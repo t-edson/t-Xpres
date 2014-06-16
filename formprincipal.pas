@@ -1,0 +1,349 @@
+unit FormPrincipal;
+
+{$mode objfpc}{$H+}
+
+interface
+
+uses
+  Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs,
+  ComCtrls, Menus, ActnList, StdActns, ExtCtrls, utilEditSyn,
+  SynHighlighterFacil, XpresComplet, uXpres, Process, Globales;
+
+type
+
+  { TfrmPrincipal }
+
+  TfrmPrincipal = class(TForm)
+    acArcAbrir: TAction;
+    acArcGuaCom: TAction;
+    acArcGuardar: TAction;
+    acArcNueVent: TAction;
+    acArcNuevo: TAction;
+    acArcSalir: TAction;
+    acBusBuscar: TAction;
+    acBusBusSig: TAction;
+    acBusRem: TAction;
+    acEdiCopy: TEditCopy;
+    acEdiCut: TEditCut;
+    acEdiModCol: TAction;
+    acEdiPaste: TEditPaste;
+    acEdiRedo: TAction;
+    acEdiSelecAll: TAction;
+    acEdiUndo: TAction;
+    acHerConfig: TAction;
+    acHerDetener: TAction;
+    acHerEjecutar: TAction;
+    acPArcAbrir: TAction;
+    acPArcAbrNue: TAction;
+    acPArcCamNom: TAction;
+    acPArcElim: TAction;
+    acPArcNueCar: TAction;
+    acPArcNueCon: TAction;
+    acPArcNueEnc: TAction;
+    acPArcRefres: TAction;
+    acHerComp: TAction;
+    acEdiRecSyn: TAction;
+    acHerGenTemCom: TAction;
+    ActionList: TActionList;
+    acVerPanArc: TAction;
+    ImageList1: TImageList;
+    MainMenu1: TMainMenu;
+    MenuItem1: TMenuItem;
+    MenuItem10: TMenuItem;
+    MenuItem11: TMenuItem;
+    MenuItem12: TMenuItem;
+    MenuItem13: TMenuItem;
+    MenuItem14: TMenuItem;
+    MenuItem15: TMenuItem;
+    MenuItem16: TMenuItem;
+    MenuItem17: TMenuItem;
+    MenuItem18: TMenuItem;
+    MenuItem19: TMenuItem;
+    MenuItem20: TMenuItem;
+    MenuItem21: TMenuItem;
+    MenuItem22: TMenuItem;
+    MenuItem23: TMenuItem;
+    mnRecientes: TMenuItem;
+    MenuItem2: TMenuItem;
+    MenuItem3: TMenuItem;
+    MenuItem4: TMenuItem;
+    MenuItem5: TMenuItem;
+    MenuItem6: TMenuItem;
+    MenuItem7: TMenuItem;
+    MenuItem8: TMenuItem;
+    MenuItem9: TMenuItem;
+    OpenDialog1: TOpenDialog;
+    SaveDialog1: TSaveDialog;
+    Splitter1: TSplitter;
+    StatusBar1: TStatusBar;
+    edXpr: TSynEdit;
+    edAsm: TSynEdit;
+    ToolBar1: TToolBar;
+    ToolButton1: TToolButton;
+    ToolButton10: TToolButton;
+    ToolButton11: TToolButton;
+    ToolButton12: TToolButton;
+    ToolButton2: TToolButton;
+    ToolButton3: TToolButton;
+    ToolButton4: TToolButton;
+    ToolButton5: TToolButton;
+    ToolButton6: TToolButton;
+    ToolButton7: TToolButton;
+    ToolButton8: TToolButton;
+    ToolButton9: TToolButton;
+    VerBarEst1: TAction;
+    VerNumLin1: TAction;
+    procedure acArcAbrirExecute(Sender: TObject);
+    procedure acArcGuaComExecute(Sender: TObject);
+    procedure acArcGuardarExecute(Sender: TObject);
+    procedure acArcNuevoExecute(Sender: TObject);
+    procedure acArcSalirExecute(Sender: TObject);
+    procedure acEdiCopyExecute(Sender: TObject);
+    procedure acEdiCutExecute(Sender: TObject);
+    procedure acEdiPasteExecute(Sender: TObject);
+    procedure acEdiRecSynExecute(Sender: TObject);
+    procedure acEdiRedoExecute(Sender: TObject);
+    procedure acEdiUndoExecute(Sender: TObject);
+    procedure acHerCompExecute(Sender: TObject);
+    procedure acHerEjecutarExecute(Sender: TObject);
+    procedure acHerGenTemComExecute(Sender: TObject);
+    procedure eArchivoCargado;
+    procedure eCambiaDatArchivo;
+    procedure eCambiaEstArchivo;
+    procedure edXprKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure FormCloseQuery(Sender: TObject; var CanClose: boolean);
+    procedure FormCreate(Sender: TObject);
+    procedure FormDestroy(Sender: TObject);
+    procedure FormDropFiles(Sender: TObject; const FileNames: array of String);
+    procedure FormShow(Sender: TObject);
+  private
+    procedure MarcarError(nLin, nCol: integer);
+    procedure PreparaEditor;
+    procedure VerificarError;
+    { private declarations }
+  public
+    c : TCompiler;
+    e : TVentEditor;
+    { public declarations }
+  end;
+
+var
+  frmPrincipal: TfrmPrincipal;
+
+implementation
+{$R *.lfm}
+var
+  hlXpr, hlAsm: TSynFacilSyn;
+
+{ TfrmPrincipal }
+
+procedure TfrmPrincipal.FormCreate(Sender: TObject);
+begin
+  e := TVentEditor.Create;
+  c := TCompiler.Create;
+  edXpr.Align:=alLeft;
+  splitter1.Align:=alLeft;
+  edAsm.Align:=alClient;
+  //crea el resaltador-lexer, para el editor y el compilador
+  hlXpr := TSynFacilSyn.Create(self);
+  hlXpr.LoadFromFile('Xpres.xml');
+//  if hlXpr.Err<>'' then msgerr(hlXpr.Err);
+  PreparaEditor;
+end;
+
+procedure TfrmPrincipal.FormDestroy(Sender: TObject);
+begin
+  FinAyudaContext;   //Finaliza ayuda contextual
+  c.Free;
+  e.Destroy;
+end;
+
+procedure TfrmPrincipal.PreparaEditor;
+//Configura el editor para empezar a trabajar
+begin
+  //configura editor de Xpres
+  edXpr.Highlighter:=hlXpr;
+
+  //configura editor de ASM
+  hlAsm := TSynFacilSyn.Create(self);
+  hlAsm.LoadFromFile('8086asm.xml');
+  edAsm.Highlighter:=hlAsm;
+
+  e.OnCambiaDatArchivo:=@eCambiaDatArchivo;
+  e.OnCambiaEstArchivo:=@eCambiaEstArchivo;
+  e.OnArchivoCargado:=@eArchivoCargado;
+  e.InitEditor(edXpr,'SinNombre', 'xpr', StatusBar1.Panels[2], StatusBar1.Panels[1]);
+  e.InitMenuRecents(mnRecientes);  //inicia el menú "Recientes"
+  InicEditorC1(edXpr);     //inicia editor
+//  edXpr.OnSpecialLineMarkup:=@edSpecialLineMarkup;
+end;
+
+procedure TfrmPrincipal.FormCloseQuery(Sender: TObject; var CanClose: boolean);
+begin
+  if e.SaveQuery then CanClose := false;   //cancela
+end;
+
+procedure TfrmPrincipal.FormDropFiles(Sender: TObject; const FileNames: array of String);
+begin
+  //Carga archivo arrastrados
+  if e.SaveQuery then Exit;   //Verifica cambios
+  e.LoadFile(FileNames[0]);
+end;
+
+procedure TfrmPrincipal.FormShow(Sender: TObject);
+begin
+  InicAyudaContext(edXpr, Self,'');
+end;
+
+procedure TfrmPrincipal.eCambiaDatArchivo;
+begin
+  //actualiza barra de título
+  Caption:= 'XpresI - ' + SysToUTF8(e.NomArc);
+  StatusBar1.Panels[3].Text := Descrip_DelArc(e.DelArc);
+  StatusBar1.Panels[4].Text := e.CodArc;  //actualiza codificación
+end;
+procedure TfrmPrincipal.eCambiaEstArchivo;
+begin
+  acArcGuardar.Enabled:=e.GetModified;
+  acEdiUndo.Enabled:=e.CanUndo;
+  acEdiRedo.Enabled:=e.CanRedo;
+  acEdiPaste.Enabled:=e.CanPaste;
+end;
+
+procedure TfrmPrincipal.edXprKeyUp(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  AyudContextKeyUp(Key, Shift);
+end;
+
+procedure TfrmPrincipal.eArchivoCargado;
+begin
+  //  if Panel1.Visible then UbicarArchivoArbol(arc8);  //ubica ruta
+  //  frmConfig.fraCfgEdit1.AgregArcReciente(arc8);  //agrega a lista de recientes
+  //  frmConfig.escribirArchivoIni;  //guarda registro
+end;
+
+procedure TfrmPrincipal.acArcNuevoExecute(Sender: TObject);
+begin
+  e.NewFile;
+end;
+
+procedure TfrmPrincipal.acArcAbrirExecute(Sender: TObject);
+//Abre archivo
+begin
+  OpenDialog1.Filter:='Programa Xpres|*.xpr;*.txt|Todos los archivos|*.*';
+  e.OpenDialog(OpenDialog1);
+end;
+
+procedure TfrmPrincipal.acArcGuaComExecute(Sender: TObject);
+begin
+  e.SaveAsDialog(SaveDialog1);
+end;
+
+procedure TfrmPrincipal.acArcGuardarExecute(Sender: TObject);
+begin
+  e.SaveFile;
+end;
+procedure TfrmPrincipal.acArcSalirExecute(Sender: TObject);
+begin
+  self.Close;
+end;
+
+procedure TfrmPrincipal.acEdiCopyExecute(Sender: TObject);
+begin
+  e.Copy;
+end;
+procedure TfrmPrincipal.acEdiCutExecute(Sender: TObject);
+begin
+  e.Cut;
+end;
+procedure TfrmPrincipal.acEdiPasteExecute(Sender: TObject);
+begin
+  e.Paste;
+end;
+procedure TfrmPrincipal.acEdiRecSynExecute(Sender: TObject);
+//Recarga el archivo de sintaxis
+begin
+  hlXpr.LoadFromFile('Xpres.xml');
+  edXpr.Invalidate;
+end;
+
+procedure TfrmPrincipal.acEdiRedoExecute(Sender: TObject);
+begin
+  e.Redo;
+end;
+procedure TfrmPrincipal.acEdiUndoExecute(Sender: TObject);
+begin
+  e.Undo;
+end;
+
+procedure TfrmPrincipal.acHerCompExecute(Sender: TObject);
+begin
+  c.Compilar(e.NomArc, edXpr.Lines, hlXpr);
+  if c.HayError then begin
+    VerificarError;
+//    MsgErr(c.PErr.TxtError);
+    exit;
+  end;
+  edAsm.ClearAll;
+  edAsm.Lines.AddStrings(c.mem);
+end;
+
+procedure TfrmPrincipal.MarcarError(nLin, nCol: integer);
+begin
+  //posiciona curosr
+  edXpr.CaretX := nCol;
+  edXpr.CaretY := nLin;
+  //define línea con error
+  e.linErr := nLin;
+  edXpr.Invalidate;  //refresca
+end;
+procedure TfrmPrincipal.VerificarError;
+//Verifica si se ha producido algún error en el preprocesamiento y si lo hay
+//Ve la mejor forma de msotrarlo
+begin
+    If not c.HayError Then exit;  //verificación
+    //Selecciona posición de error en el Editor
+    If c.ArcError <> '' Then begin
+        //Se ha identificado el archivo con el error
+        If e.NomArc = '' Then begin
+            //Tenemos el editor libre para mostrar el archivo
+            e.LoadFile(c.ArcError);
+            //Ubicamos número de línea, si hay
+            MarcarError(c.Perr.nLinError,c.Perr.nColError);
+            {If MostrarError Then }c.Perr.MosError;
+        end Else begin
+            //Hay un archivo cargado
+            If c.Perr.ArcError = e.NomArc Then begin
+                //El error está en el mismo archivo, lo mostramos
+                If c.Perr.nLinError <> 0 Then begin
+                   MarcarError(c.Perr.nLinError,c.Perr.nColError);
+                   edXpr.Invalidate;
+                end;
+                {If MostrarError Then }c.Perr.MosError;
+            end Else begin
+                //Es otro archivo. Lo abre en otra ventana
+//               AbrirPreSQL(c.PErr.ArcError, c.PErr.TxtError);
+            end;
+        end;
+    End else begin   //no hay archivo de error
+      {If MostrarError Then }c.Perr.MosError;
+    end;
+End;
+procedure TfrmPrincipal.acHerEjecutarExecute(Sender: TObject);
+begin
+  edAsm.Lines.SaveToFile('code.asm');  //guarda
+  //compila
+  Shell('.\pas32v25\BIN\PASS32.EXE code.asm');
+  //ejecuta
+  Shell('cmd /c code.exe');
+end;
+
+procedure TfrmPrincipal.acHerGenTemComExecute(Sender: TObject);
+//Genera plantilla de código para el compilador, de acuerdo a los tipos definidos
+begin
+  c.GenTemplCompiler;
+end;
+
+end.
+
