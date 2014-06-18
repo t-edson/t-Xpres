@@ -122,7 +122,6 @@ type
     procedure VerificarError;
     { private declarations }
   public
-    c : TCompiler;
     e : TVentEditor;
     { public declarations }
   end;
@@ -140,7 +139,6 @@ var
 procedure TfrmPrincipal.FormCreate(Sender: TObject);
 begin
   e := TVentEditor.Create;
-  c := TCompiler.Create;
   edXpr.Align:=alLeft;
   splitter1.Align:=alLeft;
   edAsm.Align:=alClient;
@@ -154,7 +152,6 @@ end;
 procedure TfrmPrincipal.FormDestroy(Sender: TObject);
 begin
   FinAyudaContext;   //Finaliza ayuda contextual
-  c.Free;
   e.Destroy;
 end;
 
@@ -279,14 +276,14 @@ end;
 
 procedure TfrmPrincipal.acHerCompExecute(Sender: TObject);
 begin
-  c.Compilar(e.NomArc, edXpr.Lines, hlXpr);
-  if c.HayError then begin
+  Compilar(e.NomArc, edXpr.Lines, hlXpr);
+  if HayError then begin
     VerificarError;
 //    MsgErr(c.PErr.TxtError);
     exit;
   end;
   edAsm.ClearAll;
-  edAsm.Lines.AddStrings(c.mem);
+  edAsm.Lines.AddStrings(mem);
 end;
 
 procedure TfrmPrincipal.MarcarError(nLin, nCol: integer);
@@ -302,32 +299,32 @@ procedure TfrmPrincipal.VerificarError;
 //Verifica si se ha producido algún error en el preprocesamiento y si lo hay
 //Ve la mejor forma de msotrarlo
 begin
-    If not c.HayError Then exit;  //verificación
+    If not HayError Then exit;  //verificación
     //Selecciona posición de error en el Editor
-    If c.ArcError <> '' Then begin
+    If PErr.ArcError <> '' Then begin
         //Se ha identificado el archivo con el error
         If e.NomArc = '' Then begin
             //Tenemos el editor libre para mostrar el archivo
-            e.LoadFile(c.ArcError);
+            e.LoadFile(PErr.ArcError);
             //Ubicamos número de línea, si hay
-            MarcarError(c.Perr.nLinError,c.Perr.nColError);
-            {If MostrarError Then }c.Perr.MosError;
+            MarcarError(Perr.nLinError,Perr.nColError);
+            {If MostrarError Then }Perr.MosError;
         end Else begin
             //Hay un archivo cargado
-            If c.Perr.ArcError = e.NomArc Then begin
+            If Perr.ArcError = e.NomArc Then begin
                 //El error está en el mismo archivo, lo mostramos
-                If c.Perr.nLinError <> 0 Then begin
-                   MarcarError(c.Perr.nLinError,c.Perr.nColError);
+                If Perr.nLinError <> 0 Then begin
+                   MarcarError(Perr.nLinError,Perr.nColError);
                    edXpr.Invalidate;
                 end;
-                {If MostrarError Then }c.Perr.MosError;
+                {If MostrarError Then }Perr.MosError;
             end Else begin
                 //Es otro archivo. Lo abre en otra ventana
-//               AbrirPreSQL(c.PErr.ArcError, c.PErr.TxtError);
+//               AbrirPreSQL(PErr.ArcError, PErr.TxtError);
             end;
         end;
     End else begin   //no hay archivo de error
-      {If MostrarError Then }c.Perr.MosError;
+      {If MostrarError Then }Perr.MosError;
     end;
 End;
 procedure TfrmPrincipal.acHerEjecutarExecute(Sender: TObject);
@@ -342,7 +339,7 @@ end;
 procedure TfrmPrincipal.acHerGenTemComExecute(Sender: TObject);
 //Genera plantilla de código para el compilador, de acuerdo a los tipos definidos
 begin
-  c.GenTemplCompiler;
+  GenTemplCompiler;
 end;
 
 end.
