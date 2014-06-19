@@ -143,7 +143,9 @@ function TContexto.CapBlancos: Boolean;
 //Si no encuentra algun blanco al inicio, devuelve falso
 begin
   while not Eof and ((lex.GetTokenAttribute = lex.tkSpace) or
-                     (lex.GetTokenAttribute = lex.tkEol) ) do
+                     (lex.GetTokenAttribute = lex.tkEol)  or
+                     (lex.GetTokenAttribute = lex.tkComment)
+                     ) do
     Next;
   //actualiza estado
   tok := lex.GetToken;    //lee el token

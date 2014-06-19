@@ -11,7 +11,8 @@ uses
 type
   //categorías básicas de tipo de datos
   TtipDato=(
-    t_integer,  //es entero
+    t_integer,  //números enteros
+    t_uinteger, //enteros sin signo
     t_float,    //es de coma flotante
     t_string,   //cadena
     t_boolean,  //booleano
@@ -49,6 +50,7 @@ type
     function NombreTipo: string;  //nombre de tipo
     procedure Load;   //carga el operador en registro o pila
     function FindOperator(const oper: string): TOperator; //devuelve el objeto operador
+    function GetOperator: Toperator;
   end;
 
   TProcDefineVar = procedure(const varName, varInitVal: string);
@@ -57,14 +59,16 @@ type
   TProcExecOperat = procedure(var Op1: TOperand; opr: Toperator; Op2: TOperand);
 
   //Tipo operación
-  TxOperation = record
-    OperadType: TType; //tipo de operador
-    procOperat: TProcExecOperat;  //Procesamiento de la operación
+  TxOperation = class
+    OperadType : TType; //tipo de operador
+    proc       : TProcExecOperat;  //Procesamiento de la operación
     //Si "procOperat" es NIL, se deben usar estos campos para procesar la oepración
     CodForConst: string;  //código para ejecutar con Operando constante
-    CodForVar: string;    //código para ejecutar con Operando variable
-    CodForExpr: string;    //código para ejecutar con Operando expresión
+    CodForVar  : string;    //código para ejecutar con Operando variable
+    CodForExpr : string;    //código para ejecutar con Operando expresión
   end;
+
+  TOperations = specialize TFPGObjectList<TxOperation>; //lista de bloques
 
   //Operador
   { TOperator }
@@ -74,11 +78,11 @@ type
     jer: byte;      //jerarquía
     nom: string;    //nombre de la operación (suma, resta)
     idx: integer;   //ubicación dentro de un arreglo
-    Operations: array of TxOperation;  //operaciones soportadas. Debería haber tantos como
-                                      //Num. Operadores * Num.Tipos compatibles.
-    function CreateOperation(OperadType: ttype; codCons, codVar, codExp: string
-      ): integer;  //Crea operación
-    function FindOperation(typ0: Ttype): integer;  //Busca una operación para este operador
+    Operations: TOperations;  //operaciones soportadas. Debería haber tantos como
+                              //Num. Operadores * Num.Tipos compatibles.
+    function CreateOperation(OperadType: Ttype; codCons, codVar, codExp: string
+      ): TxOperation;  //Crea operación
+    function FindOperation(typ0: Ttype): TxOperation;  //Busca una operación para este operador
     constructor Create;
     destructor Destroy; override;
   end;
@@ -147,48 +151,48 @@ var  //variables privadas del compilador
   tkType    : TSynHighlighterAttributes;
   tkOthers  : TSynHighlighterAttributes;
 
-  ConsE: TListaCont;      //Lista de contextos de entrada
+  ConsE: TListaCont;   //Lista de contextos de entrada
   //Variables del Contexto actual
-  cEnt : TContexto;   //referencia al contexto de entrada actual
+  cEnt : TContexto;    //referencia al contexto de entrada actual
+  nullOper: TOperator; //Operador nulo. Usado como valor cero.
 
 { TOperator }
 
 function TOperator.CreateOperation(OperadType: Ttype; codCons, codVar,
-  codExp: string): integer;
+  codExp: string): TxOperation;
 var
   r: TxOperation;
-  n: Integer;
 begin
   //agrega
+  r := TxOperation.Create;
   r.OperadType:=OperadType;
   r.CodForConst:=codCons;
   r.CodForVar:=codVar;
   r.CodForExpr:=codExp;
-
-  n := high(Operations)+1;
-  setlength(Operations,n+1);
-  Operations[n] := r;
-  Result := n;
+  //agrega
+  operations.Add(r);
+  Result := r;
 end;
-function TOperator.FindOperation(typ0: Ttype): integer;
-{Busca, si encuentra definida, alguna operación, de este operador con el tip indicado.
-SI no lo encuentra devuelve -1}
+function TOperator.FindOperation(typ0: Ttype): TxOperation;
+{Busca, si encuentra definida, alguna operación, de este operador con el tipo indicado.
+Si no lo encuentra devuelve NIL}
 var
-  i: Integer;
+  r: TxOperation;
 begin
-  Result := -1;
-  for i:=0 to high(Operations) do begin
-    if Operations[i].OperadType = typ0 then begin
-      exit(i);
+  Result := nil;
+  for r in Operations do begin
+    if r.OperadType = typ0 then begin
+      exit(r);
     end;
   end;
 end;
 constructor TOperator.Create;
 begin
-  setlength(Operations,0); //inicia
+  Operations := TOperations.Create(true);
 end;
 destructor TOperator.Destroy;
 begin
+  Operations.Free;
   inherited Destroy;
 end;
 
@@ -200,14 +204,14 @@ begin
 end;
 function TType.CreateOperator(txt0: string; jer0: byte; name0: string): TOperator;
 {Permite crear un nuevo ooperador soportado por este tipo de datos. Si hubo error,
-devuelve NIL. En caso normal devuelve una referecnia al operador creado}
+devuelve NIL. En caso normal devuelve una referencia al operador creado}
 var
   n: Integer;
   r: TOperator;  //operador
   i: Integer;
 begin
   //verifica nombre
-  if FindOperator(txt0)<>nil then begin
+  if FindOperator(txt0)<>nullOper then begin
     Result := nil;  //indica que hubo error
     exit;
   end;
@@ -222,10 +226,12 @@ begin
   Result := r;
 end;
 function TType.FindOperator(const Opr: string): TOperator;
+//Recibe la cadena de un operador y devuelve una referencia a un objeto Toperator, del
+//tipo. Si no está definido el operador para este tipo, devuelve nullOper.
 var
   i: Integer;
 begin
-  Result := nil;
+  Result := nullOper;   //valor por defecto
   for i:=0 to Operators.Count-1 do begin
     if Operators[i].txt = Opr then begin
       exit(Operators[i]); //está definido
@@ -260,8 +266,19 @@ begin
   typ.procLoad(self);  //llama al evento de carga
 end;
 function TOperand.FindOperator(const oper: string): TOperator;
+//Recibe la cadena de un operador y devuelve una referencia a un objeto Toperator, del
+//operando. Si no está definido el operador para este operando, devuelve nullOper.
 begin
   Result := typ.FindOperator(oper);
+end;
+function TOperand.GetOperator: Toperator;
+//Lee del contexto de entrada y toma un operador. Si no encuentra un operador, devuelve NIL.
+//Si el operador encontrado no se aplica al operando, devuelve nullOper.
+begin
+  cEnt.CapBlancos;
+  if cEnt.tokType <> tkOperator then exit(nil);
+  Result := typ.FindOperator(cEnt.tok);
+  cEnt.Next;   //toma el token
 end;
 
 { Rutinas del compilador }
@@ -421,31 +438,6 @@ begin
     CEnt := ConsE[ConsE.Count-1];
 end;
 
-function cogOperador: string;
-//Coge el operador actual y pasa al siguiente token.
-//Si no encuentra un operador, devuelve el operador Op_ninguno.
-{
-OPERADOR     JERARQUÍA	DESCRIPCIÓN
->>,<<,>+,>-	        1	Redirección
-=	                2	Asignación
-&&, ||,|! ,!	    3	Operadores Lógicos
-==,<>,>,>=,<,<=,~   4	Operadores de comparación
-+,-,|	            5	Suma, resta, concatenación
-*,/,\, %,	        6	Multiplicación, División, Residuo
-=>,=<	            7	Función Mayor, Función Menor
-^,++,--,+=,-=,*=,/=	8	Potenciación, auto incremento, etc
-}
-begin
-  cEnt.CapBlancos;
-  if cEnt.tokType <> tkOperator then begin
-    //no sigue un operador
-    Result:='';
-    exit;
-  end;
-  //Hay operador. Al menos así lo identifica el lexer.
-  Result:=cEnt.tok;  //lee el texto
-  cEnt.Next;  //coge el operador
-end;
 function CogOperando: TOperand;
   procedure TipDefecNumber(var Op: TOperand; toknum: string);
   //Devuelve el tipo de número entero o fltante más sencillo que le corresponde a un token
@@ -551,6 +543,7 @@ var t: ttype;
   r : Tvar;
 begin
   //Verifica el tipo
+  hay := false;
   for t in types do begin
     if t.name=varType then begin
        hay:=true; break;
@@ -660,9 +653,7 @@ begin
   end;
   cEnt.CapBlancos;
   //empiezan las declaraciones
-  Code('.MODEL TINY');
-  Code('.DATA');
-  Code('  HelloMesg  db     ''Hello,World'',10,13,''$''');
+  Cod_StartData;
   if tokAct = 'var' then begin
     cEnt.Next;    //lo toma
     while (tokAct <>'begin') and (tokAct <>'const') and
@@ -672,7 +663,6 @@ begin
     end;
   end;
   if tokAct = 'begin' then begin
-    Code('.CODE');   //inicia la sección de código
     Cod_StartProgram;
 
     cEnt.Next;   //coge "begin"
@@ -713,21 +703,21 @@ begin
   Result := PErr.HayError;
 end;
 function Evaluar(Op1: TOperand; opr: TOperator; Op2: TOperand): TOperand;
-//Se debe ejecutar una operación con dos operandos y un operador
+//Ejecuta una operación con dos operandos y un operador. "opr" es el operador de Op1.
 var expr: TOperand;
-  i: Integer;
+  o: TxOperation;
 begin
     PErr.IniError;
     Evaluar.cat := coExpres;    //ahora es expresión por defecto
     //Busca si hay una operación definida para: <tipo de Op1>-opr-<tipo de Op2>
-    i := opr.FindOperation(Op2.typ);
-    if i=-1 then begin
+    o := opr.FindOperation(Op2.typ);
+    if o = nil then begin
       Perr.GenError('No se ha definido la operación: ' +
                     Op1.NombreTipo + opr.txt + Op2.NombreTipo, PosAct);
       Exit;
     end;
     //Llama al evento asociado
-    opr.Operations[i].procOperat(Op1, opr, Op2);
+    o.proc(Op1, opr, Op2);
     //Completa campos de evaluar
     Evaluar.txt := Op1.txt + opr.txt + Op2.txt;   //texto de la expresión
 //    Evaluar.uop := opr;   //última operación ejecutada
@@ -737,13 +727,10 @@ function CogExpresion(jerar: Integer): TOperand;
 //Esta es la función más importante del compilador
 var
   Op1, Op2: TOperand;   //Operandos
-  operator1, operator2: TOperator;
-  opr, opr2: string;    //Operadores
-  jerOpr, jerOpr2: shortint;      //jerarquías
+  opr, opr2: TOperator;    //Operadores
   cadena: string;
   pos1,pos2: TPosCont;
 begin
-  Code('  ;expresión');
   expr_start;  //llama a evento
   Op1.CatTyp:=t_integer;    //asumir opcion por defecto
   Op2.CatTyp:=t_integer;   //asumir opcion por defecto
@@ -751,8 +738,8 @@ begin
   //----------------coger primer operando------------------
   Op1 := CogOperando; if pErr.HayError then exit;
   //verifica si termina la expresion
-  opr := cogOperador; if pErr.HayError then exit;
-  if opr = '' then begin  //no sigue operador
+  opr := Op1.GetOperator; if pErr.HayError then exit;
+  if opr = nil then begin  //no sigue operador
     //Expresión de un solo operando. Lo carga por si se necesita
     Op1.Load;   //carga el operador para cumplir
     Result:=Op1;
@@ -760,19 +747,17 @@ begin
   end;
   //------- sigue un operador ---------
   //verifica si el operador aplica al operando
-  operator1 := Op1.FindOperator(opr);
-  if operator1=nil then begin
-    PErr.GenError('No está definido el operador: '+ opr + ' para tipo: '+Op1.typ.name, PosAct);
+  if opr = nullOper then begin
+    PErr.GenError('No está definido el operador: '+ opr.txt + ' para tipo: '+Op1.typ.name, PosAct);
     exit;
   end;
-  jerOpr := operator1.jer;
   //¿Delimitada por jerarquía?
-  If jerOpr <= jerar Then begin  //es menor que la que sigue, expres.
+  If opr.jer <= jerar Then begin  //es menor que la que sigue, expres.
     Result := Op1;  //solo devuelve el único operando que leyó
     Exit;
   End;
 
-  while opr<>'' do begin
+  while opr<>nil do begin
     pos1 := PosAct;    //Guarda por si lo necesita
     //--------------------coger operador ---------------------------
 	//operadores unitarios ++ y -- (un solo operando).
@@ -805,36 +790,29 @@ begin
     //--------------------coger segundo operando--------------------
 	Op2 := CogOperando; if pErr.HayError then exit;
     pos2 := PosAct;    //Guarda por si lo necesita
-    opr2 := cogOperador;   //Toma el siguiente operador
-    If opr2 <> '' Then begin  //Hay otro operador
-      operator2 := Op2.FindOperator(opr2);
-      if operator2=nil then begin
-        PErr.GenError('No está definido el operador: '+ opr2 + ' para tipo: '+Op2.typ.name, PosAct);
-        exit;
-      end;
-      jerOpr2 := operator2.jer;
-      if jerOpr2=-1 then begin
-        PErr.GenError('No está definido el operador: '+ opr2 + ' para tipo: '+Op2.typ.name, PosAct);
+    opr2 := Op2.GetOperator;   //Toma el siguiente operador
+    If opr2 <> nil Then begin  //Hay otro operador
+      if opr2=nullOper then begin
+        PErr.GenError('No está definido el operador: '+ opr2.txt + ' para tipo: '+Op2.typ.name, PosAct);
         exit;
       end;
       //¿Delimitado por jerarquía de operador?
-      If jerOpr2 <= jerar Then begin  //sigue uno de menor jerarquía, hay que salir
+      If opr2.jer <= jerar Then begin  //sigue uno de menor jerarquía, hay que salir
           PosAct := pos2;   //antes de coger el operador
-          Result := Evaluar(Op1, operator1, Op2);
+          Result := Evaluar(Op1, opr, Op2);
           Exit;
       End;
-      If jerOpr2 > jerOpr Then begin    //y es de mayor jerarquía, retrocede
+      If opr2.jer > opr.jer Then begin   //y es de mayor jerarquía, retrocede
           PosAct := pos1;        //retrocede
-          Op2 := CogExpresion(jerOpr);        //evalua primero
-          opr2 := cogOperador;    //actualiza el siguiente operador
+          Op2 := CogExpresion(Opr.jer);  //evalua primero
+          opr2 := Op2.GetOperator;       //actualiza el siguiente operador
       End;
 
     end;
-    Op1 := Evaluar(Op1, operator1, Op2);    //evalua resultado
+    Op1 := Evaluar(Op1, opr, Op2);    //evalua resultado
     if PErr.HayError then exit;
     //prepara siguiente operación
     opr := opr2;
-    jerOpr := jerOpr;    //actualiza operador anterior
   end;  //hata que ya no siga un operador
 
 end;
@@ -904,7 +882,10 @@ initialization
   types := TTypes.Create(true);
   //Inicia lista de variables
   setlength(vars,0);
+  //crea el operador NULL
+  nullOper := TOperator.Create;
 finalization;
+  nullOper.Free;
   types.Free;
   //Limpia lista de Contextos
   ConsE.Free;
