@@ -54,9 +54,9 @@ type
   end;
 
   TProcDefineVar = procedure(const varName, varInitVal: string);
-  TProcLoadOperand = procedure(var Op: TOperand);
+  TProcLoadOperand = procedure(const Op: TOperand);
 
-  TProcExecOperat = procedure(var Op1: TOperand; opr: Toperator; Op2: TOperand);
+  TProcExecOperat = function(const Op1: TOperand; opr: Toperator; const Op2: TOperand): TOperand;
 
   //Tipo operación
   TxOperation = class
@@ -80,8 +80,7 @@ type
     idx: integer;   //ubicación dentro de un arreglo
     Operations: TOperations;  //operaciones soportadas. Debería haber tantos como
                               //Num. Operadores * Num.Tipos compatibles.
-    function CreateOperation(OperadType: Ttype; codCons, codVar, codExp: string
-      ): TxOperation;  //Crea operación
+    function CreateOperation(OperadType: Ttype; proc: TProcExecOperat): TxOperation;  //Crea operación
     function FindOperation(typ0: Ttype): TxOperation;  //Busca una operación para este operador
     constructor Create;
     destructor Destroy; override;
@@ -158,17 +157,17 @@ var  //variables privadas del compilador
 
 { TOperator }
 
-function TOperator.CreateOperation(OperadType: Ttype; codCons, codVar,
-  codExp: string): TxOperation;
+function TOperator.CreateOperation(OperadType: Ttype; proc: TProcExecOperat): TxOperation;
 var
   r: TxOperation;
 begin
   //agrega
   r := TxOperation.Create;
   r.OperadType:=OperadType;
-  r.CodForConst:=codCons;
-  r.CodForVar:=codVar;
-  r.CodForExpr:=codExp;
+//  r.CodForConst:=codCons;
+//  r.CodForVar:=codVar;
+//  r.CodForExpr:=codExp;
+  r.proc:=proc;
   //agrega
   operations.Add(r);
   Result := r;
@@ -385,7 +384,7 @@ begin
 //      cEnt.arc := '';
 //      nlin := 0;
     end else begin
-      cEnt.SetPosXY(pc.col, pc.fil);  //posiciona al contexto
+      cEnt.SetPosXY(pc.fil, pc.col );  //posiciona al contexto
       cEnt.arc := pc.arc;
       cEnt.nlin := pc.nlin;
     end;
@@ -702,13 +701,12 @@ function HayError: boolean;
 begin
   Result := PErr.HayError;
 end;
-function Evaluar(Op1: TOperand; opr: TOperator; Op2: TOperand): TOperand;
+function Evaluar(const Op1: TOperand; opr: TOperator; const Op2: TOperand): TOperand;
 //Ejecuta una operación con dos operandos y un operador. "opr" es el operador de Op1.
 var expr: TOperand;
   o: TxOperation;
 begin
     PErr.IniError;
-    Evaluar.cat := coExpres;    //ahora es expresión por defecto
     //Busca si hay una operación definida para: <tipo de Op1>-opr-<tipo de Op2>
     o := opr.FindOperation(Op2.typ);
     if o = nil then begin
@@ -717,9 +715,10 @@ begin
       Exit;
     end;
     //Llama al evento asociado
-    o.proc(Op1, opr, Op2);
+    Result := o.proc(Op1, opr, Op2);
     //Completa campos de evaluar
-    Evaluar.txt := Op1.txt + opr.txt + Op2.txt;   //texto de la expresión
+    Result.cat := coExpres;    //ahora es expresión por defecto
+    Result.txt := Op1.txt + opr.txt + Op2.txt;   //texto de la expresión
 //    Evaluar.uop := opr;   //última operación ejecutada
 End;
 function CogExpresion(jerar: Integer): TOperand;
@@ -805,6 +804,7 @@ begin
       If opr2.jer > opr.jer Then begin   //y es de mayor jerarquía, retrocede
           PosAct := pos1;        //retrocede
           Op2 := CogExpresion(Opr.jer);  //evalua primero
+          if pErr.HayError then exit;
           opr2 := Op2.GetOperator;       //actualiza el siguiente operador
       End;
 
@@ -814,7 +814,7 @@ begin
     //prepara siguiente operación
     opr := opr2;
   end;  //hata que ya no siga un operador
-
+  Result := Op1;  //aquí debe haber quedado el resultado
 end;
 procedure GenTemplCompiler;
 //Genera una plantilla de código para implementar este mismo compilador

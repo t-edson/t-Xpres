@@ -3,14 +3,15 @@ Los números de 8 bits se dejan en AL
 Los números de 16 bits se dejan en AX
 }
 var
-  result_in_AL: Boolean;
+  int8: TType;   //tipo
+  result_in_AL: Boolean;  //bandera
 
 procedure Cod_StartData;
 //Codifica la parte inicial de declaración de variables estáticas
 begin
   Code('.MODEL TINY');
   Code('.DATA');
-  Code('  HelloMesg  db     ''Hello,World'',10,13,''$''');
+  Code('  HelloMesg  db     ''Hola mundo'',10,13,''$''');
 end;
 procedure Cod_StartProgram;
 //Codifica la parte inicial del programa
@@ -43,7 +44,7 @@ procedure int8_procDefine(const varName, varInitVal: string);
 begin
   Code('  '+varName+ ' DB ?');
 end;
-procedure int8_procLoad(var Op: TOperand);
+procedure int8_procLoad(const Op: TOperand);
 begin
   //carga el primer operando
   if Op.cat = coConst then begin
@@ -54,7 +55,7 @@ begin
     //ya debe estar cargada
   end;
 end;
-procedure int8_suma_int8proc(var Op1: TOperand; opr: TOperator; Op2: TOperand);
+function int8_suma_int8proc(const Op1: TOperand; opr: TOperator; const Op2: TOperand): TOperand;
 begin
   //carga el primer operando
   if not result_in_AL then begin
@@ -70,8 +71,9 @@ begin
   end else begin  //expresión
     //ya debe estar cargada!!!!!
   end;
+  Result.typ:=int8;   //devuelve int8
 end;
-procedure int8_resta_int8proc(var Op1: TOperand; opr: TOperator; Op2: TOperand);
+function int8_resta_int8proc(const Op1: TOperand; opr: TOperator; const Op2: TOperand): TOperand;
 begin
   //carga el primer operando
   if not result_in_AL then begin
@@ -87,8 +89,9 @@ begin
   end else begin  //expresión
     //ya debe estar cargada!!!!!
   end;
+  Result.typ:=int8;   //devuelve int8
 end;
-procedure int8_mult_int8proc(var Op1: TOperand; opr: TOperator; Op2: TOperand);
+function int8_mult_int8proc(const Op1: TOperand; opr: TOperator; const Op2: TOperand): TOperand;
 begin
   //carga el primer operando
   if not result_in_AL then begin
@@ -106,15 +109,12 @@ begin
     //????
   end;
   //deja resultado en AX
+  Result.typ:=int8;   //devuelve int8
 end;
 
 procedure Iniciar(lex0: TSynFacilSyn);
 var
-  int8: TType;
-  int8_suma,int8_resta,
-  int8_mult: TOperator;
-  int8_suma_int8, int8_resta_int8,
-  int8_mult_int8: TxOperation;
+  opr: TOperator;
 begin
   lex := lex0;    //asigna lexer
   //guarda referencia a los atributos
@@ -136,17 +136,14 @@ begin
   int8.procDefine:=@int8_procDefine;
   int8.procLoad:=@int8_procLoad;
 
-  int8_suma:=int8.CreateOperator('+',5,'suma');
-  int8_suma_int8 := int8_suma.CreateOperation(int8,'','','');
-  int8_suma_int8.proc:=@int8_suma_int8proc;
+  opr:=int8.CreateOperator('+',5,'suma');
+  opr.CreateOperation(int8,@int8_suma_int8proc);
 
-  int8_resta:=int8.CreateOperator('-',5,'resta');
-  int8_resta_int8 := int8_resta.CreateOperation(int8,'','','');
-  int8_resta_int8.proc:=@int8_resta_int8proc;
+  opr:=int8.CreateOperator('-',5,'resta');
+  opr.CreateOperation(int8,@int8_resta_int8proc);
 
-  int8_mult:=int8.CreateOperator('*',5,'mult');
-  int8_mult_int8 := int8_mult.CreateOperation(int8,'','','');
-  int8_mult_int8.proc:=@int8_mult_int8proc;
+  opr:=int8.CreateOperator('*',6,'mult');
+  opr.CreateOperation(int8,@int8_mult_int8proc);
 
   //  int8:=CreateType('int16',t_integer,1);
 end;

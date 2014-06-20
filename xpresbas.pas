@@ -184,6 +184,9 @@ begin
   //el estado apropiado. Esto implica que no se debe abusar de este método.
   lex.SetHighlighterAtXY(Point(col0,fil0));
   fil := fil0;  //actualiza la nueva fila
+  //actualiza estado
+  tok := lex.GetToken;    //lee el token
+  tokType := lex.GetTokenAttribute;  //lee atributo
 end;
 procedure TContexto.CurPosIni;
 //Mueve la posición al inicio del contenido.
