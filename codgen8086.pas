@@ -2,9 +2,16 @@
 Los números de 8 bits se dejan en AL
 Los números de 16 bits se dejan en AX
 }
+const
+  //Constamtes para indicar el estado de los operadores.
+  NOLOADED = 0;  //No cargado. Este estado debe existir siempre.
+  LOADED = 1;    //Indica que esta cargado en registro. Listo para operar.
+
 var
+  //tipos
   int8: TType;   //tipo
-  result_in_AL: Boolean;  //bandera
+  //banderas
+  ALused: Boolean;  //indica que el registro Al está siendo usado
 
 procedure Cod_StartData;
 //Codifica la parte inicial de declaración de variables estáticas
@@ -35,84 +42,126 @@ begin
   Code('END');
 end;
 procedure expr_start;
-//Se ejecuta al inicial el procesamiento de una expresión
+//Se ejecuta siempre al StartSyntax el procesamiento de una expresión
 begin
-  Code('  ;expres');
-  result_in_AL := false;   //inicia con al libre
+//  Code('  ;expres');
+  if exprLevel=1 then begin //es el primer nivel
+    Code('  ;expres');
+    ALused := false;   //inicia con AL libre
+  end else begin  //es recursivo
+//    if ALused then  //hay un dato evaluado
+//      Code('  push al');  //lo guarda
+  end;
 end;
+procedure expr_end;
+//Se ejecuta al final de una expresión, si es que no ha habido error.
+begin
+//  Code('  ;fin expres');
+  if exprLevel = 1 then begin  //el último nivel
+    ALused := false;   //termina con AL libre
+//    Code('  ;fin expres');
+  end;
+end;
+///////// Eventos para la generación de código de evaluación de expresiones ////////
 procedure int8_procDefine(const varName, varInitVal: string);
 begin
   Code('  '+varName+ ' DB ?');
 end;
-procedure int8_procLoad(const Op: TOperand);
+procedure int8_procLoad(var Op: TOperand);
 begin
-  //carga el primer operando
-  if Op.cat = coConst then begin
+  if Op.estOp = LOADED then exit;   //ya está cargado
+  //verifica disponibilidad de registro
+  if ALused then begin
+    Perr.GenError('No se puede compilar expresión.', PosAct);exit;
+  end;
+  //carga el operando en
+  if Op.catOp = coConst then begin
     Code('  mov al,'+ Op.txt);  //8 bits en dl
-  end else if Op.cat = coVariable then begin
+  end else if Op.catOp = coVariable then begin
     Code('  mov al,'+ Op.txt);  //8 bits en dl
   end else begin  //expresión
     //ya debe estar cargada
   end;
 end;
-function int8_suma_int8proc(const Op1: TOperand; opr: TOperator; const Op2: TOperand): TOperand;
+function int8_suma_int8proc(var Op1: TOperand; opr: TOperator; var Op2: TOperand): TOperand;
 begin
-  //carga el primer operando
-  if not result_in_AL then begin
-    int8_procLoad(Op1)
-  end;
   //opera
-  if Op2.cat = coConst then begin
-    Code('  add al,'+ Op2.txt);  //8 bits en dl
-    result_in_AL := true;
-  end else if Op2.cat = coVariable then begin
-    Code('  add al,'+ Op2.txt);  //8 bits en dl
-    result_in_AL := true;
+  if Op2.catOp = coConst then begin
+    int8_procLoad(Op1); if HayError then exit;  //carga operando
+    Code('  add al,'+ Op2.txt);  //8 bits en AL
+    ALused := true;
+  end else if Op2.catOp = coVariable then begin
+    int8_procLoad(Op1); if HayError then exit;  //carga operando
+    Code('  add al,'+ Op2.txt);  //8 bits en AL
+    ALused := true;
   end else begin  //expresión
-    //ya debe estar cargada!!!!!
+    if (Op1.estOp = NOLOADED) and (Op2.estOp = LOADED) then begin
+      Code('  mov bl,al');  //pasa expresión a BL
+      ALused := false;   //ya está libre AL
+      int8_procLoad(Op1); if HayError then exit;  //carga operando
+      Code('  add al,bl');         //deja en AL
+      ALused := true;
+    end else begin
+      Perr.GenError('No se puede compilar expresión.', PosAct);
+    end;
+  end;
+  Result.typ:=int8;     //devuelve int8
+  Result.estOp:=LOADED; //indica que está cargado en registro
+end;
+function int8_resta_int8proc(var Op1: TOperand; opr: TOperator; var Op2: TOperand): TOperand;
+begin
+  //opera
+  if Op2.catOp = coConst then begin
+    int8_procLoad(Op1); if HayError then exit;  //carga operando
+    Code('  sub al,'+ Op2.txt);  //8 bits en AL
+    ALused := true;
+  end else if Op2.catOp = coVariable then begin
+    int8_procLoad(Op1); if HayError then exit;  //carga operando
+    Code('  sub al,'+ Op2.txt);  //8 bits en AL
+    ALused := true;
+  end else begin  //expresión
+    if (Op1.estOp = NOLOADED) and (Op2.estOp = LOADED) then begin
+      Code('  mov bl,al');  //pasa expresión a BL
+      ALused := false;   //ya está libre AL
+      int8_procLoad(Op1); if HayError then exit;  //carga operando
+      Code('  sub al,bl');         //deja en AL
+      ALused := true;
+    end else begin
+      Perr.GenError('No se puede compilar expresión.', PosAct);
+    end;
   end;
   Result.typ:=int8;   //devuelve int8
+  Result.estOp:=LOADED; //indica que está cargado en registro
 end;
-function int8_resta_int8proc(const Op1: TOperand; opr: TOperator; const Op2: TOperand): TOperand;
+function int8_mult_int8proc(var Op1: TOperand; opr: TOperator; var Op2: TOperand): TOperand;
 begin
-  //carga el primer operando
-  if not result_in_AL then begin
-    int8_procLoad(Op1)
-  end;
   //opera
-  if Op2.cat = coConst then begin
-    Code('  sub al,'+ Op2.txt);  //8 bits en dl
-    result_in_AL := true;
-  end else if Op2.cat = coVariable then begin
-    Code('  sub al,'+ Op2.txt);  //8 bits en dl
-    result_in_AL := true;
-  end else begin  //expresión
-    //ya debe estar cargada!!!!!
-  end;
-  Result.typ:=int8;   //devuelve int8
-end;
-function int8_mult_int8proc(const Op1: TOperand; opr: TOperator; const Op2: TOperand): TOperand;
-begin
-  //carga el primer operando
-  if not result_in_AL then begin
-    int8_procLoad(Op1)
-  end;
-  //opera
-  if Op2.cat = coConst then begin
+  if Op2.catOp = coConst then begin
+    int8_procLoad(Op1); if HayError then exit;  //carga operando
     Code('  mov bl,'+ Op2.txt);  //no se puede multiplicar directo por constante
-    Code('  mul al,bl');
-    result_in_AL := true;
-  end else if Op2.cat = coVariable then begin
-    Code('  mul al,'+ Op2.txt);
-    result_in_AL := true;
+    Code('  imul al,bl');         //deja en AX
+    ALused := true;
+  end else if Op2.catOp = coVariable then begin
+    int8_procLoad(Op1); if HayError then exit;  //carga operando
+    Code('  imul al,'+ Op2.txt);  //deja en AX
+    ALused := true;
   end else begin  //expresión
-    //????
+    if (Op1.estOp = NOLOADED) and (Op2.estOp = LOADED) then begin
+      Code('  mov bl,al');  //pasa expresión a BL
+      ALused := false;   //ya está libre AL
+      int8_procLoad(Op1); if HayError then exit;  //carga operando
+      Code('  imul al,bl');         //deja en AX
+      ALused := true;
+    end else begin
+      Perr.GenError('No se puede compilar expresión.', PosAct);
+    end;
   end;
   //deja resultado en AX
-  Result.typ:=int8;   //devuelve int8
+  Result.typ:=int8;   //devuelve int8 (se pierde AH)
+  Result.estOp:=LOADED; //indica que está cargado en registro
 end;
 
-procedure Iniciar(lex0: TSynFacilSyn);
+procedure StartSyntax(lex0: TSynFacilSyn);
 var
   opr: TOperator;
 begin
@@ -126,11 +175,8 @@ begin
   tkType     := lex.GetAttribByName('Types');    //se debe haber creado
   tkOthers   := lex.GetAttribByName('Others');   //se debe haber creado
 
-  ConsE.Clear;          //elimina todos los Contextos de entrada
-
   ///////////Crea tipos y operaciones
   ClearTypes;
-  ClearVars;
   //////// tipo int8 ////////////
   int8:=CreateType('int8',t_integer,1);
   int8.procDefine:=@int8_procDefine;

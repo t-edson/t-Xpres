@@ -35,14 +35,13 @@ type
   TOperand = object
     nom: string;
     simple: boolean;  //indica si el tipo de dato es simple o compuesto
-  	CatTyp: tTipDato; //Categoría de Tipo de dato
-//    sType: string;    //Tipo de dato (en cadena)
     typ   : TType;    //referencia al tipo de dato
+  	catTyp: tTipDato; //Categoría de Tipo de dato
     size:  integer;   //tamaño del operando en bytes
-    cat: CatOperan;   //Categoría de operando
-//    cons: boolean;     //indica si es constante o variable
-  	dir_ini: integer; //Direción física de inicio (necesario para compilar)
-    txt: string;     //Texto del operador o expresión
+    catOp: CatOperan; //Categoría de operando
+    estOp: integer;   //Estado del operando (Usado para la generec. de código)
+  	addStr: integer;  //Direción física de inicio (necesario para compilar)
+    txt: string;      //Texto del operador o expresión
     //valores del operando
     valFloat: extended; //Valor en caso de que sea un flotante
     valInt: Int64;     //valor en caso de que sea un entero
@@ -54,9 +53,8 @@ type
   end;
 
   TProcDefineVar = procedure(const varName, varInitVal: string);
-  TProcLoadOperand = procedure(const Op: TOperand);
-
-  TProcExecOperat = function(const Op1: TOperand; opr: Toperator; const Op2: TOperand): TOperand;
+  TProcLoadOperand = procedure(var Op: TOperand);
+  TProcExecOperat = function(var Op1: TOperand; opr: Toperator; var Op2: TOperand): TOperand;
 
   //Tipo operación
   TxOperation = class
@@ -124,13 +122,12 @@ var //variables públicas del compilador
   PErr : TPError;   //Objeto de Error
   mem: TStringList;   //texto de salida del compilador
 
-procedure Iniciar(lex0: TSynFacilSyn);   //Prepara la secuencia de preprocesamiento
+procedure StartSyntax(lex0: TSynFacilSyn);   //Prepara la secuencia de preprocesamiento
 function LeePosContAct: TPosCont;
 procedure FijPosContAct(pc: TPosCont);
 property PosAct: TPosCont read LeePosContAct write FijPosContAct;
 procedure Compilar(NombArc: string; LinArc: Tstrings; lex0: TSynFacilSyn);
-//Procesamiento de errores
-function HayError: boolean;  //indica si hay error actual
+
 procedure GenTemplCompiler;
 
 implementation
@@ -154,6 +151,7 @@ var  //variables privadas del compilador
   //Variables del Contexto actual
   cEnt : TContexto;    //referencia al contexto de entrada actual
   nullOper: TOperator; //Operador nulo. Usado como valor cero.
+  ExprLevel: Integer;  //Nivel de anidamiento de la rutina de evaluación de expresiones
 
 { TOperator }
 
@@ -251,7 +249,7 @@ end;
 
 function TOperand.NombreTipo: string;
 begin
-   case CatTyp of
+   case catTyp of
    t_integer: Result := 'Numérico';
    t_float: Result := 'Flotante';
    t_string: Result := 'Numérico';
@@ -334,7 +332,11 @@ begin
 end;
 
 ////////////////Rutinas de generación de código para el compilador////////////
-function CogExpresion(jerar: Integer): TOperand; forward;  //prototipo
+function HayError: boolean;
+begin
+  Result := PErr.HayError;
+end;
+function CogExpresion(const jerar: Integer): TOperand; forward;
 {$I codgen8086.pas}
 function TokAct: string; inline;
 //Devuelve el token actual, ignorando la caja.
@@ -447,7 +449,7 @@ function CogOperando: TOperand;
   begin
     if pos('.',toknum) <> 0 then begin  //es flotante
       f := StrToFloat(toknum);
-      Op.CatTyp := t_float;   //es flotante
+      Op.catTyp := t_float;   //es flotante
     end else begin     //es entero
       //verificación de longitud de entero
       if length(toknum)>=19 then begin  //solo aquí puede haber problemas
@@ -496,11 +498,12 @@ var
 begin
   PErr.Limpiar;
   cEnt.CapBlancos;
+  Result.estOp:=0;  //Este estado significa NO CARGADO en registros.
   if cEnt.tokType = tkNumber then begin  //constantes numéricas
      Result.simple:=true;       //es simple
-     Result.cat:=coConst;       //constante es Mono Operando
+     Result.catOp:=coConst;       //constante es Mono Operando
      Result.txt:= cEnt.tok;     //toma el texto
-     Result.CatTyp:= t_integer;  //es numérico
+     Result.catTyp:= t_integer;  //es numérico
      TipDefecNumber(Result, cEnt.tok); //encuentra tipo de número, tamaño y valor
      if pErr.HayError then exit;  //verifica
      if Result.typ = nil then begin
@@ -516,9 +519,9 @@ begin
     end;
     //es una variable
     Result.simple:=true;       //es simple
-    Result.cat:=coVariable;    //variable
+    Result.catOp:=coVariable;    //variable
     Result.txt:= cEnt.tok;     //toma el texto
-    Result.CatTyp:= vars[ivar].typ.cat;  //categoría
+    Result.catTyp:= vars[ivar].typ.cat;  //categoría
     Result.typ:=vars[ivar].typ;
     cEnt.Next;    //Pasa al siguiente
 
@@ -690,18 +693,17 @@ procedure Compilar(NombArc: string; LinArc: Tstrings; lex0 : TSynFacilSyn);
 //Compila el contenido de un archivo a ensamblador
 begin
   Perr.IniError;
-  Iniciar(lex0);
-  mem.Clear;
+  StartSyntax(lex0); //!!!!!Debería hacerse solo uan vez al inicio
+  mem.Clear;       //limpia salida
+  ConsE.Clear;     //elimina todos los Contextos de entrada
+  ClearVars;       //limpia las variables
+  ExprLevel := 0;  //inicia
   //compila
   CompilarArc(NombArc, LinArc);
   if PErr.HayError then exit;
 //  PPro.GenArchivo(ArcSal);
 end;
-function HayError: boolean;
-begin
-  Result := PErr.HayError;
-end;
-function Evaluar(const Op1: TOperand; opr: TOperator; const Op2: TOperand): TOperand;
+function Evaluar(var Op1: TOperand; opr: TOperator; var Op2: TOperand): TOperand;
 //Ejecuta una operación con dos operandos y un operador. "opr" es el operador de Op1.
 var expr: TOperand;
   o: TxOperation;
@@ -717,28 +719,26 @@ begin
     //Llama al evento asociado
     Result := o.proc(Op1, opr, Op2);
     //Completa campos de evaluar
-    Result.cat := coExpres;    //ahora es expresión por defecto
+    Result.catOp := coExpres;    //ahora es expresión por defecto
     Result.txt := Op1.txt + opr.txt + Op2.txt;   //texto de la expresión
 //    Evaluar.uop := opr;   //última operación ejecutada
 End;
-function CogExpresion(jerar: Integer): TOperand;
+function GetExpressionCore(const jerar: Integer): TOperand; //inline;
 //Generador de Algoritmos de Evaluacion de expresiones.
 //Esta es la función más importante del compilador
 var
-  Op1, Op2: TOperand;   //Operandos
-  opr, opr2: TOperator;    //Operadores
-  cadena: string;
-  pos1,pos2: TPosCont;
+  Op1, Op2  : TOperand;   //Operandos
+  opr1, opr2: TOperator;  //Operadores
+  pos1, pos2: TPosCont;   //posiciones de texto
 begin
-  expr_start;  //llama a evento
-  Op1.CatTyp:=t_integer;    //asumir opcion por defecto
-  Op2.CatTyp:=t_integer;   //asumir opcion por defecto
+  Op1.catTyp:=t_integer;    //asumir opcion por defecto
+  Op2.catTyp:=t_integer;   //asumir opcion por defecto
   pErr.Limpiar;
   //----------------coger primer operando------------------
   Op1 := CogOperando; if pErr.HayError then exit;
   //verifica si termina la expresion
-  opr := Op1.GetOperator; if pErr.HayError then exit;
-  if opr = nil then begin  //no sigue operador
+  opr1 := Op1.GetOperator; if pErr.HayError then exit;
+  if opr1 = nil then begin  //no sigue operador
     //Expresión de un solo operando. Lo carga por si se necesita
     Op1.Load;   //carga el operador para cumplir
     Result:=Op1;
@@ -746,41 +746,41 @@ begin
   end;
   //------- sigue un operador ---------
   //verifica si el operador aplica al operando
-  if opr = nullOper then begin
-    PErr.GenError('No está definido el operador: '+ opr.txt + ' para tipo: '+Op1.typ.name, PosAct);
+  if opr1 = nullOper then begin
+    PErr.GenError('No está definido el operador: '+ opr1.txt + ' para tipo: '+Op1.typ.name, PosAct);
     exit;
   end;
   //¿Delimitada por jerarquía?
-  If opr.jer <= jerar Then begin  //es menor que la que sigue, expres.
+  If opr1.jer <= jerar Then begin  //es menor que la que sigue, expres.
     Result := Op1;  //solo devuelve el único operando que leyó
-    Exit;
+    exit;
   End;
 
-  while opr<>nil do begin
+  while opr1<>nil do begin
     pos1 := PosAct;    //Guarda por si lo necesita
     //--------------------coger operador ---------------------------
 	//operadores unitarios ++ y -- (un solo operando).
     //Se evaluan como si fueran una mini-expresión o función
-{	if opr.id = op_incremento then begin
-      case Op1.CatTyp of
+{	if opr1.id = op_incremento then begin
+      case Op1.catTyp of
         t_integer: Cod_IncremOperanNumerico(Op1);
       else
         PErr.GenError('Operador ++ no es soportado en este tipo de dato.',PosAct);
         exit;
       end;
-      opr := cogOperador; if pErr.HayError then exit;
-      if opr.id = Op_ninguno then begin  //no sigue operador
+      opr1 := cogOperador; if pErr.HayError then exit;
+      if opr1.id = Op_ninguno then begin  //no sigue operador
         Result:=Op1; exit;  //termina ejecucion
       end;
-    end else if opr.id = op_decremento then begin
-      case Op1.CatTyp of
+    end else if opr1.id = op_decremento then begin
+      case Op1.catTyp of
         t_integer: Cod_DecremOperanNumerico(Op1);
       else
         PErr.GenError('Operador -- no es soportado en este tipo de dato.',PosAct);
         exit;
       end;
-      opr := cogOperador; if pErr.HayError then exit;
-      if opr.id = Op_ninguno then begin  //no sigue operador
+      opr1 := cogOperador; if pErr.HayError then exit;
+      if opr1.id = Op_ninguno then begin  //no sigue operador
         Result:=Op1; exit;  //termina ejecucion
       end;
     end;}
@@ -798,23 +798,33 @@ begin
       //¿Delimitado por jerarquía de operador?
       If opr2.jer <= jerar Then begin  //sigue uno de menor jerarquía, hay que salir
           PosAct := pos2;   //antes de coger el operador
-          Result := Evaluar(Op1, opr, Op2);
+          Result := Evaluar(Op1, opr1, Op2);
           Exit;
       End;
-      If opr2.jer > opr.jer Then begin   //y es de mayor jerarquía, retrocede
+      If opr2.jer > opr1.jer Then begin   //y es de mayor jerarquía, retrocede
           PosAct := pos1;        //retrocede
-          Op2 := CogExpresion(Opr.jer);  //evalua primero
+          Op2 := CogExpresion(opr1.jer);  //evalua primero
           if pErr.HayError then exit;
           opr2 := Op2.GetOperator;       //actualiza el siguiente operador
       End;
 
     end;
-    Op1 := Evaluar(Op1, opr, Op2);    //evalua resultado
+    Op1 := Evaluar(Op1, opr1, Op2);    //evalua resultado
     if PErr.HayError then exit;
     //prepara siguiente operación
-    opr := opr2;
-  end;  //hata que ya no siga un operador
+    opr1 := opr2;
+  end;  //hasta que ya no siga un operador
   Result := Op1;  //aquí debe haber quedado el resultado
+end;
+function CogExpresion(const jerar: Integer): TOperand;
+//Envoltura para GetExpressionCore().
+{ TODO : Para optimizar debería existir solo CogExpresion() y no GetExpressionCore() }
+begin
+  Inc(ExprLevel);  //cuenta el anidamiento
+  expr_start;  //llama a evento
+  Result := GetExpressionCore(jerar);
+  expr_end;    //llama al evento de salida
+  Dec(ExprLevel);
 end;
 procedure GenTemplCompiler;
 //Genera una plantilla de código para implementar este mismo compilador

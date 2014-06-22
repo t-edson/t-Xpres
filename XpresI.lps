@@ -1,0 +1,288 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="9"/>
+    <BuildModes Active="Default"/>
+    <Units Count="17">
+      <Unit0>
+        <Filename Value="XpresI.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="XpresI"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="16" Y="18"/>
+        <UsageCount Value="200"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="formprincipal.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="frmPrincipal"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="FormPrincipal"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="291"/>
+        <CursorPos X="18" Y="302"/>
+        <UsageCount Value="200"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="synhighlighterfacil.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="SynHighlighterFacil"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="751"/>
+        <CursorPos X="3" Y="758"/>
+        <FoldState Value=" T8m12=3e"/>
+        <UsageCount Value="200"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="utileditsyn.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="utilEditSyn"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="169"/>
+        <CursorPos X="30" Y="191"/>
+        <UsageCount Value="200"/>
+        <Bookmarks Count="1">
+          <Item0 X="3" Y="415" ID="1"/>
+        </Bookmarks>
+      </Unit3>
+      <Unit4>
+        <Filename Value="syncompletionq.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="SynCompletionQ"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="520"/>
+        <CursorPos X="26" Y="535"/>
+        <UsageCount Value="200"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="uxpres.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="uXpres"/>
+        <EditorIndex Value="1"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="3"/>
+        <CursorPos X="1" Y="131"/>
+        <FoldState Value=" T4503 T5A0{S2 TMk90102143517481G p0tI21091311]X7YDI]mCjS94 T3kS0EA piXjL05]9j3jR0F5 pk9iM2p2]Rel90.3]RclN]/ T6kT01D TLl1015 T0l7P4I]XAnHXIF]pZjIV3E]9fjZT37]R7jSS3]iHma]GTFuN2HC"/>
+        <UsageCount Value="200"/>
+        <Bookmarks Count="2">
+          <Item0 X="25" Y="852" ID="2"/>
+          <Item1 X="1" Y="562" ID="1"/>
+        </Bookmarks>
+        <Loaded Value="True"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="xprescomplet.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="XpresComplet"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="101"/>
+        <CursorPos X="35" Y="114"/>
+        <UsageCount Value="200"/>
+      </Unit6>
+      <Unit7>
+        <Filename Value="globales.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Globales"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="27"/>
+        <CursorPos X="11" Y="46"/>
+        <UsageCount Value="202"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="xpresbas.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="XpresBas"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="193"/>
+        <CursorPos X="13" Y="324"/>
+        <FoldState Value=" T3lX049 piZjA043Z"/>
+        <UsageCount Value="153"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="C:\lazarus\fpc\2.6.2\source\rtl\objpas\classes\classesh.inc"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1608"/>
+        <CursorPos X="17" Y="1624"/>
+        <UsageCount Value="4"/>
+      </Unit9>
+      <Unit10>
+        <Filename Value="C:\lazarus\lcl\comctrls.pp"/>
+        <UnitName Value="ComCtrls"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="74"/>
+        <CursorPos X="3" Y="91"/>
+        <UsageCount Value="1"/>
+      </Unit10>
+      <Unit11>
+        <Filename Value="C:\lazarus\fpc\2.6.2\source\rtl\objpas\strutils.pp"/>
+        <UnitName Value="strutils"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="43"/>
+        <CursorPos X="15" Y="65"/>
+        <UsageCount Value="2"/>
+      </Unit11>
+      <Unit12>
+        <Filename Value="C:\lazarus\components\synedit\synedithighlighter.pp"/>
+        <UnitName Value="SynEditHighlighter"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="289"/>
+        <CursorPos X="5" Y="306"/>
+        <UsageCount Value="2"/>
+      </Unit12>
+      <Unit13>
+        <Filename Value="C:\lazarus\fpc\2.6.2\source\rtl\objpas\sysutils\sysstrh.inc"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="53"/>
+        <CursorPos X="10" Y="72"/>
+        <UsageCount Value="1"/>
+      </Unit13>
+      <Unit14>
+        <Filename Value="C:\lazarus\fpc\2.6.2\source\rtl\inc\systemh.inc"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="853"/>
+        <CursorPos X="11" Y="871"/>
+        <UsageCount Value="1"/>
+      </Unit14>
+      <Unit15>
+        <Filename Value="synhighlighterfile.inc"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="69"/>
+        <CursorPos X="1" Y="101"/>
+        <UsageCount Value="9"/>
+      </Unit15>
+      <Unit16>
+        <Filename Value="codgen8086.pas"/>
+        <UnitName Value="codgen8086"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="0"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="54"/>
+        <CursorPos X="7" Y="119"/>
+        <FoldState Value=" T0H04 T3M08121f"/>
+        <UsageCount Value="32"/>
+        <Loaded Value="True"/>
+      </Unit16>
+    </Units>
+    <General>
+      <ActiveWindowIndexAtStart Value="0"/>
+    </General>
+    <JumpHistory Count="28" HistoryIndex="27">
+      <Position1>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="93" Column="19" TopLine="80"/>
+      </Position1>
+      <Position2>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="98" Column="19" TopLine="86"/>
+      </Position2>
+      <Position3>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="119" Column="19" TopLine="106"/>
+      </Position3>
+      <Position4>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="124" Column="19" TopLine="106"/>
+      </Position4>
+      <Position5>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="146" Column="1" TopLine="124"/>
+      </Position5>
+      <Position6>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="163" Column="1" TopLine="145"/>
+      </Position6>
+      <Position7>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="164" Column="1" TopLine="145"/>
+      </Position7>
+      <Position8>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="165" Column="1" TopLine="145"/>
+      </Position8>
+      <Position9>
+        <Filename Value="uxpres.pas"/>
+        <Caret Line="723" Column="1" TopLine="682"/>
+      </Position9>
+      <Position10>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="152" Column="47" TopLine="132"/>
+      </Position10>
+      <Position11>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="144" Column="15" TopLine="114"/>
+      </Position11>
+      <Position12>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="202" Column="1" TopLine="165"/>
+      </Position12>
+      <Position13>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="91" Column="9" TopLine="90"/>
+      </Position13>
+      <Position14>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="90" Column="18" TopLine="77"/>
+      </Position14>
+      <Position15>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="1" Column="1" TopLine="1"/>
+      </Position15>
+      <Position16>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="70" Column="24" TopLine="13"/>
+      </Position16>
+      <Position17>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="90" Column="18" TopLine="71"/>
+      </Position17>
+      <Position18>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="94" Column="18" TopLine="77"/>
+      </Position18>
+      <Position19>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="101" Column="20" TopLine="83"/>
+      </Position19>
+      <Position20>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="115" Column="1" TopLine="83"/>
+      </Position20>
+      <Position21>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="119" Column="1" TopLine="99"/>
+      </Position21>
+      <Position22>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="126" Column="1" TopLine="99"/>
+      </Position22>
+      <Position23>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="139" Column="1" TopLine="122"/>
+      </Position23>
+      <Position24>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="144" Column="1" TopLine="122"/>
+      </Position24>
+      <Position25>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="151" Column="1" TopLine="122"/>
+      </Position25>
+      <Position26>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="125" Column="36" TopLine="93"/>
+      </Position26>
+      <Position27>
+        <Filename Value="codgen8086.pas"/>
+        <Caret Line="101" Column="35" TopLine="71"/>
+      </Position27>
+      <Position28>
+        <Filename Value="uxpres.pas"/>
+        <Caret Line="131" Column="1" TopLine="112"/>
+      </Position28>
+    </JumpHistory>
+  </ProjectSession>
+  <EditorMacros Count="0"/>
+</CONFIG>

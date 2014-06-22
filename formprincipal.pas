@@ -277,7 +277,7 @@ end;
 procedure TfrmPrincipal.acHerCompExecute(Sender: TObject);
 begin
   Compilar(e.NomArc, edXpr.Lines, hlXpr);
-  if HayError then begin
+  if Perr.HayError then begin
     VerificarError;
 //    MsgErr(c.PErr.TxtError);
     exit;
@@ -299,7 +299,7 @@ procedure TfrmPrincipal.VerificarError;
 //Verifica si se ha producido algún error en el preprocesamiento y si lo hay
 //Ve la mejor forma de msotrarlo
 begin
-    If not HayError Then exit;  //verificación
+    If not pErr.HayError Then exit;  //verificación
     //Selecciona posición de error en el Editor
     If PErr.ArcError <> '' Then begin
         //Se ha identificado el archivo con el error
