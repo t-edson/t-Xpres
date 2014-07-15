@@ -111,20 +111,21 @@ begin
     If not agregar Then IdentAyudC.Clear;
 
     IdentAyudC.add('begin');
-    IdentAyudC.add('begin '#10#13'end;');
+    IdentAyudC.add('begin '#13#10'end;');
     IdentAyudC.add('ELSE ');
     IdentAyudC.add('ELSIF ');
     IdentAyudC.add('code');
     IdentAyudC.add('end;');
 
     IdentAyudC.add('IF ');
-    IdentAyudC.add('IF THEN '#10#13'END;');
-    IdentAyudC.add('IF THEN '#10#13'ELSE'#10#13'END;');
+    IdentAyudC.add('IF THEN '#13#10'END;');
+    IdentAyudC.add('IF THEN '#13#10'ELSE'#10#13'END;');
     IdentAyudC.add('IF THEN ELSIF END;');
     IdentAyudC.add('IF NOT ');
 
     IdentAyudC.add('program ');
     IdentAyudC.add('program NoName;');
+    IdentAyudC.add('program NoName;'#10#13'begin'#10#13'end;');
     IdentAyudC.add('method');
     IdentAyudC.add('type');
     IdentAyudC.add('class');

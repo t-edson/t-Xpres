@@ -1,51 +1,64 @@
-{                                  UtilEditSyn 0.0
- Utilidades para trabajar con editores de texto usando SynEdit. Incluye funciones para manejo
- de la lectura y escritura de archivos de texto, considerando la codificaión de texto y
- el delimitador de línea.
-                                                  Por Tito Hinostroza 21/11/2013
-                                   UtilEditSyn 0.1
-Se creó el objeto TVentEditor, para encapsular las principales operaciones con
-los editores de texto (leer de disoc, grabar en disco, etc).
-                                            Modif. Por Tito Hinostroza 16/05/2014
-}
-{                                   UtilEditSyn 0.2
-Se define TVentEditor como una calse en lugar de objeto, y se agrega soporte para
-guardar la lista de archivos recientes.
-Se convierten textos adicionales como constantes para facilitar el cambio de idioma.
-                                           Modif. Por Tito Hinostroza 25/05/2014
+{                                   UtilEditSyn 0.4
+* Se cambia el nombre al evento OnArchivoCargado().
+* Se crea la propiedad de solo lectur "Modified".
+* Se agrega la propiedad "canCopy".
+* Se agrega el evento OnSelectionChange(), como funcionalidad adicional.
+* Se corrige un error de desbordamiento que se podía producir en VerTipoArchivo().
+
+                                  Modif. Por Tito Hinostroza 12/07/2014
 }
 unit utilEditSyn; {$mode objfpc}{$H+}
 interface
 uses  Classes, SysUtils, SynEdit, SynEditMarkupHighAll, SynEditMarkupSpecialLine,
       lconvencoding, Graphics, FileUtil, Dialogs, Controls, Forms, LCLType, ComCtrls,
-      SynEditKeyCmds, Menus, strUtils, IniFiles;
+      SynEditKeyCmds, SynEditTypes, Menus, strUtils, IniFiles;
 const
-  MSG_UNKNOWN_CODE = '¡Codificación de archivo desconocida!';
+{English messages}
+{  MSG_ROW = 'row=';
+  MSG_COL = 'col=';
+  MSG_SAVED = 'Saved';
+  MSG_NO_SAVED = 'Modified';
+  MSG_FILE_NOSAVED = 'File %s, has been modified.' +
+                     #13#10 + '¿Save?';
+  MSG_FILE_NOT_FOUND = 'File not found: ';
+  MSG_ERROR_SAVING = 'Error saving file: ';
+  MSG_OVERWRITE = 'File %s already exists.' + #13#10 +
+                  'Overwrite?';
+  MSG_RECENTS = '&Recents';
+  MSG_NO_RECENTS = 'No files';
+  MSG_EDIT_NO_INIT = 'Internal: Not initialized Editor.';}
+{Mnnsajes en español}
   MSG_ROW = 'fil=';
   MSG_COL = 'col=';
   MSG_SAVED = 'Guardado';
   MSG_NO_SAVED = 'Sin Guardar';
+  MSG_FILE_NOSAVED = 'El archivo %s ha sido modificado.' +  #13#10 +
+                     '¿Deseas guardar los cambios?';
   MSG_FILE_NOT_FOUND = 'No se encuentra el archivo: ';
   MSG_ERROR_SAVING = 'Error guardando archivo: ';
-  MSG_FILE_MODIFIED = 'El archivo %s ha sido modificado.';
-  MSG_OVERWRITE = '¿Deseas sobreescribirlo?';
-  MSG_FILE_EXIST = 'El archivo %s ya existe.';
-  MSG_WISH_SAVE = '¿Deseas guardar los cambios?';
+  MSG_OVERWRITE = 'El archivo %s ya existe.' + #13#10 +
+                  '¿Deseas sobreescribirlo?';
   MSG_RECENTS = '&Recientes';
   MSG_NO_RECENTS = 'No hay archivos';
+  MSG_EDIT_NO_INIT = 'Error Interno: Editor no inicializado.';
+
 type
   //Tipos de delimitador de línea de archivo.
   TDelArc = (TAR_DESC,    //Tipo desconocido
-              TAR_DOS,     //Tipo Windows/DOS
-              TAR_UNIX,    //Tipo Unix/Linux
-              TAR_MAC      //Tipo Mac OS
+             TAR_DOS,     //Tipo Windows/DOS
+             TAR_UNIX,    //Tipo Unix/Linux
+             TAR_MAC      //Tipo Mac OS
              );
 
-  { TVentEditor }
+  { TObjEditor }
   TEventoArchivo = procedure of object;
 
   //Define las propiedades que debe tener un texto que se está editando
-  TVentEditor = class
+  TObjEditor = class
+    procedure edMouseDown(Sender: TObject; Button: TMouseButton;
+      Shift: TShiftState; X, Y: Integer);
+    procedure edStatusChange(Sender: TObject; Changes: TSynStatusChanges);
+  private
     procedure edChange(Sender: TObject);
     procedure edCommandProcessed(Sender: TObject;
       var Command: TSynEditorCommand; var AChar: TUTF8Char; Data: pointer);
@@ -53,15 +66,17 @@ type
     procedure menRecentsClick(Sender: TObject);
   private
     ed      : TSynEdit;  //referencia al editor
-    PanSaved : TStatusPanel;   //Panel para mensaje "Guardado"
-    PanPosCursor : TStatusPanel; //Panel para posición del cursor
     ArcRecientes: TStringList;  //Lista de archivos recientes
     menRecents: TMenuItem; //Menú de archivos recientes
     MaxRecents: integer;   //Máxima cantidad de archivos recientes
     procedure ActualMenusReciente;
     procedure AgregArcReciente(arch: string);
+    procedure ChangeFileInform;
     procedure GuardarADisco(var arcINI: TIniFile; etiq: string='edit');
     procedure LeerDeDisco(var arcINI: TIniFile; etiq: string='edit');
+    //Estado de modificación
+    procedure SetModified(valor: boolean);
+    function GetModified: boolean;
   public
     NomArc  : string;    //nombre del archivo
     DelArc  : TDelArc;   //Tipo de delimitador de fin de línea
@@ -70,11 +85,22 @@ type
     Error   : string;    //mensaje de error en alguna operación
     extDef  : string;    //extensión por defecto para los archivos (txt, xml, ...)
     nomDef  : string;    //nombre por defecto pàra nuevos archivos
-    OnCambiaEstArchivo: TEventoArchivo;
-    OnCambiaDatArchivo: TEventoArchivo;
-    OnArchivoCargado  : TEventoArchivo;   //Cuando se ha cargado un nuevo archivo
-    procedure InitEditor(ed0: TsynEdit; nomDef0, extDef0: string;
-      panPosCursor0: TStatusPanel=nil; panSaved0: TStatusPanel=nil);
+    //eventos
+    OnChangeEditorState:TEventoArchivo;  {Cuando cambia el estado de modificado, con opción
+                          "Undo", con "Redo", con opción "Copiar", "Cortar", "Pegar"}
+    OnChangeFileInform: TEventoArchivo;  {Cuando cambia información de nombre de archivo, tipo
+                           de delimitador de línea o tipo de codificación}
+    OnSelectionChange : TEventoArchivo; //Cuando cambia el área seleccionada
+    OnFileOpened : TEventoArchivo; //Cuando se ha cargado un nuevo archivo
+    OnEditChange : TNotifyEvent;   //Reflejo del evento OnChange() de TSynEdit;
+    //paneles con información del estado del editor
+    PanFileSaved : TStatusPanel;  //Panel para mensaje "Guardado"
+    PanCursorPos : TStatusPanel;  //Panel para mostrar posición del cursor
+    //paneles para información del archivo
+    PanFileName  : TStatusPanel;  //Panel para mostrar el nombre de archivo
+    PanForEndLin : TStatusPanel;  //Panel para mostrar el tipo de delimitador de línea
+    PanCodifFile : TStatusPanel;  //Panel para mostrar la codificaión de archivo
+    procedure InitEditor(ed0: TsynEdit; nomDef0, extDef0: string);
     procedure InitMenuRecents(menRecents0: TMenuItem; MaxRecents0: integer=5);
     procedure NewFile;
     procedure LoadFile(arc8: string);
@@ -82,7 +108,7 @@ type
     function OpenDialog(OpenDialog1: TOpenDialog): boolean;
     function SaveAsDialog(SaveDialog1: TSaveDialog): boolean;
     function SaveQuery: boolean;
-    procedure CambiaFormatoSalto(nueFor: TDelArc);
+    procedure ChangeEndLineDelim(nueFor: TDelArc);
     procedure CambiaCodific(nueCod: string);
     //Espejo de funciones comunes del editor
     procedure Cut;
@@ -90,14 +116,13 @@ type
     procedure Paste;
     procedure Undo;
     procedure Redo;
-    //Estado de modificación
-    procedure SetModified(valor: boolean);
-    function GetModified: boolean;
     //Lee estado
     function CanUndo: boolean;
     function CanRedo: boolean;
+    function CanCopy: boolean;
     function CanPaste: boolean;
 
+    property Modified: boolean read GetModified;
     constructor Create;
     destructor Destroy; override;
   end;
@@ -183,7 +208,7 @@ begin
    //Lee bloque de datos
    AssignFile(ar,archivo);
    reset(ar,1);
-   BlockRead(ar,Bolsa,Sizeof(Bolsa),Leidos);  //Lectura masiva
+   BlockRead(ar,Bolsa,TAM_BOL,Leidos);  //Lectura masiva
    CloseFile(ar);
    bolsa[Leidos] := #0; //agrega delimitador
    Pbolsa := @bolsa;    //cadena PChar
@@ -214,10 +239,10 @@ function Descrip_DelArc(DelArc: TDelArc): string;
 //proporciona una descripción al tipo de delimitador
 begin
   case DelArc of
-    TAR_DOS: Result := 'DOS/Windows';
+    TAR_DOS : Result := 'DOS/Win';  //DOS/Windows
     TAR_UNIX: Result := 'UNIX/Linux';
-    TAR_MAC: Result := 'Mac OS';
-    TAR_DESC: Result := 'Desconoc.';
+    TAR_MAC : Result := 'MAC OS';
+    TAR_DESC: Result := 'Unknown'; //'Desconoc.';
   end;
 end;
 function CargarArchivoLin(arc8: string; Lineas: TStrings;
@@ -286,54 +311,67 @@ begin
     StringToFile(UTF8ToISO_8859_1(Lineas.Text),arc0);
   end
   else begin //si es otra codificación, se guarda como UTF-8
-    ShowMessage(MSG_UNKNOWN_CODE);   //muestra
+    ShowMessage('¡Codificación de archivo desconocida!');   //muestra
     StringToFile(Lineas.Text,arc0);
   end;
 end;
 
-{ TVentEditor }
+{ TObjEditor }
 
-procedure TVentEditor.edChange(Sender: TObject);
+procedure TObjEditor.edMouseDown(Sender: TObject; Button: TMouseButton;
+  Shift: TShiftState; X, Y: Integer);
 begin
-  if PanSaved <> nil then begin
-    if GetModified then PanSaved.Text:=MSG_NO_SAVED else PanSaved.Text:=MSG_SAVED;
+  if PanCursorPos <> nil then
+    PanCursorPos.Text:= MSG_ROW + IntToStr(ed.CaretY) + ', '+ MSG_COL + IntToStr(ed.CaretX);
+  linErr := 0;  //para que quite la marca de fondo del error.
+                //Solo se notará cuando se refresque la línea en el editor.
+end;
+procedure TObjEditor.edStatusChange(Sender: TObject; Changes: TSynStatusChanges);
+//Cambia el estado del editor
+begin
+  if scSelection in changes then begin   //cambios en la selección
+    if OnSelectionChange<>nil then OnSelectionChange;  //dispara eventos
+    if OnChangeEditorState<>nil then OnChangeEditorState;  //para iniciar controles
+  end;
+end;
+procedure TObjEditor.edChange(Sender: TObject);
+begin
+  if PanFileSaved <> nil then begin
+    if GetModified then PanFileSaved.Text:=MSG_NO_SAVED else PanFileSaved.Text:=MSG_SAVED;
   end;
   //Ha habido cambio de contenido
-  if OnCambiaEstArchivo<>nil then OnCambiaEstArchivo;  //para iniciar controles
+  if OnChangeEditorState<>nil then OnChangeEditorState;  //para iniciar controles
+  if OnEditChange <> nil then OnEditChange(Sender);  //pasa el evento.
 end;
-
-procedure TVentEditor.edCommandProcessed(Sender: TObject;
+procedure TObjEditor.edCommandProcessed(Sender: TObject;
   var Command: TSynEditorCommand; var AChar: TUTF8Char; Data: pointer);
 begin
-  if PanPosCursor <> nil then
-   PanPosCursor.Text:= MSG_ROW + IntToStr(ed.CaretY) + ', '+ MSG_COL + IntToStr(ed.CaretX);
+  if PanCursorPos <> nil then
+    PanCursorPos.Text:= MSG_ROW + IntToStr(ed.CaretY) + ', '+ MSG_COL + IntToStr(ed.CaretX);
   linErr := 0;  //para que quite la marca de fondo del error.
                 //Solo se notará cuando se refresque la línea en el editor.
 end;
 
-procedure TVentEditor.InitEditor(ed0: TsynEdit; nomDef0, extDef0: string;
-  panPosCursor0: TStatusPanel = nil;
-  panSaved0: TStatusPanel = nil);
+procedure TObjEditor.InitEditor(ed0: TsynEdit; nomDef0, extDef0: string);
 //Inicia el objeto con la referencia al editor, y parámetros fijos.
 begin
   ed := ed0;
-  extDef := extDef0;
   nomDef := nomDef0;
+  extDef := extDef0;
   NewFile;   //Inicia editor con archivo vacío
-  //asigna paneles
-  panPosCursor := panPosCursor0;  //panel para la posición del cursor
-  panSaved := panSaved0; //panel para mensaje "Guardado"
   //refresca controles con el estado inicial
   edChange(nil);       //para iniciar controles
-  if PanPosCursor <> nil then
-   PanPosCursor.Text:= MSG_ROW + IntToStr(ed.CaretY) + ', '+ MSG_COL + IntToStr(ed.CaretX);
-//  if OnCambiaEstArchivo<>nil then OnCambiaEstArchivo;  //para iniciar controles
+  if PanCursorPos <> nil then
+   PanCursorPos.Text:= MSG_ROW + IntToStr(ed.CaretY) + ', '+ MSG_COL + IntToStr(ed.CaretX);
+//  if OnChangeEditorState<>nil then OnChangeEditorState;  //para iniciar controles
   //intercepta eventos
   ed.OnChange:=@edChange;  //necesita interceptar los cambios
   ed.OnCommandProcessed:=@edCommandProcessed;  //necesita para actualizar el cursor
+  ed.OnStatusChange:=@edStatusChange;
+  ed.OnMouseDown:=@edMouseDown;
 end;
 //Manejo de archivos recientes
-procedure TVentEditor.AgregArcReciente(arch: string);
+procedure TObjEditor.AgregArcReciente(arch: string);
 //Agrega el nombre de un archivo reciente
 var hay: integer; //bandera-índice
     i: integer;
@@ -351,17 +389,17 @@ begin
   while ArcRecientes.Count>MaxRecents do  //mantiene tamaño máximo
     ArcRecientes.Delete(MaxRecents);
 end;
-procedure TVentEditor.itemClick(Sender: TObject);
+procedure TObjEditor.itemClick(Sender: TObject);
 //Se selecciona un archivo de la lista de recientes
 begin
    LoadFile(MidStr(TMenuItem(Sender).Caption,4,150));
 end;
-procedure TVentEditor.menRecentsClick(Sender: TObject);
+procedure TObjEditor.menRecentsClick(Sender: TObject);
 //Evento del menú de archivos recientes
 begin
   ActualMenusReciente;  //carga la lista de archivos recientes
 end;
-procedure TVentEditor.InitMenuRecents(menRecents0: TMenuItem; MaxRecents0: integer=5);
+procedure TObjEditor.InitMenuRecents(menRecents0: TMenuItem; MaxRecents0: integer=5);
 //Configura un menú, con el historial de los archivos abiertos recientemente
 //"nRecents", es el número de archivos recientes que se guardará
 var item: TMenuItem;
@@ -379,7 +417,7 @@ begin
     menRecents.Add(item);
   end;
 end;
-procedure TVentEditor.ActualMenusReciente;
+procedure TObjEditor.ActualMenusReciente;
 {Actualiza el menú de archivos recientes con la lista de los archivos abiertos
 recientemente. }
 var
@@ -408,14 +446,14 @@ begin
     menRecents[i].Caption := '&'+IntToStr(i+1)+' '+ArcRecientes[i];
   end;
 end;
-procedure TVentEditor.LeerDeDisco(var arcINI: TIniFile; etiq: string = 'edit');
+procedure TObjEditor.LeerDeDisco(var arcINI: TIniFile; etiq: string = 'edit');
 //Lee las propiedades de disco.
 //El parámetro "etiq", se usa para cuando se quiere guardar varios editores
 begin
   //Lee archivos recientes
   arcINI.ReadSection(etiq+'_Recientes',ArcRecientes);
 end;
-procedure TVentEditor.GuardarADisco(var arcINI: TIniFile;  etiq: string = 'edit');
+procedure TObjEditor.GuardarADisco(var arcINI: TIniFile;  etiq: string = 'edit');
 //lee las propiedades de disco
 //El parámetro "etiq", se usa para cuando se quiere guardar varios editores
 var
@@ -427,23 +465,43 @@ begin
     arcINI.WriteString(etiq+'_Recientes',ArcRecientes[i],'');
 end;
 
-procedure TVentEditor.SetModified(valor: boolean);
+procedure TObjEditor.SetModified(valor: boolean);
 //Cambia el valor del campo "Modified", del editor
 begin
   if ed.Modified<> valor then begin
     //se ha cambiado el estado de "Modificado"
     ed.Modified := valor;    //Fija valor
     //dispara evento
-    if OnCambiaEstArchivo<>nil then OnCambiaEstArchivo;
+    if PanFileSaved <> nil then begin
+      if GetModified then PanFileSaved.Text:=MSG_NO_SAVED else PanFileSaved.Text:=MSG_SAVED;
+    end;
+    if OnChangeEditorState<>nil then OnChangeEditorState;
   end;
 end;
-function TVentEditor.GetModified: boolean;
+function TObjEditor.GetModified: boolean;
 //Lee el valor del campo "Modified", del editor.
 begin
   Result := ed.Modified;
 end;
 
-procedure TVentEditor.NewFile;
+procedure TObjEditor.ChangeFileInform;
+//Se debe llamar siempre que puede cambiar la información de nombre de archivo, tipo de
+//delimitador de línea o tipo de codificación del archivo.
+begin
+  //actualiza información en los paneles
+  if PanFileName <> nil then begin
+    PanFileName.Text := SysToUTF8(NomArc);
+  end;
+  if PanForEndLin <> nil then begin
+    PanForEndLin.Text:=Descrip_DelArc(DelArc);
+  end;
+  if PanCodifFile <> nil then begin
+    PanCodifFile.Text:=CodArc;
+  end;
+  //dispara evento
+  if OnChangeFileInform<>nil then OnChangeFileInform;
+end;
+procedure TObjEditor.NewFile;
 //Inicia al editor con un nuevo nombre de archivo
 begin
   if SaveQuery then Exit;   //Verifica cambios
@@ -462,10 +520,10 @@ begin
   ed.ClearAll;        //limpia editor
   ed.ClearUndo;       //limpia acciones "deshacer"
   SetModified(false);
-  if OnCambiaDatArchivo<>nil then OnCambiaDatArchivo;  //dispara evento
+  ChangeFileInform;   //actualiza
 end;
 
-procedure TVentEditor.LoadFile(arc8: string);
+procedure TObjEditor.LoadFile(arc8: string);
 //Carga el contenido de un archivo en el editor, analizando la codificación.
 //Si ocurre algún error, muestra el mensaje en pantalla y actualiza "Error".
 var
@@ -485,12 +543,12 @@ begin
   NomArc := arc0;         //fija nombre de archivo de trabajo
   SetModified(false);  //Inicia estado
   linErr := 0;            //limpia línea marcada por si acaso
-  if OnCambiaDatArchivo<>nil then OnCambiaDatArchivo;  //dispara evento
-  if OnArchivoCargado<>nil then OnArchivoCargado;  //dispara evento
+  ChangeFileInform;   //actualiza
+  if OnFileOpened<>nil then OnFileOpened;  //dispara evento
   AgregArcReciente(arc8);  //agrega a lista de recientes
 end;
 
-procedure TVentEditor.SaveFile;
+procedure TObjEditor.SaveFile;
 //Guarda el contenido del editor en su archivo correspondiente
 //Si ocurre algún error, muestra el mensaje en pantalla y actualiza "Error".
 begin
@@ -498,15 +556,16 @@ begin
   try
     GuardarArchivoLin(NomArc, ed.Lines, DelArc, CodArc);  //guarda en formato original
     SetModified(false);
-    //se dispara por si acaso, se haya guardado con otro nombre
-    if OnCambiaDatArchivo<>nil then OnCambiaDatArchivo;  //dispara evento
+    edChange(self);  //para que actualice el panel PanFileSaved
+    //se actualiza por si acaso, se haya guardado con otro nombre
+    ChangeFileInform;   //actualiza
   except
     Error := MSG_ERROR_SAVING + NomArc;
     msgErr(Error);
   end;
 end;
 
-function TVentEditor.OpenDialog(OpenDialog1: TOpenDialog): boolean;
+function TObjEditor.OpenDialog(OpenDialog1: TOpenDialog): boolean;
 //Muestra el cuadro de diálogo para abrir un archivo, teniend cuidado de
 //pedir confirmación para grabar el contenido actual.
 var arc0: string;
@@ -518,7 +577,7 @@ begin
   LoadFile(arc0);  //legalmente debería darle en UTF-8
 end;
 
-function TVentEditor.SaveAsDialog(SaveDialog1: TSaveDialog): boolean;
+function TObjEditor.SaveAsDialog(SaveDialog1: TSaveDialog): boolean;
 //Guarda el contenido del editor, permitiendo cambiar el nombre con un diálogo.
 //Si se ignora la acción, devuelve "true".
 //Si ocurre algún error, muestra el mensaje en pantalla y actualiza "Error".
@@ -533,8 +592,8 @@ begin
   end;
   arc0 := SaveDialog1.FileName;
   if FileExists(arc0) then begin
-    resp := MessageDlg('', format(MSG_FILE_EXIST,[arc0]) +
-            #13#10 + MSG_OVERWRITE, mtConfirmation, [mbYes, mbNo, mbCancel],0);
+    resp := MessageDlg('', Format(MSG_OVERWRITE,[arc0]),
+                       mtConfirmation, [mbYes, mbNo, mbCancel],0);
     if (resp = mrCancel) or (resp = mrNo) then Exit;
   end;
   NomArc := UTF8ToSys(arc0);   //asigna nuevo nombre
@@ -542,16 +601,21 @@ begin
   SaveFile;   //lo guarda
 end;
 
-function TVentEditor.SaveQuery: boolean;
+function TObjEditor.SaveQuery: boolean;
 //Verifica si es necesario guardar el archivo antes de ejecutar alguna oepración con el editor.
 //Si se ignora la acción, devuelve "true".
 //Si ocurre algún error, muestra el mensaje en pantalla y actualiza "Error".
 var resp: integer;
 begin
   Result := false;
+  if ed = nil then begin
+    Error := MSG_EDIT_NO_INIT;
+    msgErr(Error);
+    exit;
+  end;
   if ed.Modified then begin
-    resp := MessageDlg('', format(MSG_FILE_MODIFIED,[NomArc])  +
-            #13#10 + MSG_WISH_SAVE, mtConfirmation, [mbYes, mbNo, mbCancel],0);
+    resp := MessageDlg('', format(MSG_FILE_NOSAVED,[ExtractFileName(NomArc)]),
+                       mtConfirmation, [mbYes, mbNo, mbCancel],0);
     if resp = mrCancel then begin
       Result := true;   //Sale con "true"
       Exit;
@@ -565,73 +629,75 @@ begin
   end;
 end;
 
-procedure TVentEditor.CambiaFormatoSalto(nueFor: TDelArc);
+procedure TObjEditor.ChangeEndLineDelim(nueFor: TDelArc);
 //Cambia el formato de salto de línea del contenido
 begin
   if DelArc <> nueFor then begin  //verifica si hay cambio
     DelArc := nueFor;
     SetModified(true); //para indicar que algo ha cambiado
-    if OnCambiaDatArchivo<>nil then OnCambiaDatArchivo;  //dispara evento
+    ChangeFileInform;   //actualiza
   end;
 end;
-procedure TVentEditor.CambiaCodific(nueCod: string);
+procedure TObjEditor.CambiaCodific(nueCod: string);
 //Cambia la codificación del archivo
 begin
   if CodArc <> nueCod then begin
     CodArc := nueCod;
     SetModified(true); //para indicar que algo ha cambiado
-    if OnCambiaDatArchivo<>nil then OnCambiaDatArchivo;  //dispara evento
+    ChangeFileInform;   //actualiza
   end;
 end;
 
-procedure TVentEditor.Cut;
+procedure TObjEditor.Cut;
 begin
   ed.CutToClipboard;
 end;
-procedure TVentEditor.Copy;
+procedure TObjEditor.Copy;
 begin
   ed.CopyToClipboard;
 end;
-procedure TVentEditor.Paste;
+procedure TObjEditor.Paste;
 begin
   ed.PasteFromClipboard;
 end;
-procedure TVentEditor.Undo;
+procedure TObjEditor.Undo;
 //Deshace una acción en el editor
 begin
   ed.Undo;
-  if OnCambiaEstArchivo<>nil then OnCambiaEstArchivo;  //dispara evento
 end;
-procedure TVentEditor.Redo;
+procedure TObjEditor.Redo;
 //Rehace una acción en el editor
 begin
   ed.Redo;
-  if OnCambiaEstArchivo<>nil then OnCambiaEstArchivo;  //dispara evento
 end;
 
-function TVentEditor.CanUndo: boolean;
+function TObjEditor.CanUndo: boolean;
 //Indica si Hay Algo por deshacer
 begin
   Result := ed.CanUndo;
 end;
-function TVentEditor.CanRedo: boolean;
+function TObjEditor.CanRedo: boolean;
 //Indica si Hay Algo por rehacer
 begin
   Result := ed.CanRedo;
 end;
-function TVentEditor.CanPaste: boolean;
-//Indica si Hay ALgo por pegar
+function TObjEditor.CanCopy: boolean;
+//Indica si hay algo por copiar
+begin
+  Result := ed.SelAvail;
+end;
+function TObjEditor.CanPaste: boolean;
+//Indica si Hay Algo por pegar
 begin
   Result := ed.CanPaste;
 end;
 
-constructor TVentEditor.Create;
+constructor TObjEditor.Create;
 begin
   ArcRecientes := TStringList.Create;
   MaxRecents := 1;   //Inicia con 1
 end;
-
-destructor TVentEditor.Destroy;
+destructor TObjEditor.Destroy;
 begin
   ArcRecientes.Free;
   inherited Destroy;

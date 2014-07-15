@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs,
   ComCtrls, Menus, ActnList, StdActns, ExtCtrls, utilEditSyn,
-  SynHighlighterFacil, XpresComplet, uXpres, Process, Globales;
+  SynHighlighterFacil, XpresComplet, uXpres, Process, Globales, FormConfig;
 
 type
 
@@ -83,6 +83,8 @@ type
     ToolButton10: TToolButton;
     ToolButton11: TToolButton;
     ToolButton12: TToolButton;
+    ToolButton13: TToolButton;
+    ToolButton14: TToolButton;
     ToolButton2: TToolButton;
     ToolButton3: TToolButton;
     ToolButton4: TToolButton;
@@ -105,12 +107,14 @@ type
     procedure acEdiRedoExecute(Sender: TObject);
     procedure acEdiUndoExecute(Sender: TObject);
     procedure acHerCompExecute(Sender: TObject);
+    procedure acHerConfigExecute(Sender: TObject);
     procedure acHerEjecutarExecute(Sender: TObject);
     procedure acHerGenTemComExecute(Sender: TObject);
     procedure eArchivoCargado;
-    procedure eCambiaDatArchivo;
+    procedure eCambiaInfArchivo;
     procedure eCambiaEstArchivo;
     procedure edXprKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+    procedure FormClose(Sender: TObject; var CloseAction: TCloseAction);
     procedure FormCloseQuery(Sender: TObject; var CanClose: boolean);
     procedure FormCreate(Sender: TObject);
     procedure FormDestroy(Sender: TObject);
@@ -122,7 +126,7 @@ type
     procedure VerificarError;
     { private declarations }
   public
-    e : TVentEditor;
+    e : TObjEditor;
     { public declarations }
   end;
 
@@ -138,7 +142,7 @@ var
 
 procedure TfrmPrincipal.FormCreate(Sender: TObject);
 begin
-  e := TVentEditor.Create;
+  e := TObjEditor.Create;
   edXpr.Align:=alLeft;
   splitter1.Align:=alLeft;
   edAsm.Align:=alClient;
@@ -165,11 +169,14 @@ begin
   hlAsm := TSynFacilSyn.Create(self);
   hlAsm.LoadFromFile('8086asm.xml');
   edAsm.Highlighter:=hlAsm;
+  //configura paneles
+  e.PanFileSaved := StatusBar1.Panels[0]; //panel para mensaje "Guardado"
+  e.PanCursorPos := StatusBar1.Panels[1];  //panel para la posición del cursor
 
-  e.OnCambiaDatArchivo:=@eCambiaDatArchivo;
-  e.OnCambiaEstArchivo:=@eCambiaEstArchivo;
-  e.OnArchivoCargado:=@eArchivoCargado;
-  e.InitEditor(edXpr,'SinNombre', 'xpr', StatusBar1.Panels[2], StatusBar1.Panels[1]);
+  e.OnChangeFileInform:=@eCambiaInfArchivo;
+  e.OnChangeEditorState:=@eCambiaEstArchivo;
+  e.OnFileOpened:=@eArchivoCargado;
+  e.InitEditor(edXpr,'SinNombre', 'xpr');
   e.InitMenuRecents(mnRecientes);  //inicia el menú "Recientes"
   InicEditorC1(edXpr);     //inicia editor
 //  edXpr.OnSpecialLineMarkup:=@edSpecialLineMarkup;
@@ -190,27 +197,32 @@ end;
 procedure TfrmPrincipal.FormShow(Sender: TObject);
 begin
   InicAyudaContext(edXpr, Self,'');
+  Config.Iniciar(edXpr);
 end;
 
-procedure TfrmPrincipal.eCambiaDatArchivo;
+procedure TfrmPrincipal.eCambiaInfArchivo;
 begin
   //actualiza barra de título
   Caption:= 'XpresI - ' + SysToUTF8(e.NomArc);
-  StatusBar1.Panels[3].Text := Descrip_DelArc(e.DelArc);
-  StatusBar1.Panels[4].Text := e.CodArc;  //actualiza codificación
 end;
 procedure TfrmPrincipal.eCambiaEstArchivo;
 begin
-  acArcGuardar.Enabled:=e.GetModified;
+  acArcGuardar.Enabled:=e.Modified;
   acEdiUndo.Enabled:=e.CanUndo;
   acEdiRedo.Enabled:=e.CanRedo;
-  acEdiPaste.Enabled:=e.CanPaste;
+//  acEdiPaste.Enabled:=e.CanPaste;
 end;
 
 procedure TfrmPrincipal.edXprKeyUp(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
   AyudContextKeyUp(Key, Shift);
+end;
+
+procedure TfrmPrincipal.FormClose(Sender: TObject; var CloseAction: TCloseAction
+  );
+begin
+  Config.escribirArchivoIni;  //guarda la configuración actual
 end;
 
 procedure TfrmPrincipal.eArchivoCargado;
@@ -284,6 +296,11 @@ begin
   end;
   edAsm.ClearAll;
   edAsm.Lines.AddStrings(mem);
+end;
+
+procedure TfrmPrincipal.acHerConfigExecute(Sender: TObject);
+begin
+  Config.Mostrar;
 end;
 
 procedure TfrmPrincipal.MarcarError(nLin, nCol: integer);

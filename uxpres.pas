@@ -138,7 +138,7 @@ var  //variables privadas del compilador
   types: TTypes;   //lista de tipos
 //    oper: string;      //indica el operador actual
   //tipos de tokens
-  vars  : array of Tvar;
+  vars  : array of Tvar;  //lista de variables
   tkIdentif : TSynHighlighterAttributes;
   tkKeyword : TSynHighlighterAttributes;
   tkNumber  : TSynHighlighterAttributes;
@@ -337,7 +337,7 @@ begin
   Result := PErr.HayError;
 end;
 function CogExpresion(const jerar: Integer): TOperand; forward;
-{$I codgen8086.pas}
+{$I interprete1.pas}
 function TokAct: string; inline;
 //Devuelve el token actual, ignorando la caja.
 begin
@@ -438,60 +438,83 @@ begin
   else  //apunta al último
     CEnt := ConsE[ConsE.Count-1];
 end;
+procedure TipDefecNumber(var Op: TOperand; toknum: string);
+//Devuelve el tipo de número entero o fltante más sencillo que le corresponde a un token
+//que representa a una constante numérica.
+//Su forma de trabajo es buscar el tipo numérico más pequeño que permita alojar a la
+//constante numérica indicada.
 
-function CogOperando: TOperand;
-  procedure TipDefecNumber(var Op: TOperand; toknum: string);
-  //Devuelve el tipo de número entero o fltante más sencillo que le corresponde a un token
-  var
-    n: int64;   //para almacenar a los enteros
-    f: extended;  //para almacenar a reales
-    i: Integer;
-  begin
-    if pos('.',toknum) <> 0 then begin  //es flotante
-      f := StrToFloat(toknum);
-      Op.catTyp := t_float;   //es flotante
-    end else begin     //es entero
-      //verificación de longitud de entero
-      if length(toknum)>=19 then begin  //solo aquí puede haber problemas
-        if toknum[1] = '-' then begin  //es negativo
-          if length(toknum)>20 then begin
-            pErr.GenError('Número muy grande. No se puede procesar. ', posAct);
-            exit
-          end else if (length(toknum) = 20) and  (toknum > '-9223372036854775808') then begin
-            pErr.GenError('Número muy grande. No se puede procesar. ', posAct);
-            exit
-          end;
-        end else begin  //es positivo
-          if length(toknum)>19 then begin
-            pErr.GenError('Número muy grande. No se puede procesar. ', posAct);
-            exit
-          end else if (length(toknum) = 19) and  (toknum > '9223372036854775807') then begin
-            pErr.GenError('Número muy grande. No se puede procesar. ', posAct);
-            exit
-          end;
+var
+  n: int64;   //para almacenar a los enteros
+  f: extended;  //para almacenar a reales
+  i: Integer;
+  menor: Integer;
+  imen: integer;
+begin
+  if pos('.',toknum) <> 0 then begin  //es flotante
+    f := StrToFloat(toknum);
+    Op.catTyp := t_float;   //es flotante
+  end else begin     //es entero
+    //verificación de longitud de entero
+    if length(toknum)>=19 then begin  //solo aquí puede haber problemas
+      if toknum[1] = '-' then begin  //es negativo
+        if length(toknum)>20 then begin
+          pErr.GenError('Número muy grande. No se puede procesar. ', posAct);
+          exit
+        end else if (length(toknum) = 20) and  (toknum > '-9223372036854775808') then begin
+          pErr.GenError('Número muy grande. No se puede procesar. ', posAct);
+          exit
+        end;
+      end else begin  //es positivo
+        if length(toknum)>19 then begin
+          pErr.GenError('Número muy grande. No se puede procesar. ', posAct);
+          exit
+        end else if (length(toknum) = 19) and  (toknum > '9223372036854775807') then begin
+          pErr.GenError('Número muy grande. No se puede procesar. ', posAct);
+          exit
         end;
       end;
-      //conversión. aquí ya no debe haber posibilidad de error
-      n := StrToInt64(toknum);
-      if (n>= -128) and  (n<=127) then
-          Op.size := 1
-      else if (n>= -32768) and (n<=32767) then
-          Op.size := 2
-      else if (n>= -2147483648) and (n<=2147483647) then
-          Op.size := 4
-      else if (n>= -9223372036854775808) and (n<=9223372036854775807) then
-          Op.size := 8;
-      Op.valInt := n;   //copia valor entero
-      //busca si hay tipo numérico que soporte esta constante
-      Op.typ:=nil;
-      for i:=0 to types.Count-1 do begin
-        { TODO : Se debería tener una lista adicional  TIntegerTypes, para acelerar la
-        búsqueda}
-        if (types[i].cat = t_integer) and (types[i].size=Op.size) then
-          Op.typ:=types[i];  //encontró
+    end;
+    //conversión. aquí ya no debe haber posibilidad de error
+    n := StrToInt64(toknum);
+    if (n>= -128) and  (n<=127) then
+        Op.size := 1
+    else if (n>= -32768) and (n<=32767) then
+        Op.size := 2
+    else if (n>= -2147483648) and (n<=2147483647) then
+        Op.size := 4
+    else if (n>= -9223372036854775808) and (n<=9223372036854775807) then
+        Op.size := 8;
+    Op.valInt := n;   //copia valor entero
+    //busca si hay tipo numérico que soporte esta constante
+{      Op.typ:=nil;
+    for i:=0 to types.Count-1 do begin
+      { TODO : Se debería tener una lista adicional  TIntegerTypes, para acelerar la
+      búsqueda}
+      if (types[i].cat = t_integer) and (types[i].size=Op.size) then
+        Op.typ:=types[i];  //encontró
+    end;}
+    //busca el tipo numérico más pequeño que pueda albergar a este número
+    menor := 1000;
+    for i:=0 to types.Count-1 do begin
+      { TODO : Se debería tener una lista adicional  TIntegerTypes, para acelerar la
+      búsqueda}
+      if (types[i].cat = t_integer) and (types[i].size>=Op.size) then begin
+        //guarda el menor
+        if types[i].size < menor then  begin
+           imen := i;   //guarda referencia
+           menor := types[i].size;
+        end;
       end;
     end;
+    if menor = 1000 then  //no hubo tipo
+      Op.typ := nil
+    else  //encontró
+      Op.typ:=types[imen];
   end;
+end;
+
+function CogOperando: TOperand;
 //Parte de la funcion GAEE que genera codigo para leer un operando.
 var
   ivar: Integer;
@@ -524,12 +547,19 @@ begin
     Result.catTyp:= vars[ivar].typ.cat;  //categoría
     Result.typ:=vars[ivar].typ;
     cEnt.Next;    //Pasa al siguiente
-
+  end else if (cEnt.tokType = tkOthers) and (cEnt.tok = '(') then begin  //"("
+    cEnt.Next;
+    Result := CogExpresion(0);
+    if PErr.HayError then exit;
+    If cEnt.tok = ')' Then begin
+       cEnt.Next;  //lo toma
+    end Else begin
+       PErr.GenError('Error en expresión. Se esperaba ")"', PosAct);
+       Exit;       //error
+    end;
 {    tkString: begin  //constantes de cadena
-
     end;
     tkSymbol: begin  //los únicos símbolos válidos son +,-, que son parte de un número
-
     end;}
   end else begin
     //No se reconoce el operador
@@ -579,7 +609,7 @@ var
   tmp: String;
 begin
   setlength(varNames,0);  //inicia arreglo
-  //procesa variables a,b,c : int8;
+  //procesa variables a,b,c : int;
   repeat
     cEnt.CapBlancos;
     //ahora debe haber un identificador de variable
@@ -626,6 +656,7 @@ var
   con: TPosCont;
   lin: String;
   o: TOperand;
+  tmp: Int64;
 begin
   PErr.IniError;
   con := PosAct;   //Guarda posición y contenido actual
@@ -672,8 +703,9 @@ begin
     while not cEnt.Eof do begin
   //      Application.MessageBox(PChar(cEnt.tok),'',0);
       //se espera una expresión
-      CogExpresion(0);
+tmp := CogExpresion(0).valInt;
       if perr.HayError then exit;   //aborta
+MsgBox(IntToStr(tmp));
       //se espera delimitador
       if cEnt.Eof then break;  //sale
       if not CapturaDelim then break;
