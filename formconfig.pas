@@ -58,8 +58,6 @@ begin
   //Crea dinámicamente los frames de configuración
   Edit:= TfraCfgEdit.Create(Self);
   Edit.parent := self;
-//  Colores:= TfraColores.Create(Self);
-//  Colores.parent := self;
 
   /////// verifica archivo INI /////////////
   arIni := GetIniName;
@@ -84,7 +82,6 @@ begin
   //************  Modificar Aquí ***************//
   //inicia los Frames creados
   Edit.Iniciar('texto',ed);
-//  Colores.Iniciar('colores',);
 
   LeerArchivoIni;  //lee parámetros del archivo de configuración.
 end;

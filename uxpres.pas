@@ -42,11 +42,14 @@ type
     estOp: integer;   //Estado del operando (Usado para la generec. de código)
   	addStr: integer;  //Direción física de inicio (necesario para compilar)
     txt: string;      //Texto del operador o expresión
-    //valores del operando
+    //valores del operando, usado para constantes
     valFloat: extended; //Valor en caso de que sea un flotante
-    valInt: Int64;     //valor en caso de que sea un entero
-    valUInt: Int64;    //valor en caso de que sea un entero sin signo
-    function NombreTipo: string;  //nombre de tipo
+    valInt  : Int64;    //valor en caso de que sea un entero
+    valUInt : Int64;    //valor en caso de que sea un entero sin signo
+    valBol  : Boolean;  //valor  en caso de que sea un booleano
+    //referencia a la tabla de variables, usado para variables
+    ivar : integer;
+    function CategName: string;  //nombre de tipo
     procedure Load;   //carga el operador en registro o pila
     function FindOperator(const oper: string): TOperator; //devuelve el objeto operador
     function GetOperator: Toperator;
@@ -111,11 +114,18 @@ type
   //Lista de tipos
   TTypes = specialize TFPGObjectList<TType>; //lista de bloques
 
-  //regsitro para almacenar infromación de las variables
+  //regsitro para almacenar información de las variables
   Tvar = record
-    nom : string;  //nombre de la variable
-    typ : Ttype;   //tipo de la variable
-    amb: string;   //ámbito o alcance de la variable
+    nom : string;   //nombre de la variable
+    typ : Ttype;    //tipo de la variable
+    amb : string;   //ámbito o alcance de la variable
+    //direción física. Usado para implementar un compilador
+    adrr: integer;
+    //valores de la variable. Usado para implementar el intérprete sin máquina virtual
+    valFloat: extended; //Valor en caso de que sea un flotante
+    valInt  : Int64;    //valor en caso de que sea un entero
+    valUInt : Int64;    //valor en caso de que sea un entero sin signo
+    valBol  : Boolean;  //valor  en caso de que sea un booleano
   end;
 
 var //variables públicas del compilador
@@ -234,6 +244,8 @@ begin
       exit(Operators[i]); //está definido
     end;
   end;
+  //no encontró
+  Result.txt := Opr;    //para que sepa el operador leído
 end;
 constructor TType.Create;
 begin
@@ -247,7 +259,7 @@ end;
 
 { TOperand }
 
-function TOperand.NombreTipo: string;
+function TOperand.CategName: string;
 begin
    case catTyp of
    t_integer: Result := 'Numérico';
@@ -452,9 +464,32 @@ var
   imen: integer;
 begin
   if pos('.',toknum) <> 0 then begin  //es flotante
-    f := StrToFloat(toknum);
     Op.catTyp := t_float;   //es flotante
+    f := StrToFloat(toknum);  //carag con la mayor precisión posible
+    //busca el tipo numérico más pequeño que pueda albergar a este número
+    Op.size := 4;   //se asume que con 4 bytes bastará
+    {Aquí se puede decidir el tamaño de acuerdo a la cantidad de decimales indicados}
+
+    Op.valFloat := StrToFloat(toknum);  //debe devolver un extended
+    menor := 1000;
+    for i:=0 to types.Count-1 do begin
+      { TODO : Se debería tener una lista adicional TFloatTypes, para acelerar la
+      búsqueda}
+      if (types[i].cat = t_float) and (types[i].size>=Op.size) then begin
+        //guarda el menor
+        if types[i].size < menor then  begin
+           imen := i;   //guarda referencia
+           menor := types[i].size;
+        end;
+      end;
+    end;
+    if menor = 1000 then  //no hubo tipo
+      Op.typ := nil
+    else  //encontró
+      Op.typ:=types[imen];
+
   end else begin     //es entero
+    Op.catTyp := t_integer;   //es entero
     //verificación de longitud de entero
     if length(toknum)>=19 then begin  //solo aquí puede haber problemas
       if toknum[1] = '-' then begin  //es negativo
@@ -526,7 +561,7 @@ begin
      Result.simple:=true;       //es simple
      Result.catOp:=coConst;       //constante es Mono Operando
      Result.txt:= cEnt.tok;     //toma el texto
-     Result.catTyp:= t_integer;  //es numérico
+//     Result.catTyp:= t_integer;  //es numérico
      TipDefecNumber(Result, cEnt.tok); //encuentra tipo de número, tamaño y valor
      if pErr.HayError then exit;  //verifica
      if Result.typ = nil then begin
@@ -546,6 +581,12 @@ begin
     Result.txt:= cEnt.tok;     //toma el texto
     Result.catTyp:= vars[ivar].typ.cat;  //categoría
     Result.typ:=vars[ivar].typ;
+    Result.ivar:=ivar;   //gaurda referencia a la variable
+    //para los tipos simples, carga su valor
+//    case Result.catTyp of
+//    t_integer: Result.typ := vars[ivar];
+//    t_float: ;
+//    end;
     cEnt.Next;    //Pasa al siguiente
   end else if (cEnt.tokType = tkOthers) and (cEnt.tok = '(') then begin  //"("
     cEnt.Next;
@@ -651,12 +692,34 @@ begin
   if not CapturaDelim then exit;
   cEnt.CapBlancos;
 end;
+procedure ShowOperand(const Op: TOperand);
+//muestra un operando por pantalla
+begin
+  case Op.catOp of
+  coConst, coExpres: begin   //es constante o resultado de un cálculo
+      if Op.catTyp = t_integer then begin
+         MsgBox('Result Integer = '+ IntToStr(Op.valInt));
+      end;
+      if Op.catTyp = t_float then begin
+        MsgBox('Result Float = '+ FloatToStr(Op.valFloat));
+      end;
+    end;
+  coVariable: begin  //es una variable
+      if Op.catTyp = t_integer then begin
+         MsgBox('Result Integer = '+ IntToStr(vars[Op.ivar].valInt));
+      end;
+      if Op.catTyp = t_float then begin
+        MsgBox('Result Float = '+ FloatToStr(vars[Op.ivar].valFloat));
+      end;
+    end;
+  end;
+end;
 procedure CompilarArc(NomArc: String; LinArc: Tstrings);
 var
   con: TPosCont;
   lin: String;
   o: TOperand;
-  tmp: Int64;
+  tmp: TOperand;
 begin
   PErr.IniError;
   con := PosAct;   //Guarda posición y contenido actual
@@ -701,19 +764,19 @@ begin
     cEnt.Next;   //coge "begin"
     //codifica el contenido
     while not cEnt.Eof do begin
-  //      Application.MessageBox(PChar(cEnt.tok),'',0);
       //se espera una expresión
-tmp := CogExpresion(0).valInt;
+      tmp := CogExpresion(0);
       if perr.HayError then exit;   //aborta
-MsgBox(IntToStr(tmp));
       //se espera delimitador
       if cEnt.Eof then break;  //sale
       if not CapturaDelim then break;
+      cEnt.CapBlancos;
       if tokAct = 'end' then begin  //verifica si termina el programa
         cEnt.Next;   //lo toma
         break;       //sale
       end;
     end;
+    ShowOperand(tmp);  //muestra el resultado
   end else begin
     Perr.GenError('Se esperaba "begin", "var", "type" o "const".', PosAct);
     exit;
@@ -744,8 +807,10 @@ begin
     //Busca si hay una operación definida para: <tipo de Op1>-opr-<tipo de Op2>
     o := opr.FindOperation(Op2.typ);
     if o = nil then begin
-      Perr.GenError('No se ha definido la operación: ' +
-                    Op1.NombreTipo + opr.txt + Op2.NombreTipo, PosAct);
+//      Perr.GenError('No se ha definido la operación: (' +
+//                    Op1.typ.name + ') '+ opr.txt + ' ('+Op2.typ.name+')', PosAct);
+      Perr.GenError('Operación no válida: (' +
+                    Op1.typ.name + ') '+ opr.txt + ' ('+Op2.typ.name+')', PosAct);
       Exit;
     end;
     //Llama al evento asociado

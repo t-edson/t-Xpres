@@ -6,7 +6,7 @@
   <Attribute Name="Types"></Attribute>
   <Attribute Name="Others"></Attribute>
   <Symbols>
-    <Operator> + - * &gt; &lt; </Operator>
+    <Operator> + - * / \ = &gt; &gt;= &lt; &lt;= &gt;&lt; := </Operator>
     <Delimiter> ; </Delimiter>
     <Others> ( ) : , </Others>
   </Symbols>
