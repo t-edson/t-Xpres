@@ -1,7 +1,0 @@
-program NoName; 
-var 
-  x,y:    int8;
-//  doble:int16;
-begin
-1+2*3
-end;
