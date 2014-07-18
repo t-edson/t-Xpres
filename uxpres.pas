@@ -14,7 +14,7 @@ type
     t_integer,  //números enteros
     t_uinteger, //enteros sin signo
     t_float,    //es de coma flotante
-    t_string,   //cadena
+    t_string,   //cadena de caracteres
     t_boolean,  //booleano
     t_enum      //enumerado
   );
@@ -30,9 +30,35 @@ type
   TType = class;
   TOperator = class;
 
+  //regsitro para almacenar información de las variables
+  Tvar = record
+    nom : string;   //nombre de la variable
+    typ : Ttype;    //tipo de la variable
+    amb : string;   //ámbito o alcance de la variable
+    //direción física. Usado para implementar un compilador
+    adrr: integer;
+    //Campos usados para implementar el intérprete sin máquina virtual
+    //valores de la variable.
+    valFloat: extended; //Valor en caso de que sea un flotante
+    valInt  : Int64;    //valor en caso de que sea un entero
+    valUInt : Int64;    //valor en caso de que sea un entero sin signo
+    valBol  : Boolean;  //valor  en caso de que sea un booleano
+    valStr  : string;     //valor  en caso de que sea una cadena
+  end;
+
   { TOperand }
   //Operando
   TOperand = object
+  private
+    function GetValBol: boolean;
+    procedure SetValBol(AValue: boolean);
+    procedure SetValInt(AValue: Int64);
+    function GetValInt: int64;
+    function GetValFloat: extended;
+    procedure SetValFloat(AValue: extended);
+    function GetValStr: string;
+    procedure SetValStr(AValue: string);
+  public
     nom: string;
     simple: boolean;  //indica si el tipo de dato es simple o compuesto
     typ   : TType;    //referencia al tipo de dato
@@ -40,19 +66,18 @@ type
     size:  integer;   //tamaño del operando en bytes
     catOp: CatOperan; //Categoría de operando
     estOp: integer;   //Estado del operando (Usado para la generec. de código)
-  	addStr: integer;  //Direción física de inicio (necesario para compilar)
     txt: string;      //Texto del operador o expresión
-    //valores del operando, usado para constantes
-    valFloat: extended; //Valor en caso de que sea un flotante
-    valInt  : Int64;    //valor en caso de que sea un entero
-    valUInt : Int64;    //valor en caso de que sea un entero sin signo
-    valBol  : Boolean;  //valor  en caso de que sea un booleano
-    //referencia a la tabla de variables, usado para variables
-    ivar : integer;
+    cons: Tvar;        //valor en caso de que sea una constante
+    ivar : integer;   //ínidce a variables, en caso de que sea variable
     function CategName: string;  //nombre de tipo
     procedure Load;   //carga el operador en registro o pila
     function FindOperator(const oper: string): TOperator; //devuelve el objeto operador
     function GetOperator: Toperator;
+    //metodos para facilitar la implementación del intérprete
+     property valInt: Int64 read GetValInt write SetvalInt;
+     property valFloat: extended read GetValFloat write SetValFloat;
+     property valStr: string read GetValStr write SetValStr;
+     property valBol: boolean read GetValBol write SetValBol;
   end;
 
   TProcDefineVar = procedure(const varName, varInitVal: string);
@@ -114,19 +139,6 @@ type
   //Lista de tipos
   TTypes = specialize TFPGObjectList<TType>; //lista de bloques
 
-  //regsitro para almacenar información de las variables
-  Tvar = record
-    nom : string;   //nombre de la variable
-    typ : Ttype;    //tipo de la variable
-    amb : string;   //ámbito o alcance de la variable
-    //direción física. Usado para implementar un compilador
-    adrr: integer;
-    //valores de la variable. Usado para implementar el intérprete sin máquina virtual
-    valFloat: extended; //Valor en caso de que sea un flotante
-    valInt  : Int64;    //valor en caso de que sea un entero
-    valUInt : Int64;    //valor en caso de que sea un entero sin signo
-    valBol  : Boolean;  //valor  en caso de que sea un booleano
-  end;
 
 var //variables públicas del compilador
   PErr : TPError;   //Objeto de Error
@@ -152,10 +164,12 @@ var  //variables privadas del compilador
   tkIdentif : TSynHighlighterAttributes;
   tkKeyword : TSynHighlighterAttributes;
   tkNumber  : TSynHighlighterAttributes;
+  tkString  : TSynHighlighterAttributes;
   tkOperator: TSynHighlighterAttributes;
   tkDelimiter: TSynHighlighterAttributes;
   tkType    : TSynHighlighterAttributes;
   tkOthers  : TSynHighlighterAttributes;
+  tkBoolean : TSynHighlighterAttributes;
 
   ConsE: TListaCont;   //Lista de contextos de entrada
   //Variables del Contexto actual
@@ -164,6 +178,7 @@ var  //variables privadas del compilador
   ExprLevel: Integer;  //Nivel de anidamiento de la rutina de evaluación de expresiones
 
 { TOperator }
+
 
 function TOperator.CreateOperation(OperadType: Ttype; proc: TProcExecOperat): TxOperation;
 var
@@ -259,20 +274,78 @@ end;
 
 { TOperand }
 
+function TOperand.GetValBol: boolean;
+begin
+  if catOp = coVariable then  //lee de la variable
+    Result := vars[ivar].valBol
+  else  //debe ser constante o expresión
+    Result := cons.valBol;
+end;
+procedure TOperand.SetValBol(AValue: boolean);
+begin
+  if catOp = coVariable then  //solo permite escribir en variable
+    vars[ivar].valBol := AValue;
+//  else  //es expresión
+//    cons.valInt := AValue;
+end;
+function TOperand.GetValInt: int64;
+begin
+  if catOp = coVariable then  //lee de la variable
+    Result := vars[ivar].valInt
+  else  //debe ser constante o expresión
+    Result := cons.valInt;
+end;
+procedure TOperand.SetValInt(AValue: Int64);
+begin
+  if catOp = coVariable then  //solo permite escribir en variable
+    vars[ivar].valInt := AValue;
+//  else  //es expresión
+//    cons.valInt := AValue;
+end;
+function TOperand.GetValFloat: extended;
+begin
+  if catOp = coVariable then  //lee de la variable
+    Result := vars[ivar].valFloat
+  else  //debe ser constante o expresión
+    Result := cons.valFloat;
+end;
+procedure TOperand.SetValFloat(AValue: extended);
+begin
+  if catOp = coVariable then  //solo permite escribir en variable
+    vars[ivar].valFloat := AValue;
+//  else  //es expresión
+//    cons.valInt := AValue;
+end;
+function TOperand.GetValStr: string;
+begin
+  if catOp = coVariable then  //lee de la variable
+    Result := vars[ivar].valStr
+  else  //debe ser constante o expresión
+    Result := cons.valStr;
+end;
+procedure TOperand.SetValStr(AValue: string);
+begin
+  if catOp = coVariable then  //solo permite escribir en variable
+    vars[ivar].valStr := AValue;
+//  else  //es expresión
+//    cons.valInt := AValue;
+end;
+
 function TOperand.CategName: string;
 begin
    case catTyp of
    t_integer: Result := 'Numérico';
    t_float: Result := 'Flotante';
-   t_string: Result := 'Numérico';
-   t_boolean: Result := 'Booelano';
+   t_string: Result := 'Cadena';
+   t_boolean: Result := 'Booleano';
    t_enum: Result := 'Enumerado';
    else Result := 'Desconocido';
    end;
 end;
 procedure TOperand.Load;
 begin
-  typ.procLoad(self);  //llama al evento de carga
+  //llama al evento de carga
+  if typ.procLoad <> nil then typ.procLoad(self);
 end;
 function TOperand.FindOperator(const oper: string): TOperator;
 //Recibe la cadena de un operador y devuelve una referencia a un objeto Toperator, del
@@ -470,7 +543,7 @@ begin
     Op.size := 4;   //se asume que con 4 bytes bastará
     {Aquí se puede decidir el tamaño de acuerdo a la cantidad de decimales indicados}
 
-    Op.valFloat := StrToFloat(toknum);  //debe devolver un extended
+    Op.cons.valFloat := f;  //debe devolver un extended
     menor := 1000;
     for i:=0 to types.Count-1 do begin
       { TODO : Se debería tener una lista adicional TFloatTypes, para acelerar la
@@ -520,7 +593,7 @@ begin
         Op.size := 4
     else if (n>= -9223372036854775808) and (n<=9223372036854775807) then
         Op.size := 8;
-    Op.valInt := n;   //copia valor entero
+    Op.cons.valInt := n;   //copia valor de constante entera
     //busca si hay tipo numérico que soporte esta constante
 {      Op.typ:=nil;
     for i:=0 to types.Count-1 do begin
@@ -548,7 +621,46 @@ begin
       Op.typ:=types[imen];
   end;
 end;
-
+procedure TipDefecString(var Op: TOperand; tokcad: string);
+//Devuelve el tipo de cadena encontrado en un token
+var
+  i: Integer;
+begin
+  Op.catTyp := t_string;   //es flotante
+  Op.size:=length(tokcad);
+  //toma el texto
+  Op.cons.valStr := copy(cEnt.tok,2, length(cEnt.tok)-2);   //quita comillas
+  //verifica si hay tipos string definidos
+  Op.typ:=nil;
+  for i:=0 to types.Count-1 do begin
+    { TODO : Se debería tener una lista adicional  TStringTypes, para acelerar la
+    búsqueda}
+    if (types[i].cat = t_string) and (types[i].size=1) then begin  //busca un char
+      Op.typ:=types[i];  //encontró
+      break;
+    end;
+  end;
+end;
+procedure TipDefecBoolean(var Op: TOperand; tokcad: string);
+//Devuelve el tipo de cadena encontrado en un token
+var
+  i: Integer;
+begin
+  Op.catTyp := t_boolean;   //es flotante
+  Op.size:=1;   //se usará un byte
+  //toma valor constante
+  Op.cons.valBol:= (tokcad[1] in ['t','T']);
+  //verifica si hay tipo boolean definido
+  Op.typ:=nil;
+  for i:=0 to types.Count-1 do begin
+    { TODO : Se debería tener una lista adicional  TBooleanTypes, para acelerar la
+    búsqueda}
+    if (types[i].cat = t_boolean) then begin  //basta con que haya uno
+      Op.typ:=types[i];  //encontró
+      break;
+    end;
+  end;
+end;
 function CogOperando: TOperand;
 //Parte de la funcion GAEE que genera codigo para leer un operando.
 var
@@ -558,17 +670,16 @@ begin
   cEnt.CapBlancos;
   Result.estOp:=0;  //Este estado significa NO CARGADO en registros.
   if cEnt.tokType = tkNumber then begin  //constantes numéricas
-     Result.simple:=true;       //es simple
-     Result.catOp:=coConst;       //constante es Mono Operando
-     Result.txt:= cEnt.tok;     //toma el texto
-//     Result.catTyp:= t_integer;  //es numérico
-     TipDefecNumber(Result, cEnt.tok); //encuentra tipo de número, tamaño y valor
-     if pErr.HayError then exit;  //verifica
-     if Result.typ = nil then begin
+    Result.simple:=true;       //es simple
+    Result.catOp:=coConst;       //constante es Mono Operando
+    Result.txt:= cEnt.tok;     //toma el texto
+    TipDefecNumber(Result, cEnt.tok); //encuentra tipo de número, tamaño y valor
+    if pErr.HayError then exit;  //verifica
+    if Result.typ = nil then begin
         PErr.GenError('No hay tipo definido para albergar a esta constante numérica',PosAct);
         exit;
       end;
-     cEnt.Next;    //Pasa al siguiente
+    cEnt.Next;    //Pasa al siguiente
   end else if cEnt.tokType = tkIdentif then begin  //puede ser variable
     ivar := FindVar(cEnt.tok);
     if ivar = -1 then begin
@@ -588,6 +699,17 @@ begin
 //    t_float: ;
 //    end;
     cEnt.Next;    //Pasa al siguiente
+  end else if cEnt.tokType = tkBoolean then begin  //true o false
+    Result.simple:=true;       //es simple
+    Result.catOp:=coConst;       //constante es Mono Operando
+    Result.txt:= cEnt.tok;     //toma el texto
+    TipDefecBoolean(Result, cEnt.tok); //encuentra tipo de número, tamaño y valor
+    if pErr.HayError then exit;  //verifica
+    if Result.typ = nil then begin
+       PErr.GenError('No hay tipo definido para albergar a esta constante numérica',PosAct);
+       exit;
+     end;
+    cEnt.Next;    //Pasa al siguiente
   end else if (cEnt.tokType = tkOthers) and (cEnt.tok = '(') then begin  //"("
     cEnt.Next;
     Result := CogExpresion(0);
@@ -598,9 +720,18 @@ begin
        PErr.GenError('Error en expresión. Se esperaba ")"', PosAct);
        Exit;       //error
     end;
-{    tkString: begin  //constantes de cadena
-    end;
-    tkSymbol: begin  //los únicos símbolos válidos son +,-, que son parte de un número
+  end else if (cEnt.tokType = tkString) then begin  //constante cadena
+    Result.simple:=true;       //es simple
+    Result.catOp:=coConst;     //constante es Mono Operando
+//    Result.txt:= cEnt.tok;     //toma el texto
+    TipDefecString(Result, cEnt.tok); //encuentra tipo de número, tamaño y valor
+    if pErr.HayError then exit;  //verifica
+    if Result.typ = nil then begin
+       PErr.GenError('No hay tipo definido para albergar a esta constante booelana',PosAct);
+       exit;
+     end;
+    cEnt.Next;    //Pasa al siguiente
+{   tkSymbol: begin  //los únicos símbolos válidos son +,-, que son parte de un número
     end;}
   end else begin
     //No se reconoce el operador
@@ -623,7 +754,7 @@ begin
     end;
   end;
   if not hay then begin
-    Perr.GenError('Tipo "' + varType + '" no defiido.', PosAct);
+    Perr.GenError('Tipo "' + varType + '" no definido.', PosAct);
     exit;
   end;
   //verifica nombre
@@ -695,24 +826,13 @@ end;
 procedure ShowOperand(const Op: TOperand);
 //muestra un operando por pantalla
 begin
-  case Op.catOp of
-  coConst, coExpres: begin   //es constante o resultado de un cálculo
-      if Op.catTyp = t_integer then begin
-         MsgBox('Result Integer = '+ IntToStr(Op.valInt));
-      end;
-      if Op.catTyp = t_float then begin
-        MsgBox('Result Float = '+ FloatToStr(Op.valFloat));
-      end;
+    case Op.catTyp of
+    t_integer: MsgBox('Result Integer = '+ IntToStr(Op.valInt));
+    t_float :  MsgBox('Result Float = '+ FloatToStr(Op.valFloat));
+    t_string:  MsgBox('Result String = '+ Op.valStr);
+    t_boolean: if Op.valBol then MsgBox('Result String = TRUE')
+               else MsgBox('Result String = FALSE');
     end;
-  coVariable: begin  //es una variable
-      if Op.catTyp = t_integer then begin
-         MsgBox('Result Integer = '+ IntToStr(vars[Op.ivar].valInt));
-      end;
-      if Op.catTyp = t_float then begin
-        MsgBox('Result Float = '+ FloatToStr(vars[Op.ivar].valFloat));
-      end;
-    end;
-  end;
 end;
 procedure CompilarArc(NomArc: String; LinArc: Tstrings);
 var

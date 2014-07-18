@@ -148,7 +148,7 @@ begin
   edAsm.Align:=alClient;
   //crea el resaltador-lexer, para el editor y el compilador
   hlXpr := TSynFacilSyn.Create(self);
-  hlXpr.LoadFromFile('Xpres.xml');
+  hlXpr.LoadFromFile('lang_Xpres.xml');
 //  if hlXpr.Err<>'' then msgerr(hlXpr.Err);
   PreparaEditor;
 end;
@@ -167,7 +167,7 @@ begin
 
   //configura editor de ASM
   hlAsm := TSynFacilSyn.Create(self);
-  hlAsm.LoadFromFile('8086asm.xml');
+  hlAsm.LoadFromFile('lang_8086asm.xml');
   edAsm.Highlighter:=hlAsm;
   //configura paneles
   e.PanFileSaved := StatusBar1.Panels[0]; //panel para mensaje "Guardado"
@@ -177,7 +177,6 @@ begin
   e.OnChangeEditorState:=@eCambiaEstArchivo;
   e.OnFileOpened:=@eArchivoCargado;
   e.InitEditor(edXpr,'SinNombre', 'xpr');
-  e.InitMenuRecents(mnRecientes);  //inicia el menú "Recientes"
   InicEditorC1(edXpr);     //inicia editor
 //  edXpr.OnSpecialLineMarkup:=@edSpecialLineMarkup;
 end;
@@ -198,6 +197,9 @@ procedure TfrmPrincipal.FormShow(Sender: TObject);
 begin
   InicAyudaContext(edXpr, Self,'');
   Config.Iniciar(edXpr);
+  //inicia el menú "Recientes". Se debe hacer después de iniciar "Config", para poder
+  //acceder a "Config.Edit.ArcRecientes".
+  e.InitMenuRecents(mnRecientes, Config.Edit.ArcRecientes);
 end;
 
 procedure TfrmPrincipal.eCambiaInfArchivo;
@@ -273,7 +275,7 @@ end;
 procedure TfrmPrincipal.acEdiRecSynExecute(Sender: TObject);
 //Recarga el archivo de sintaxis
 begin
-  hlXpr.LoadFromFile('Xpres.xml');
+  hlXpr.LoadFromFile('lang_Xpres.xml');
   edXpr.Invalidate;
 end;
 

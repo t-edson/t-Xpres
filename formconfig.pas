@@ -34,7 +34,6 @@ type
     //************  Modificar Aquí ***************//
     //frames de configuración
     Edit: TfraCfgEdit;
-//    Colores: TfraColores;
     procedure escribirArchivoIni;
     procedure leerArchivoIni;
     procedure LeerDeVentana;
@@ -166,7 +165,6 @@ procedure TConfig.escribirArchivoIni;
 //Escribe el archivo de configuración
 var
    appINI : TIniFile;
-   i: Integer;
    f: Tframe;
 begin
   msjError := 'Error escribiendo en archivo de configuración: ' + arIni;  //valor por defecto

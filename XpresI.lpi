@@ -96,7 +96,9 @@
       <Unit10>
         <Filename Value="FrameCfgEdit.pas"/>
         <IsPartOfProject Value="True"/>
+        <ComponentName Value="fraCfgEdit"/>
         <HasResources Value="True"/>
+        <ResourceBaseClass Value="Frame"/>
         <UnitName Value="FrameCfgEdit"/>
       </Unit10>
     </Units>

@@ -1,5 +1,5 @@
 {Interprete del lenguaje Xpres.
-Implementado para probar la flexibilida del compilador Xpres
+Implementado para probar la flexibilidad del compilador Xpres
 Este módulo no generará código sino que lo ejecutará directamente.
 }
 const
@@ -9,8 +9,10 @@ const
 
 var
   //tipos
-  tipInt: TType;   //entero flotante
+  tipInt  : TType;   //entero flotante
   tipFloat: Ttype;
+  tipBool : Ttype;
+  tipChar : Ttype;
   //banderas
   ALused: Boolean;  //indica que el registro Al está siendo usado
 
@@ -38,14 +40,6 @@ begin
 end;
 ///////// Eventos para la generación de código de evaluación de expresiones ////////
 //operaciones con Enteros
-procedure int_procDefine(const varName, varInitVal: string);
-//Se dispara cuando se declara una variable de este tipo.
-begin
-end;
-procedure int_procLoad(var Op: TOperand);
-begin
-end;
-
 function int_asig_int(var Op1: TOperand; opr: Toperator; var Op2: TOperand): TOperand;
 begin
   if Op1.catOp <> coVariable then begin  //validación
@@ -53,8 +47,7 @@ begin
   end;
   Result.catTyp:=t_integer;
   Result.typ:=tipInt;
-  if Op2.catOp = coVariable then Op2.valInt :=vars[Op2.ivar].valInt;
-  vars[Op1.ivar].valInt:=Op2.valInt;  //asigna
+  Op1.valInt:=Op2.valInt;  //asigna
 end;
 function int_asign_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand): TOperand;
 begin
@@ -63,92 +56,77 @@ begin
   end;
   Result.catTyp:=t_integer;
   Result.typ:=tipInt;
-  if Op2.catOp = coVariable then Op2.valFloat :=vars[Op2.ivar].valFloat;
-  vars[Op1.ivar].valInt:=Trunc(Op2.valFloat);
+  Op1.valInt:=Trunc(Op2.valFloat);
+end;
+function int_igual_int(var Op1: TOperand; opr: Toperator; var Op2: TOperand): TOperand;
+begin
+  Result.catTyp:=t_boolean;
+  Result.typ:=tipBool;
+  Result.cons.valBol:=Op1.valInt=Op2.valInt;
 end;
 
 function int_suma_int(var Op1: TOperand; opr: TOperator; var Op2: TOperand): TOperand;
 begin
   Result.catTyp:=t_integer;
   Result.typ:=tipInt;
-  if Op1.catOp = coVariable then Op1.valInt:=vars[Op1.ivar].valInt;
-  if Op2.catOp = coVariable then Op2.valInt:=vars[Op2.ivar].valInt;
-  Result.valInt:=Op1.valInt+Op2.valInt;
+  Result.cons.valInt:=Op1.valInt+Op2.valInt;
 end;
 function int_suma_float(var Op1: TOperand; opr: TOperator; var Op2: TOperand): TOperand;
 begin
   Result.catTyp:=t_float;
   Result.typ:=tipFloat;
-  if Op1.catOp = coVariable then Op1.valInt:=vars[Op1.ivar].valInt;
-  if Op2.catOp = coVariable then Op2.valFloat:=vars[Op2.ivar].valFloat;
-  Result.valFloat:=Op1.valInt+Op2.valFloat;
+  Result.cons.valFloat:=Op1.valInt+Op2.valFloat;
 end;
 function int_resta_int(var Op1: TOperand; opr: TOperator; var Op2: TOperand): TOperand;
 begin
   Result.catTyp:=t_integer;
   Result.typ:=tipInt;   //devuelve tipInt
-  if Op1.catOp = coVariable then Op1.valInt:=vars[Op1.ivar].valInt;
-  if Op2.catOp = coVariable then Op2.valInt:=vars[Op2.ivar].valInt;
-  Result.valInt:=Op1.valInt-Op2.valInt;
+  Result.cons.valInt:=Op1.valInt-Op2.valInt;
 end;
 function int_resta_float(var Op1: TOperand; opr: TOperator; var Op2: TOperand): TOperand;
 begin
   Result.catTyp:=t_float;
   Result.typ:=tipFloat;
-  if Op1.catOp = coVariable then Op1.valInt:=vars[Op1.ivar].valInt;
-  if Op2.catOp = coVariable then Op2.valFloat:=vars[Op2.ivar].valFloat;
-  Result.valFloat:=Op1.valInt-Op2.valFloat;
+  Result.cons.valFloat:=Op1.valInt-Op2.valFloat;
 end;
 function int_mult_int(var Op1: TOperand; opr: TOperator; var Op2: TOperand): TOperand;
 begin
   Result.catTyp:=t_integer;
   Result.typ:=tipInt;   //devuelve tipInt (se pierde AH)
-  if Op1.catOp = coVariable then Op1.valInt:=vars[Op1.ivar].valInt;
-  if Op2.catOp = coVariable then Op2.valInt:=vars[Op2.ivar].valInt;
-  Result.valInt:=Op1.valInt*Op2.valInt;
+  Result.cons.valInt:=Op1.valInt*Op2.valInt;
 end;
 function int_mult_float(var Op1: TOperand; opr: TOperator; var Op2: TOperand): TOperand;
 begin
   Result.catTyp:=t_float;
   Result.typ:=tipFloat;
-  if Op1.catOp = coVariable then Op1.valInt:=vars[Op1.ivar].valInt;
-  if Op2.catOp = coVariable then Op2.valFloat:=vars[Op2.ivar].valFloat;
-  Result.valFloat:=Op1.valInt*Op2.valFloat;
+  Result.cons.valFloat:=Op1.valInt*Op2.valFloat;
 end;
 function int_div_int(var Op1: TOperand; opr: Toperator; var Op2: TOperand): TOperand;
 begin
   Result.catTyp:=t_float;
   Result.typ:=tipFloat;
-  if Op1.catOp = coVariable then Op1.valInt:=vars[Op1.ivar].valInt;
-  if Op2.catOp = coVariable then Op2.valInt:=vars[Op2.ivar].valInt;
-  Result.valFloat:=Op1.valInt/Op2.valInt;
+  Result.cons.valFloat:=Op1.valInt/Op2.valInt;
 end;
 function int_div_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand): TOperand;
 begin
   Result.catTyp:=t_float;
   Result.typ:=tipFloat;
-  if Op1.catOp = coVariable then Op1.valInt:=vars[Op1.ivar].valInt;
-  if Op2.catOp = coVariable then Op2.valFloat:=vars[Op2.ivar].valFloat;
-  Result.valFloat:=Op1.valInt/Op2.valFloat;
+  Result.cons.valFloat:=Op1.valInt/Op2.valFloat;
 end;
 function int_idiv_int(var Op1: TOperand; opr: TOperator; var Op2: TOperand): TOperand;
 begin
   Result.catTyp:=t_integer;
   Result.typ:=tipInt;   //devuelve tipInt
-  if Op1.catOp = coVariable then Op1.valInt:=vars[Op1.ivar].valInt;
-  if Op2.catOp = coVariable then Op2.valInt:=vars[Op2.ivar].valInt;
-  Result.valInt:=Op1.valInt div Op2.valInt;
+  Result.cons.valInt:=Op1.valInt div Op2.valInt;
+end;
+function int_resid_int(var Op1: TOperand; opr: TOperator; var Op2: TOperand): TOperand;
+begin
+  Result.catTyp:=t_integer;
+  Result.typ:=tipInt;   //devuelve tipInt
+  Result.cons.valInt:=Op1.valInt mod Op2.valInt;
 end;
 
 //operaciones con Flotantes
-procedure float_procDefine(const varName, varInitVal: string);
-begin
-
-end;
-procedure float_procLoad(var Op: TOperand);
-begin
-
-end;
 function float_asig_int(var Op1: TOperand; opr: Toperator; var Op2: TOperand): TOperand;
 begin
   if Op1.catOp <> coVariable then begin  //validación
@@ -156,7 +134,6 @@ begin
   end;
   Result.catTyp:=t_float;
   Result.typ:=tipFloat;
-  if Op2.catOp = coVariable then Op2.valInt :=vars[Op2.ivar].valInt;
   vars[Op1.ivar].valFloat:=Op2.valInt;
 end;
 function float_asign_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand): TOperand;
@@ -166,7 +143,6 @@ begin
   end;
   Result.catTyp:=t_float;
   Result.typ:=tipFloat;
-  if Op2.catOp = coVariable then Op2.valFloat :=vars[Op2.ivar].valFloat;
   vars[Op1.ivar].valFloat:=Op2.valFloat;
 end;
 
@@ -174,65 +150,61 @@ function float_suma_int(var Op1: TOperand; opr: TOperator; var Op2: TOperand): T
 begin
   Result.catTyp:=t_float;
   Result.typ:=tipFloat;
-  if Op1.catOp = coVariable then Op1.valFloat:=vars[Op1.ivar].valFloat;
-  if Op2.catOp = coVariable then Op2.valInt :=vars[Op2.ivar].valInt;
-  Result.valFloat := Op1.valFloat+Op2.valInt;
+  Result.cons.valFloat := Op1.valFloat+Op2.valInt;
 end;
 function float_suma_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand): TOperand;
 begin
   Result.catTyp:=t_float;
   Result.typ:=tipFloat;
-  if Op1.catOp = coVariable then Op1.valFloat:=vars[Op1.ivar].valFloat;
-  if Op2.catOp = coVariable then Op2.valFloat:=vars[Op2.ivar].valFloat;
-  Result.valFloat := Op1.valFloat+Op2.valFloat;
+  Result.cons.valFloat := Op1.valFloat+Op2.valFloat;
 end;
 function float_resta_int(var Op1: TOperand; opr: TOperator; var Op2: TOperand): TOperand;
 begin
   Result.catTyp:=t_float;
   Result.typ:=tipFloat;
-  if Op1.catOp = coVariable then Op1.valFloat:=vars[Op1.ivar].valFloat;
-  if Op2.catOp = coVariable then Op2.valInt :=vars[Op2.ivar].valInt;
-  Result.valFloat := Op1.valFloat-Op2.valInt;
+  Result.cons.valFloat := Op1.valFloat-Op2.valInt;
 end;
 function float_resta_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand): TOperand;
 begin
   Result.catTyp:=t_float;
   Result.typ:=tipFloat;
-  if Op1.catOp = coVariable then Op1.valFloat:=vars[Op1.ivar].valFloat;
-  if Op2.catOp = coVariable then Op2.valFloat:=vars[Op2.ivar].valFloat;
-  Result.valFloat := Op1.valFloat-Op2.valFloat;
+  Result.cons.valFloat := Op1.valFloat-Op2.valFloat;
 end;
 function float_mult_int(var Op1: TOperand; opr: TOperator; var Op2: TOperand): TOperand;
 begin
   Result.catTyp:=t_float;
   Result.typ:=tipFloat;
-  if Op1.catOp = coVariable then Op1.valFloat:=vars[Op1.ivar].valFloat;
-  if Op2.catOp = coVariable then Op2.valInt :=vars[Op2.ivar].valInt;
-  Result.valFloat := Op1.valFloat*Op2.valInt;
+  Result.cons.valFloat := Op1.valFloat*Op2.valInt;
 end;
 function float_mult_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand): TOperand;
 begin
   Result.catTyp:=t_float;
   Result.typ:=tipFloat;
-  if Op1.catOp = coVariable then Op1.valFloat:=vars[Op1.ivar].valFloat;
-  if Op2.catOp = coVariable then Op2.valFloat:=vars[Op2.ivar].valFloat;
-  Result.valFloat := Op1.valFloat*Op2.valFloat;
+  Result.cons.valFloat := Op1.valFloat*Op2.valFloat;
 end;
 function float_div_int(var Op1: TOperand; opr: TOperator; var Op2: TOperand): TOperand;
 begin
   Result.catTyp:=t_float;
   Result.typ:=tipFloat;
-  if Op1.catOp = coVariable then Op1.valFloat:=vars[Op1.ivar].valFloat;
-  if Op2.catOp = coVariable then Op2.valInt :=vars[Op2.ivar].valInt;
-  Result.valFloat := Op1.valFloat / Op2.valInt;
+  Result.cons.valFloat := Op1.valFloat / Op2.valInt;
 end;
 function float_div_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand): TOperand;
 begin
   Result.catTyp:=t_float;
   Result.typ:=tipFloat;
-  if Op1.catOp = coVariable then Op1.valFloat:=vars[Op1.ivar].valFloat;
-  if Op2.catOp = coVariable then Op2.valFloat:=vars[Op2.ivar].valFloat;
-  Result.valFloat := Op1.valFloat / Op2.valFloat;
+  Result.cons.valFloat := Op1.valFloat / Op2.valFloat;
+end;
+
+//operaciones con Char
+function char_asig_char(var Op1: TOperand; opr: Toperator; var Op2: TOperand): TOperand;
+begin
+  if Op1.catOp <> coVariable then begin  //validación
+    Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
+  end;
+  Result.catTyp:=t_string;
+  Result.typ:=tipChar;
+  if Op2.catOp = coVariable then Op2.valInt :=vars[Op2.ivar].valInt;
+  vars[Op1.ivar].valFloat:=Op2.valInt;
 end;
 
 procedure StartSyntax(lex0: TSynFacilSyn);
@@ -244,26 +216,34 @@ begin
   tkIdentif := lex.tkIdentif;
   tkKeyword := lex.tkKeyword;
   tkNumber := lex.tkNumber;
+  tkString   := lex.tkString;
   tkOperator := lex.GetAttribByName('Operator');  //se debe haber creado
   tkDelimiter:= lex.GetAttribByName('Delimiter'); //se debe haber creado
   tkType     := lex.GetAttribByName('Types');    //se debe haber creado
+  tkBoolean  := lex.GetAttribByName('Boolean');   //se debe haber creado
   tkOthers   := lex.GetAttribByName('Others');   //se debe haber creado
 
   ///////////Crea tipos y operaciones
   ClearTypes;
-  tipInt:=CreateType('int',t_integer,4);   //de 4 bytes
-  tipInt.procDefine:=@int_procDefine;
-  tipInt.procLoad:=@int_procLoad;
-
+  tipBool :=CreateType('bool',t_boolean,1);  //booleano
+  tipInt  :=CreateType('int',t_integer,4);   //de 4 bytes
   tipFloat:=CreateType('float',t_float,4);   //de 4 bytes
-  tipFloat.procDefine:=@float_procDefine;
-  tipFloat.procLoad:=@float_procLoad;
+
+  //debe crearse siempre el tipo char para manejar cadenas
+  tipChar:=CreateType('char',t_string,1);   //de 1 byte
+
+  //////// Operaciones con Char ////////////
+  opr:=tipChar.CreateOperator(':=',2,'asig');  //asignación
+  opr.CreateOperation(tipChar,@char_asig_char);
 
   //////// Operaciones con Int ////////////
   {Los operadores deben crearse con su precedencia correcta}
   opr:=tipInt.CreateOperator(':=',2,'asig');  //asignación
   opr.CreateOperation(tipInt,@int_asig_int);
   opr.CreateOperation(tipFloat,@int_asign_float);
+
+  opr:=tipInt.CreateOperator('=',2,'igual');  //asignación
+  opr.CreateOperation(tipInt,@int_igual_int);
 
   opr:=tipInt.CreateOperator('+',5,'suma');
   opr.CreateOperation(tipInt,@int_suma_int);
@@ -283,7 +263,8 @@ begin
 
   opr:=tipInt.CreateOperator('\',6,'idiv');
   opr.CreateOperation(tipInt,@int_idiv_int);
-//  opr.CreateOperation(tipFloat,@int_idiv_float);  no tiene sentido
+  opr:=tipInt.CreateOperator('%',6,'resid');
+  opr.CreateOperation(tipInt,@int_resid_int);
 
   //////// Operaciones con Float ///////////////
   opr:=tipFloat.CreateOperator(':=',2,'asig');  //asignación

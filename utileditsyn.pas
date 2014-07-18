@@ -1,9 +1,7 @@
-{                                   UtilEditSyn 0.4
-* Se cambia el nombre al evento OnArchivoCargado().
-* Se crea la propiedad de solo lectur "Modified".
-* Se agrega la propiedad "canCopy".
-* Se agrega el evento OnSelectionChange(), como funcionalidad adicional.
-* Se corrige un error de desbordamiento que se podía producir en VerTipoArchivo().
+{                                   UtilEditSyn 0.5b
+* Se eliminan los métodos GuardarADisco() y LeerDeDisco(), y se hace pública la
+lista ArcRecientes, para que pueda ser guardada por un proceso externo.
+* Se cambia el nombre de la lista ArcRecientes a RecentFiles.
 
                                   Modif. Por Tito Hinostroza 12/07/2014
 }
@@ -66,14 +64,11 @@ type
     procedure menRecentsClick(Sender: TObject);
   private
     ed      : TSynEdit;  //referencia al editor
-    ArcRecientes: TStringList;  //Lista de archivos recientes
     menRecents: TMenuItem; //Menú de archivos recientes
     MaxRecents: integer;   //Máxima cantidad de archivos recientes
     procedure ActualMenusReciente;
     procedure AgregArcReciente(arch: string);
     procedure ChangeFileInform;
-    procedure GuardarADisco(var arcINI: TIniFile; etiq: string='edit');
-    procedure LeerDeDisco(var arcINI: TIniFile; etiq: string='edit');
     //Estado de modificación
     procedure SetModified(valor: boolean);
     function GetModified: boolean;
@@ -85,6 +80,7 @@ type
     Error   : string;    //mensaje de error en alguna operación
     extDef  : string;    //extensión por defecto para los archivos (txt, xml, ...)
     nomDef  : string;    //nombre por defecto pàra nuevos archivos
+    RecentFiles: TStringList;  //Lista de archivos recientes
     //eventos
     OnChangeEditorState:TEventoArchivo;  {Cuando cambia el estado de modificado, con opción
                           "Undo", con "Redo", con opción "Copiar", "Cortar", "Pegar"}
@@ -101,7 +97,8 @@ type
     PanForEndLin : TStatusPanel;  //Panel para mostrar el tipo de delimitador de línea
     PanCodifFile : TStatusPanel;  //Panel para mostrar la codificaión de archivo
     procedure InitEditor(ed0: TsynEdit; nomDef0, extDef0: string);
-    procedure InitMenuRecents(menRecents0: TMenuItem; MaxRecents0: integer=5);
+    procedure InitMenuRecents(menRecents0: TMenuItem; RecentList: TStringList;
+      MaxRecents0: integer=5);
     procedure NewFile;
     procedure LoadFile(arc8: string);
     procedure SaveFile;
@@ -376,18 +373,19 @@ procedure TObjEditor.AgregArcReciente(arch: string);
 var hay: integer; //bandera-índice
     i: integer;
 begin
+  if RecentFiles = nil then exit;
   //verifica si ya existe
   hay := -1;   //valor inicial
-  for i:= 0 to ArcRecientes.Count-1 do
-    if ArcRecientes[i] = arch then hay := i;
+  for i:= 0 to RecentFiles.Count-1 do
+    if RecentFiles[i] = arch then hay := i;
   if hay = -1 then  //no existe
-    ArcRecientes.Insert(0,arch)  //agrega al inicio
+    RecentFiles.Insert(0,arch)  //agrega al inicio
   else begin //ya existe
-    ArcRecientes.Delete(hay);     //lo elimina
-    ArcRecientes.Insert(0,arch);  //lo agrega al inicio
+    RecentFiles.Delete(hay);     //lo elimina
+    RecentFiles.Insert(0,arch);  //lo agrega al inicio
   end;
-  while ArcRecientes.Count>MaxRecents do  //mantiene tamaño máximo
-    ArcRecientes.Delete(MaxRecents);
+  while RecentFiles.Count>MaxRecents do  //mantiene tamaño máximo
+    RecentFiles.Delete(MaxRecents);
 end;
 procedure TObjEditor.itemClick(Sender: TObject);
 //Se selecciona un archivo de la lista de recientes
@@ -399,13 +397,15 @@ procedure TObjEditor.menRecentsClick(Sender: TObject);
 begin
   ActualMenusReciente;  //carga la lista de archivos recientes
 end;
-procedure TObjEditor.InitMenuRecents(menRecents0: TMenuItem; MaxRecents0: integer=5);
+procedure TObjEditor.InitMenuRecents(menRecents0: TMenuItem; RecentList: TStringList;
+                                     MaxRecents0: integer=5);
 //Configura un menú, con el historial de los archivos abiertos recientemente
 //"nRecents", es el número de archivos recientes que se guardará
 var item: TMenuItem;
   i: Integer;
 begin
   menRecents := menRecents0;
+  RecentFiles := RecentList;  //gaurda referencia a lista
   MaxRecents := MaxRecents0;
   //configura menú
   menRecents.Caption:= MSG_RECENTS;
@@ -424,8 +424,9 @@ var
   i: Integer;
 begin
   if menRecents = nil then exit;
+  if RecentFiles = nil then exit;
   //proteciión
-  if ArcRecientes.Count = 0 then begin
+  if RecentFiles.Count = 0 then begin
     menRecents[0].Caption:=MSG_NO_RECENTS;
     menRecents[0].Enabled:=false;
     for i:= 1 to menRecents.Count-1 do begin
@@ -436,33 +437,15 @@ begin
   //hace visible los ítems
   menRecents[0].Enabled:=true;
   for i:= 0 to menRecents.Count-1 do begin
-    if i<ArcRecientes.Count then
+    if i<RecentFiles.Count then
       menRecents[i].Visible:=true
     else
       menRecents[i].Visible:=false;
   end;
   //pone etiquetas a los menús, incluyendo un atajo numérico
-  for i:=0 to ArcRecientes.Count-1 do begin
-    menRecents[i].Caption := '&'+IntToStr(i+1)+' '+ArcRecientes[i];
+  for i:=0 to RecentFiles.Count-1 do begin
+    menRecents[i].Caption := '&'+IntToStr(i+1)+' '+RecentFiles[i];
   end;
-end;
-procedure TObjEditor.LeerDeDisco(var arcINI: TIniFile; etiq: string = 'edit');
-//Lee las propiedades de disco.
-//El parámetro "etiq", se usa para cuando se quiere guardar varios editores
-begin
-  //Lee archivos recientes
-  arcINI.ReadSection(etiq+'_Recientes',ArcRecientes);
-end;
-procedure TObjEditor.GuardarADisco(var arcINI: TIniFile;  etiq: string = 'edit');
-//lee las propiedades de disco
-//El parámetro "etiq", se usa para cuando se quiere guardar varios editores
-var
-  i : integer;
-begin
-  //Escribe archivos recientes
-  arcINI.EraseSection(etiq+'_Recientes');
-  for i:= 0 to ArcRecientes.Count-1 do
-    arcINI.WriteString(etiq+'_Recientes',ArcRecientes[i],'');
 end;
 
 procedure TObjEditor.SetModified(valor: boolean);
@@ -694,12 +677,12 @@ end;
 
 constructor TObjEditor.Create;
 begin
-  ArcRecientes := TStringList.Create;
+//  RecentFiles := TStringList.Create;
   MaxRecents := 1;   //Inicia con 1
 end;
 destructor TObjEditor.Destroy;
 begin
-  ArcRecientes.Free;
+//  RecentFiles.Free;
   inherited Destroy;
 end;
 
