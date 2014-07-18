@@ -129,7 +129,14 @@ begin
     IdentAyudC.add('method');
     IdentAyudC.add('type');
     IdentAyudC.add('class');
-    IdentAyudC.add('class');
+
+    IdentAyudC.add('and');
+    IdentAyudC.add('or');
+    IdentAyudC.add('xor');
+    IdentAyudC.add('not');
+
+    IdentAyudC.add('true');
+    IdentAyudC.add('false');
 End;
 procedure LlenaAyudContextual_TIPO(agregar: Boolean = False);
 //Llena los tipos de datos de Oracle
@@ -155,7 +162,7 @@ begin
     IdentAyudC.add('utf8;');
     IdentAyudC.add('utf16;');
 
-    IdentAyudC.add('boolean;');
+    IdentAyudC.add('bool;');
 End;
 procedure LlenaAyudContextual_FUNC(agregar: Boolean = False);
 //Llena las funciones de Oracle

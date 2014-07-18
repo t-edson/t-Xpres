@@ -2,12 +2,12 @@
 <Language name="Xpres" ext="xpr">
   <Attribute Name="Symbol" BackCol="#FF0000" ForeCol="#FFFFFF"></Attribute>
   <Attribute Name="Delimiter"></Attribute>
-  <Attribute Name="Operator"></Attribute>
+  <Attribute Name="Operator" ForeCol="#FF0000"></Attribute>
   <Attribute Name="Types"></Attribute>
   <Attribute Name="Boolean"></Attribute>
   <Attribute Name="Others"></Attribute>
   <Symbols>
-    <Operator> + - * / \ % = &gt; &gt;= &lt; &lt;= &gt;&lt; := </Operator>
+    <Operator> + - * / \ % = &gt; &gt;= &lt; &lt;= &lt;&gt; := </Operator>
     <Delimiter> ; </Delimiter>
     <Others> ( ) : , </Others>
   </Symbols>
@@ -28,12 +28,13 @@
 IF THEN ELSE ELSIF END
 put puts get gets
     </Keyword>
+    <Operator> And Or Xor Not </Operator>
     <Types>
 int int8 int16 int32
 uint uint8 uint16 uint32
 float float32
 char string utf8 utf16
-boolean
+bool
     </Types>
     <Boolean> true false  </Boolean>
   </Identifiers>

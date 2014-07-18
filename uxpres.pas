@@ -42,7 +42,7 @@ type
     valFloat: extended; //Valor en caso de que sea un flotante
     valInt  : Int64;    //valor en caso de que sea un entero
     valUInt : Int64;    //valor en caso de que sea un entero sin signo
-    valBol  : Boolean;  //valor  en caso de que sea un booleano
+    valBool  : Boolean;  //valor  en caso de que sea un booleano
     valStr  : string;     //valor  en caso de que sea una cadena
   end;
 
@@ -50,14 +50,23 @@ type
   //Operando
   TOperand = object
   private
-    function GetValBol: boolean;
-    procedure SetValBol(AValue: boolean);
-    procedure SetValInt(AValue: Int64);
+    cons: Tvar;        //valor en caso de que sea una constante
+    procedure cons_SetvalInt(AValue: Int64);
+    procedure var_SetvalInt(AValue: Int64);
+    procedure cons_SetvalFloat(AValue: extended);
+    procedure var_SetvalFloat(AValue: extended);
+    procedure cons_SetvalBool(AValue: boolean);
+    procedure var_SetvalBool(AValue: boolean);
+    procedure cons_SetvalStr(AValue: string);
+    procedure var_SetvalStr(AValue: string);
+    function GetValBool: boolean;
+//    procedure SetValBol(AValue: boolean);
     function GetValInt: int64;
+//    procedure SetValInt(AValue: Int64);
     function GetValFloat: extended;
-    procedure SetValFloat(AValue: extended);
+//    procedure SetValFloat(AValue: extended);
     function GetValStr: string;
-    procedure SetValStr(AValue: string);
+//    procedure SetValStr(AValue: string);
   public
     nom: string;
     simple: boolean;  //indica si el tipo de dato es simple o compuesto
@@ -67,17 +76,26 @@ type
     catOp: CatOperan; //Categoría de operando
     estOp: integer;   //Estado del operando (Usado para la generec. de código)
     txt: string;      //Texto del operador o expresión
-    cons: Tvar;        //valor en caso de que sea una constante
     ivar : integer;   //ínidce a variables, en caso de que sea variable
     function CategName: string;  //nombre de tipo
     procedure Load;   //carga el operador en registro o pila
     function FindOperator(const oper: string): TOperator; //devuelve el objeto operador
     function GetOperator: Toperator;
+
     //metodos para facilitar la implementación del intérprete
-     property valInt: Int64 read GetValInt write SetvalInt;
-     property valFloat: extended read GetValFloat write SetValFloat;
-     property valStr: string read GetValStr write SetValStr;
-     property valBol: boolean read GetValBol write SetValBol;
+     property valInt: Int64 read GetValInt; // write SetvalInt;
+     property valFloat: extended read GetValFloat; // write SetValFloat;
+     property valStr: string read GetValStr; // write SetValStr;
+     property valBool: boolean read GetValBool;// write SetValBol;
+
+     property cons_valInt: Int64 write cons_SetvalInt;
+     property var_valInt: Int64 write var_SetvalInt;
+     property cons_valFloat: extended write cons_SetvalFloat;
+     property var_valFloat: extended write var_SetvalFloat;
+     property cons_valBool: boolean write cons_SetvalBool;
+     property var_valBool: boolean write var_SetvalBool;
+     property cons_valStr: string write cons_SetvalStr;
+     property var_valStr: string write var_SetvalStr;
   end;
 
   TProcDefineVar = procedure(const varName, varInitVal: string);
@@ -255,7 +273,7 @@ var
 begin
   Result := nullOper;   //valor por defecto
   for i:=0 to Operators.Count-1 do begin
-    if Operators[i].txt = Opr then begin
+    if Operators[i].txt = upCase(Opr) then begin
       exit(Operators[i]); //está definido
     end;
   end;
@@ -274,20 +292,77 @@ end;
 
 { TOperand }
 
-function TOperand.GetValBol: boolean;
+procedure TOperand.cons_SetvalInt(AValue: Int64);
+//Fija el valor entero del operando, como constante.
+begin
+  catOp := coConst;   //lo fija como constante
+  catTyp:=t_integer;  //y como entero
+  cons.valInt := AValue;
+end;
+procedure TOperand.var_SetvalInt(AValue: Int64);
+//Fija el valor entero del operando, como variable.
+begin
+  catOp := coVariable;   //lo fija como variable
+  catTyp:=t_integer;     //y como entero
+  vars[ivar].valInt := AValue;  //escribe valor
+end;
+procedure TOperand.cons_SetvalFloat(AValue: extended);
+//Fija el valor flotante del operando, como constante.
+begin
+  catOp := coConst;   //lo fija como constante
+  catTyp:=t_float;  //y como entero
+  cons.valFloat := AValue;
+end;
+procedure TOperand.var_SetvalFloat(AValue: extended);
+//Fija el valor flotante del operando, como variable.
+begin
+  catOp := coVariable;   //lo fija como variable
+  catTyp:=t_float;     //y como entero
+  vars[ivar].valFloat := AValue;  //escribe valor
+end;
+procedure TOperand.cons_SetvalBool(AValue: boolean);
+//Fija el valor booleano del operando, como constante.
+begin
+  catOp := coConst;   //lo fija como constante
+  catTyp:=t_boolean;  //y como entero
+  cons.valBool := AValue;
+end;
+procedure TOperand.var_SetvalBool(AValue: boolean);
+//Fija el valor booleano del operando, como variable.
+begin
+  catOp := coVariable;   //lo fija como variable
+  catTyp:=t_boolean;     //y como entero
+  vars[ivar].valBool := AValue;  //escribe valor
+end;
+procedure TOperand.cons_SetvalStr(AValue: string);
+//Fija el valor string del operando, como constante.
+begin
+  catOp := coConst;   //lo fija como constante
+  catTyp:=t_string;  //y como entero
+  cons.valStr := AValue;
+end;
+procedure TOperand.var_SetvalStr(AValue: string);
+//Fija el valor string del operando, como variable.
+begin
+  catOp := coVariable;   //lo fija como variable
+  catTyp:=t_string;     //y como entero
+  vars[ivar].valStr := AValue;  //escribe valor
+end;
+
+function TOperand.GetValBool: boolean;
 begin
   if catOp = coVariable then  //lee de la variable
-    Result := vars[ivar].valBol
+    Result := vars[ivar].valBool
   else  //debe ser constante o expresión
-    Result := cons.valBol;
+    Result := cons.valBool;
 end;
-procedure TOperand.SetValBol(AValue: boolean);
+{procedure TOperand.SetValBol(AValue: boolean);
 begin
   if catOp = coVariable then  //solo permite escribir en variable
     vars[ivar].valBol := AValue;
 //  else  //es expresión
 //    cons.valInt := AValue;
-end;
+end;}
 function TOperand.GetValInt: int64;
 begin
   if catOp = coVariable then  //lee de la variable
@@ -295,13 +370,13 @@ begin
   else  //debe ser constante o expresión
     Result := cons.valInt;
 end;
-procedure TOperand.SetValInt(AValue: Int64);
+{procedure TOperand.SetValInt(AValue: Int64);
 begin
   if catOp = coVariable then  //solo permite escribir en variable
     vars[ivar].valInt := AValue;
 //  else  //es expresión
 //    cons.valInt := AValue;
-end;
+end;}
 function TOperand.GetValFloat: extended;
 begin
   if catOp = coVariable then  //lee de la variable
@@ -309,13 +384,13 @@ begin
   else  //debe ser constante o expresión
     Result := cons.valFloat;
 end;
-procedure TOperand.SetValFloat(AValue: extended);
+{procedure TOperand.SetValFloat(AValue: extended);
 begin
   if catOp = coVariable then  //solo permite escribir en variable
     vars[ivar].valFloat := AValue;
 //  else  //es expresión
 //    cons.valInt := AValue;
-end;
+end;}
 function TOperand.GetValStr: string;
 begin
   if catOp = coVariable then  //lee de la variable
@@ -323,13 +398,13 @@ begin
   else  //debe ser constante o expresión
     Result := cons.valStr;
 end;
-procedure TOperand.SetValStr(AValue: string);
+{procedure TOperand.SetValStr(AValue: string);
 begin
   if catOp = coVariable then  //solo permite escribir en variable
     vars[ivar].valStr := AValue;
 //  else  //es expresión
 //    cons.valInt := AValue;
-end;
+end;}
 
 function TOperand.CategName: string;
 begin
@@ -359,6 +434,7 @@ function TOperand.GetOperator: Toperator;
 begin
   cEnt.CapBlancos;
   if cEnt.tokType <> tkOperator then exit(nil);
+  //hay un operador
   Result := typ.FindOperator(cEnt.tok);
   cEnt.Next;   //toma el token
 end;
@@ -630,14 +706,26 @@ begin
   Op.size:=length(tokcad);
   //toma el texto
   Op.cons.valStr := copy(cEnt.tok,2, length(cEnt.tok)-2);   //quita comillas
-  //verifica si hay tipos string definidos
+  //////////// Verifica si hay tipos string definidos ////////////
   Op.typ:=nil;
+  //Busca primero tipo string (longitud variable)
   for i:=0 to types.Count-1 do begin
     { TODO : Se debería tener una lista adicional  TStringTypes, para acelerar la
     búsqueda}
-    if (types[i].cat = t_string) and (types[i].size=1) then begin  //busca un char
+    if (types[i].cat = t_string) and (types[i].size=-1) then begin  //busca un char
       Op.typ:=types[i];  //encontró
       break;
+    end;
+  end;
+  if Op.typ=nil then begin
+    //no hubo "string", busca al menos "char", para generar ARRAY OF char
+    for i:=0 to types.Count-1 do begin
+      { TODO : Se debería tener una lista adicional  TStringTypes, para acelerar la
+      búsqueda}
+      if (types[i].cat = t_string) and (types[i].size=1) then begin  //busca un char
+        Op.typ:=types[i];  //encontró
+        break;
+      end;
     end;
   end;
 end;
@@ -649,7 +737,7 @@ begin
   Op.catTyp := t_boolean;   //es flotante
   Op.size:=1;   //se usará un byte
   //toma valor constante
-  Op.cons.valBol:= (tokcad[1] in ['t','T']);
+  Op.cons.valBool:= (tokcad[1] in ['t','T']);
   //verifica si hay tipo boolean definido
   Op.typ:=nil;
   for i:=0 to types.Count-1 do begin
@@ -706,7 +794,7 @@ begin
     TipDefecBoolean(Result, cEnt.tok); //encuentra tipo de número, tamaño y valor
     if pErr.HayError then exit;  //verifica
     if Result.typ = nil then begin
-       PErr.GenError('No hay tipo definido para albergar a esta constante numérica',PosAct);
+       PErr.GenError('No hay tipo definido para albergar a esta constante booleana',PosAct);
        exit;
      end;
     cEnt.Next;    //Pasa al siguiente
@@ -727,7 +815,7 @@ begin
     TipDefecString(Result, cEnt.tok); //encuentra tipo de número, tamaño y valor
     if pErr.HayError then exit;  //verifica
     if Result.typ = nil then begin
-       PErr.GenError('No hay tipo definido para albergar a esta constante booelana',PosAct);
+       PErr.GenError('No hay tipo definido para albergar a esta constante cadena',PosAct);
        exit;
      end;
     cEnt.Next;    //Pasa al siguiente
@@ -825,14 +913,17 @@ begin
 end;
 procedure ShowOperand(const Op: TOperand);
 //muestra un operando por pantalla
+var
+  tmp: String;
 begin
-    case Op.catTyp of
-    t_integer: MsgBox('Result Integer = '+ IntToStr(Op.valInt));
-    t_float :  MsgBox('Result Float = '+ FloatToStr(Op.valFloat));
-    t_string:  MsgBox('Result String = '+ Op.valStr);
-    t_boolean: if Op.valBol then MsgBox('Result String = TRUE')
-               else MsgBox('Result String = FALSE');
-    end;
+  tmp := 'Result ' + Op.CategName + '(' + Op.typ.name + ') = ';
+  case Op.catTyp of
+  t_integer: MsgBox(tmp + IntToStr(Op.valInt));
+  t_float :  MsgBox(tmp + FloatToStr(Op.valFloat));
+  t_string:  MsgBox(tmp + Op.valStr);
+  t_boolean: if Op.valBool then MsgBox(tmp + 'TRUE')
+             else MsgBox(tmp + 'FALSE');
+  end;
 end;
 procedure CompilarArc(NomArc: String; LinArc: Tstrings);
 var
@@ -936,7 +1027,6 @@ begin
     //Llama al evento asociado
     Result := o.proc(Op1, opr, Op2);
     //Completa campos de evaluar
-    Result.catOp := coExpres;    //ahora es expresión por defecto
     Result.txt := Op1.txt + opr.txt + Op2.txt;   //texto de la expresión
 //    Evaluar.uop := opr;   //última operación ejecutada
 End;
@@ -1009,27 +1099,33 @@ begin
     opr2 := Op2.GetOperator;   //Toma el siguiente operador
     If opr2 <> nil Then begin  //Hay otro operador
       if opr2=nullOper then begin
-        PErr.GenError('No está definido el operador: '+ opr2.txt + ' para tipo: '+Op2.typ.name, PosAct);
-        exit;
+        //no está definido el operador siguente para el Op2, asumimos que se debe
+        //evaluar primero Op1 (opr1) Op2
+//        PErr.GenError('No está definido el operador: '+ opr2.txt + ' para tipo: '+Op2.typ.name, PosAct);
+      end else begin  //si está definido el operador (opr2) para Op2, vemos jerarquías
+        //¿Delimitado por jerarquía de operador?
+        If opr2.jer <= jerar Then begin  //sigue uno de menor jerarquía, hay que salir evaluando
+            PosAct := pos2;   //antes de coger el operador
+            Result := Evaluar(Op1, opr1, Op2);
+            Exit;
+        End;
+        If opr2.jer > opr1.jer Then begin   //y es de mayor jerarquía, retrocede
+            PosAct := pos1;        //retrocede
+            Op2 := CogExpresion(opr1.jer);  //evalua el nuevo Operando 2
+            if pErr.HayError then exit;
+            pos2 := PosAct;    //Guarda por si lo necesita
+            opr2 := Op2.GetOperator;       //actualiza el nuevo siguiente operador
+            { TODO : ¿Debería ir nuevamente a inicio de "If opr2 <> nil"? }
+        End;
       end;
-      //¿Delimitado por jerarquía de operador?
-      If opr2.jer <= jerar Then begin  //sigue uno de menor jerarquía, hay que salir
-          PosAct := pos2;   //antes de coger el operador
-          Result := Evaluar(Op1, opr1, Op2);
-          Exit;
-      End;
-      If opr2.jer > opr1.jer Then begin   //y es de mayor jerarquía, retrocede
-          PosAct := pos1;        //retrocede
-          Op2 := CogExpresion(opr1.jer);  //evalua primero
-          if pErr.HayError then exit;
-          opr2 := Op2.GetOperator;       //actualiza el siguiente operador
-      End;
-
     end;
     Op1 := Evaluar(Op1, opr1, Op2);    //evalua resultado
     if PErr.HayError then exit;
     //prepara siguiente operación
-    opr1 := opr2;
+    //opr1 := opr2;
+    PosAct := pos2;   //antes de coger el operador 2
+    opr1 := Op1.GetOperator;   {lo toma ahora con el tipo de la evaluación Op1 (opr1) Op2
+                                porque puede que Op1 (opr1) Op2, haya cambiado de tipo}
   end;  //hasta que ya no siga un operador
   Result := Op1;  //aquí debe haber quedado el resultado
 end;
