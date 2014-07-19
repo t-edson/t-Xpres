@@ -1,14 +1,17 @@
 t-Xpres
 =======
 
-Sencillo framework para compilador, desarrollado en Lazarus. 
-Usa un lenguaje especial, llamado Xpres que está basado en tipos de datos y operadores.
+Sencillo marco de trabajo (framework) para implementar un compilador o intérprete para un nuevo lenguaje llamado Xpres. Esta desarrollado en Lazarus e incluye una sencilla IDE.
+
+Para el analizador léxico se usa el resaltador de sintaxis SynFacilSyn.
+
+El lenguaje Xpres que está basado en tipos de datos y operadores.
 Incluye un ejemplo de intérprete y compilador a código ASM.
 
 Aún está en fase de desarrollo. 
 
 Esta implementación, es una implementación sencilla del lenguaje Xpres que incluye un 
-interprete sencillo que solo permite manejar variables y expresiones numéricas y de cadena.
+interprete sencillo que solo permite manejar variables, expresiones numéricas y de cadena.
 
 El intérprete mostrará siempre el valor de la última expresión evaluada.
  
