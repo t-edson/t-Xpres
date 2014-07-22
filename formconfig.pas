@@ -9,7 +9,7 @@ uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Buttons,
   StdCtrls, iniFiles, SynEdit,
   FrameCfgEdit,  //deben incluirse todos los frames de propiedades a usar
-  PropertyFrame;  //necesario para manejar los Frames de propiedades
+  ConfigFrame;   //para interceptar TFrame
 
 type
 
@@ -35,9 +35,6 @@ type
     //frames de configuración
     Edit: TfraCfgEdit;
     procedure escribirArchivoIni;
-    procedure leerArchivoIni;
-    procedure LeerDeVentana;
-    procedure MostEnVentana;
     procedure Iniciar(ed: TSynEdit);
     procedure Mostrar;
   end;
@@ -65,12 +62,15 @@ end;
 procedure TConfig.BitAceptarClick(Sender: TObject);
 begin
   bitAplicarClick(Self);
-  self.Close;
+  if msjError='' then self.Close;  //sale si no hay error
 end;
 procedure TConfig.BitAplicarClick(Sender: TObject);
 begin
-  LeerDeVentana;       //Escribe propiedades de los frames
-  if msjError<>'' then exit;
+  msjError := WindowToProp_AllFrames(self);
+  if msjError<>'' then begin
+    showmessage(msjError);
+    exit;
+  end;
   escribirArchivoIni;   //guarda propiedades en disco
 end;
 
@@ -78,11 +78,10 @@ procedure TConfig.Iniciar(ed: TSynEdit);
 //Inicia el formulario de configuración. Debe llamarse antes de usar el formulario y
 //después de haber cargado todos los frames.
 begin
-  //************  Modificar Aquí ***************//
   //inicia los Frames creados
   Edit.Iniciar('texto',ed);
 
-  LeerArchivoIni;  //lee parámetros del archivo de configuración.
+  msjError := ReadFileToProp_AllFrames(self, arINI);
 end;
 
 procedure TConfig.FormDestroy(Sender: TObject);
@@ -95,7 +94,7 @@ end;
 
 procedure TConfig.FormShow(Sender: TObject);
 begin
-  MostEnVentana;   //carga las propiedades en el frame
+  msjError := PropToWindow_AllFrames(self);
 end;
 
 procedure TConfig.lstCategClick(Sender: TObject);
@@ -116,77 +115,10 @@ begin
   Showmodal;
 end;
 
-procedure TConfig.LeerDeVentana;
-//Lee las propiedades de la ventana de configuración.
-var f: TFrame;
-begin
-  msjError := '';
-  //Fija propiedades de los controles
-  for f in ListOfFrames(self) do begin
-    f.WindowToProp;
-    msjError := f.MsjErr;
-    if msjError<>'' then exit;
-  end;
-end;
-procedure TConfig.MostEnVentana;
-//Muestra las propiedades en la ventana de configuración.
-var f: TFrame;
-begin
-  //llama a MostEnVentana de todos los PropertyFrame.Frames
-  for f in ListOfFrames(self) do begin
-    f.PropToWindow;
-    msjError := f.MsjErr;
-    if msjError<>'' then exit;
-  end;
-end;
-//funciones públicas
-procedure TConfig.leerArchivoIni;
-//Lee el archivo de configuración
-var
-   appINI : TIniFile;
-   f: Tframe;
-begin
-  if not FileExists(arIni) then exit;  //para que no intente leer
-
-  msjError := 'Error leyendo de archivo de configuración: ' + arIni;  //valor por defecto
-  try
-     appINI := TIniFile.Create(arIni);
-     //lee propiedades de los Frame de configuración
-     for f in ListOfFrames(self) do begin
-       f.ReadFileToProp(appINI);
-     end;
-
-     MsjError:='';  //Limpia
-  finally
-     appIni.Free;                   //libera
-  end;
-end;
 procedure TConfig.escribirArchivoIni;
 //Escribe el archivo de configuración
-var
-   appINI : TIniFile;
-   f: Tframe;
 begin
-  msjError := 'Error escribiendo en archivo de configuración: ' + arIni;  //valor por defecto
-  try
-    If FileExists(arIni)  Then  begin  //ve si existe
-        If FileIsReadOnly(arIni) Then begin
-            msjError := 'Error. Archivo de configuración es de solo lectura';
-            Exit;
-        End;
-        //Crea copia de seguridad antes de modificar
-  //        FileCopy arIni, arIni & ".bak"
-    End;
-    appINI := TIniFile.Create(arIni);
-    //escribe propiedades de los Frame de configuración
-    for f in ListOfFrames(self) do begin
-      f.SavePropToFile(appINI);
-    end;
-
-    MsjError:='';  //Limpia
-  finally
-    appIni.Free;                   //libera
-  end;
+  msjError := SavePropToFile_AllFrames(self, arINI);
 end;
 
 end.

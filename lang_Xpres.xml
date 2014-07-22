@@ -5,6 +5,7 @@
   <Attribute Name="Operator" ForeCol="#FF0000"></Attribute>
   <Attribute Name="Types"></Attribute>
   <Attribute Name="Boolean"></Attribute>
+  <Attribute Name="Structure"></Attribute>
   <Attribute Name="Others"></Attribute>
   <Symbols>
     <Operator> + - * / \ % = &gt; &gt;= &lt; &lt;= &lt;&gt; := </Operator>
@@ -12,7 +13,11 @@
     <Others> ( ) : , </Others>
   </Symbols>
   <Identifiers CharsStart= "A..Za..z_" Content = "A..Za..z0..9_"> 
+    <Structure> 
+IF for
+	</Structure> 
     <Keyword> 
+THEN ELSE ELSIF END
 	program
 	public 
 	private
@@ -25,7 +30,6 @@
 	destroy
 	sub
 	do begin
-IF THEN ELSE ELSIF END
 put puts get gets
     </Keyword>
     <Operator> And Or Xor Not </Operator>

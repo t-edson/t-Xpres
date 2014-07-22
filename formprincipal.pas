@@ -291,13 +291,13 @@ end;
 procedure TfrmPrincipal.acHerCompExecute(Sender: TObject);
 begin
   Compilar(e.NomArc, edXpr.Lines, hlXpr);
+  edAsm.ClearAll;
+  edAsm.Lines.AddStrings(mem);
   if Perr.HayError then begin
     VerificarError;
 //    MsgErr(c.PErr.TxtError);
     exit;
   end;
-  edAsm.ClearAll;
-  edAsm.Lines.AddStrings(mem);
 end;
 
 procedure TfrmPrincipal.acHerConfigExecute(Sender: TObject);
