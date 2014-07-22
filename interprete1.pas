@@ -36,6 +36,7 @@ var
   {la arquitectura definida aquí contempla dos únicos registros generales A y B. Cada
   registro se modela como un registro, con propiedades adicionales, "used".
 
+  * Todas las oepraciones recibe sus dos paráemtros en las variables p1 y p2.
   * El resultado de cualquier expresión se debe dejar indicado en el objeto "res".
   * Los valores enteros y enteros sin signo se cargan en valInt
   * Los valores flotantes  se cargan en valFloat
@@ -156,306 +157,319 @@ end;
 //operaciones con Enteros
 procedure int_procLoad(var Op: TOperand);
 begin
-//  if Op.estOp = LOADED then exit;   //ya está cargado
   //carga el operando en res
-  if not setRes(tipInt,STORED_ACU) then exit;
-  a.valInt:=Op.valInt;
-  Code('A<-' + Op.expres);
+  if not setRes(tipInt,Op.estOp) then exit;
+  if Op.estOp = STORED_LIT then res.cons.valInt := Op.valInt;
+//  a.valInt:=Op.valInt;
+///  Code('A<-' + Op.expres);
 end;
-procedure int_asig_int(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure int_asig_int;
 begin
-  if Op1.catOp <> coVariable then begin  //validación
+  if p1.catOp <> coVariable then begin  //validación
     Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
-  vars[Op1.ivar].valInt:=Op2.valInt;
+  vars[p1.ivar].valInt:=p2.valInt;
 //  res.used:=false;  //No hay obligación de que la asignación devuelva un valor.
-  Code('['+IntToStr(Op1.ivar)+']<-' + Op2.expres);
+  Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
-procedure int_asign_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure int_asign_float;
 begin
-  if Op1.catOp <> coVariable then begin  //validación
+  if p1.catOp <> coVariable then begin  //validación
     Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
-  vars[Op1.ivar].valInt:=Trunc(Op2.valFloat);  //en la VM se puede mover directamente
+  vars[p1.ivar].valInt:=Trunc(p2.valFloat);  //en la VM se puede mover directamente
 //  res.used:=false;  //No hay obligación de que la asignación devuelva un valor.
-  Code('['+IntToStr(Op1.ivar)+']<-' + Op2.expres);
+  Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
-procedure int_igual_int(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure int_igual_int;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valInt=Op2.valInt;
-  Code('A<-' + Op1.expres + '=' + Op2.expres);
+  a.valBool:=p1.valInt=p2.valInt;
+  Code('A<-' + p1.expres + '=' + p2.expres);
 end;
-procedure int_difer_int(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure int_difer_int;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valInt<>Op2.valInt;
-  Code('A<-' + Op1.expres + '<>' + Op2.expres);
+  a.valBool:=p1.valInt<>p2.valInt;
+  Code('A<-' + p1.expres + '<>' + p2.expres);
 end;
-procedure int_mayor_int(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure int_mayor_int;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valInt>Op2.valInt;
-  Code('A<-' + Op1.expres + '>' + Op2.expres);
+  a.valBool:=p1.valInt>p2.valInt;
+  Code('A<-' + p1.expres + '>' + p2.expres);
 end;
-procedure int_menor_int(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure int_menor_int;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valInt<Op2.valInt;
-  Code('A<-' + Op1.expres + '<' + Op2.expres);
+  a.valBool:=p1.valInt<p2.valInt;
+  Code('A<-' + p1.expres + '<' + p2.expres);
 end;
-procedure int_mayori_int(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure int_mayori_int;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valInt>=Op2.valInt;
-  Code('A<-' + Op1.expres + '>=' + Op2.expres);
+  a.valBool:=p1.valInt>=p2.valInt;
+  Code('A<-' + p1.expres + '>=' + p2.expres);
 end;
-procedure int_menori_int(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure int_menori_int;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valInt<=Op2.valInt;
-  Code('A<-' + Op1.expres + '<=' + Op2.expres);
+  a.valBool:=p1.valInt<=p2.valInt;
+  Code('A<-' + p1.expres + '<=' + p2.expres);
 end;
 
-procedure int_suma_int(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
+procedure int_suma_int;
 begin
-  if (Op1.catOp = coConst) and (Op2.catOp = coConst) then begin
+  if (p1.catOp = coConst) and (p2.catOp = coConst) then begin
     //es una operación con constantes, se optimiza evaluando primero
 
   end;
-  if canUseA(Op1,Op2) then  begin
+  if canUseA(p1,p2) then  begin
     if not setRes(tipInt, STORED_ACU) then exit;
-    a.valInt:=Op1.valInt+Op2.valInt;
-    Code('A<-' + Op1.expres + '+' + Op2.expres);
-  end else if canUseB(Op1,Op2) then begin  //no se puede usar A
+    a.valInt:=p1.valInt+p2.valInt;
+    Code('A<-' + p1.expres + '+' + p2.expres);
+  end else if canUseB(p1,p2) then begin  //no se puede usar A
     if not setRes(tipInt, STORED_ACUB) then exit;
-    b.valInt:=Op1.valInt+Op2.valInt;
-    Code('B<-' + Op1.expres + '+' + Op2.expres);
+    b.valInt:=p1.valInt+p2.valInt;
+    Code('B<-' + p1.expres + '+' + p2.expres);
   end else begin
     Perr.GenError('Expresión muy compleja.', PosAct);
     exit;
   end;
 end;
-procedure int_suma_float(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
+procedure int_suma_float;
 begin
   if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat:=Op1.valInt+Op2.valFloat;
-  Code('A<-' + Op1.expres + '+' + Op2.expres);
+  a.valFloat:=p1.valInt+p2.valFloat;
+  Code('A<-' + p1.expres + '+' + p2.expres);
 end;
-procedure int_resta_int(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
+procedure int_resta_int;
 begin
   if not setRes(tipInt, STORED_ACU) then exit;
-  a.valInt:=Op1.valInt-Op2.valInt;
-  Code('A<-' + Op1.expres + '-' + Op2.expres);
+  a.valInt:=p1.valInt-p2.valInt;
+  Code('A<-' + p1.expres + '-' + p2.expres);
 end;
-procedure int_resta_float(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
+procedure int_resta_float;
 begin
   if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat:=Op1.valInt-Op2.valFloat;
-  Code('A<-' + Op1.expres + '-' + Op2.expres);
+  a.valFloat:=p1.valInt-p2.valFloat;
+  Code('A<-' + p1.expres + '-' + p2.expres);
 end;
-procedure int_mult_int(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
+procedure int_mult_int;
 begin
-  if canUseA(Op1,Op2) then  begin
+  if canUseA(p1,p2) then  begin
     if not setRes(tipInt, STORED_ACU) then exit;
-    a.valInt:=Op1.valInt*Op2.valInt;
-    Code('A<-' + Op1.expres + '*' + Op2.expres);
-  end else if canUseB(Op1,Op2) then begin  //no se puede usar A
+    a.valInt:=p1.valInt*p2.valInt;
+    Code('A<-' + p1.expres + '*' + p2.expres);
+  end else if canUseB(p1,p2) then begin  //no se puede usar A
     if not setRes(tipInt, STORED_ACUB) then exit;
-    b.valInt:=Op1.valInt*Op2.valInt;
-    Code('B<-' + Op1.expres + '*' + Op2.expres);
+    b.valInt:=p1.valInt*p2.valInt;
+    Code('B<-' + p1.expres + '*' + p2.expres);
   end else begin
     Perr.GenError('Expresión muy compleja.', PosAct);
     exit;
   end;
 end;
-procedure int_mult_float(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
+procedure int_mult_float;
 begin
   if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat:=Op1.valInt*Op2.valFloat;
-  Code('A<-' + Op1.expres + '*' + Op2.expres);
+  a.valFloat:=p1.valInt*p2.valFloat;
+  Code('A<-' + p1.expres + '*' + p2.expres);
 end;
-procedure int_div_int(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure int_div_int;
 begin
   if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat:=Op1.valInt/Op2.valInt;
-  Code('A<-' + Op1.expres + '/' + Op2.expres);
+  a.valFloat:=p1.valInt/p2.valInt;
+  Code('A<-' + p1.expres + '/' + p2.expres);
 end;
-procedure int_div_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure int_div_float;
 begin
   if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat:=Op1.valInt/Op2.valFloat;
-  Code('A<-' + Op1.expres + '/' + Op2.expres);
+  a.valFloat:=p1.valInt/p2.valFloat;
+  Code('A<-' + p1.expres + '/' + p2.expres);
 end;
-procedure int_idiv_int(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
+procedure int_idiv_int;
 begin
   if not setRes(tipInt, STORED_ACU) then exit;
-  a.valInt:=Op1.valInt div Op2.valInt;
-  Code('A<-' + Op1.expres + '\' + Op2.expres);
+  a.valInt:=p1.valInt div p2.valInt;
+  Code('A<-' + p1.expres + '\' + p2.expres);
 end;
-procedure int_resid_int(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
+procedure int_resid_int;
 begin
   if not setRes(tipInt, STORED_ACU) then exit;
-  a.valInt:=Op1.valInt mod Op2.valInt;
-  Code('A<-' + Op1.expres + '%' + Op2.expres);
+  a.valInt:=p1.valInt mod p2.valInt;
+  Code('A<-' + p1.expres + '%' + p2.expres);
 end;
 
 //operaciones con Flotantes
-procedure float_asig_int(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure float_asig_int;
 begin
-  if Op1.catOp <> coVariable then begin  //validación
+  if p1.catOp <> coVariable then begin  //validación
     Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
-  vars[Op1.ivar].valFloat:=Op2.valInt;
+  vars[p1.ivar].valFloat:=p2.valInt;
 //  res.used:=false;  //No hay obligación de que la asignación devuelva un valor.
-  Code('['+IntToStr(Op1.ivar)+']<-' + Op2.expres);
+  Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
-procedure float_asign_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure float_asign_float;
 begin
-  if Op1.catOp <> coVariable then begin  //validación
+  if p1.catOp <> coVariable then begin  //validación
     Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
-  vars[Op1.ivar].valFloat:=Op2.valFloat;
+  vars[p1.ivar].valFloat:=p2.valFloat;
 //  res.used:=false;  //No hay obligación de que la asignación devuelva un valor.
-  Code('['+IntToStr(Op1.ivar)+']<-' + Op2.expres);
+  Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
-procedure float_igual_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure float_igual_float;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valFloat=Op2.valFloat;
+  a.valBool:=p1.valFloat=p2.valFloat;
 end;
-procedure float_difer_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure float_difer_float;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valFloat<>Op2.valFloat;
+  a.valBool:=p1.valFloat<>p2.valFloat;
 end;
-procedure float_mayor_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure float_mayor_float;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valFloat>Op2.valFloat;
+  a.valBool:=p1.valFloat>p2.valFloat;
 end;
-procedure float_menor_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure float_menor_float;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valFloat<Op2.valFloat;
+  a.valBool:=p1.valFloat<p2.valFloat;
 end;
-procedure float_mayori_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure float_mayori_float;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valFloat>=Op2.valFloat;
+  a.valBool:=p1.valFloat>=p2.valFloat;
 end;
-procedure float_menori_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure float_menori_float;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valFloat<=Op2.valFloat;
+  a.valBool:=p1.valFloat<=p2.valFloat;
 end;
 
-procedure float_suma_int(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
+procedure float_suma_int;
 begin
   if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat := Op1.valFloat+Op2.valInt;
+  a.valFloat := p1.valFloat+p2.valInt;
 end;
-procedure float_suma_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure float_suma_float;
 begin
   if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat := Op1.valFloat+Op2.valFloat;
+  a.valFloat := p1.valFloat+p2.valFloat;
 end;
-procedure float_resta_int(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
+procedure float_resta_int;
 begin
   if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat := Op1.valFloat-Op2.valInt;
+  a.valFloat := p1.valFloat-p2.valInt;
 end;
-procedure float_resta_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure float_resta_float;
 begin
   if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat := Op1.valFloat-Op2.valFloat;
+  a.valFloat := p1.valFloat-p2.valFloat;
 end;
-procedure float_mult_int(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
+procedure float_mult_int;
 begin
   if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat := Op1.valFloat*Op2.valInt;
+  a.valFloat := p1.valFloat*p2.valInt;
 end;
-procedure float_mult_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure float_mult_float;
 begin
   if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat := Op1.valFloat*Op2.valFloat;
+  a.valFloat := p1.valFloat*p2.valFloat;
 end;
-procedure float_div_int(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
+procedure float_div_int;
 begin
   if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat := Op1.valFloat / Op2.valInt;
+  a.valFloat := p1.valFloat / p2.valInt;
 end;
-procedure float_div_float(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure float_div_float;
 begin
   if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat := Op1.valFloat / Op2.valFloat;
+  a.valFloat := p1.valFloat / p2.valFloat;
 end;
 //operaciones con booleanos
-procedure bool_asig_bool(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure bool_asig_bool;
 begin
-  if Op1.catOp <> coVariable then begin  //validación
+  if p1.catOp <> coVariable then begin  //validación
     Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
-  vars[Op1.ivar].valBool:=Op2.valBool;
+  vars[p1.ivar].valBool:=p2.valBool;
 //  res.used:=false;  //No hay obligación de que la expresión devuelva un valor.
-  Code('['+IntToStr(Op1.ivar)+']<-' + Op2.expres);
+  Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
-procedure bool_igual_bool(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure bool_igual_bool;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valBool=Op2.valBool;
+  a.valBool:=p1.valBool=p2.valBool;
 end;
-procedure bool_difer_bool(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure bool_difer_bool;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valBool<>Op2.valBool;
+  a.valBool:=p1.valBool<>p2.valBool;
 end;
-procedure bool_and_bool(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure bool_and_bool;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valBool and Op2.valBool;
+  a.valBool:=p1.valBool and p2.valBool;
 end;
-procedure bool_or_bool(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure bool_or_bool;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valBool or Op2.valBool;
+  a.valBool:=p1.valBool or p2.valBool;
 end;
-procedure bool_xor_bool(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure bool_xor_bool;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valBool xor Op2.valBool;
+  a.valBool:=p1.valBool xor p2.valBool;
 end;
 
 //operaciones con string
-procedure str_asig_str(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure str_asig_str;
 begin
-  if Op1.catOp <> coVariable then begin  //validación
+  if p1.catOp <> coVariable then begin  //validación
     Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
-  vars[Op1.ivar].valStr:=Op2.valStr;
+  vars[p1.ivar].valStr:=p2.valStr;
 //  res.used:=false;  //No hay obligación de que la expresión devuelva un valor.
-  Code('['+IntToStr(Op1.ivar)+']<-' + Op2.expres);
+  Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
-procedure str_igual_str(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure str_igual_str;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valStr=Op2.valStr;
+  a.valBool:=p1.valStr=p2.valStr;
 end;
-procedure str_difer_str(var Op1: TOperand; opr: Toperator; var Op2: TOperand);
+procedure str_difer_str;
 begin
   if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=Op1.valStr<>Op2.valStr;
+  a.valBool:=p1.valStr<>p2.valStr;
 end;
-procedure str_concat_str(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
+procedure str_concat_str;
 begin
   setRes(tipStr, STORED_ACU);
-  a.valStr:=Op1.valStr+Op2.valStr;
+  a.valStr:=p1.valStr+p2.valStr;
+end;
+
+//funciones básicas
+procedure fun_msgbox;
+begin
+  msgbox('eureka');
+  res.estOp:=0;
+end;
+procedure fun_puts;
+//envia un texto a consola
+begin
+  frmOut.puts('eureka');
+  res.estOp:=0;
 end;
 
 
@@ -484,6 +498,7 @@ begin
   //debe crearse siempre el tipo char o string para manejar cadenas
 //  tipStr:=CreateType('char',t_string,1);   //de 1 byte
   tipStr:=CreateType('string',t_string,-1);   //de longitud variable
+//  tipInt.procLoad:=@str_procLoad;
 
   //////// Operaciones con String ////////////
   opr:=tipStr.CreateOperator(':=',2,'asig');  //asignación
@@ -584,5 +599,9 @@ begin
   opr.CreateOperation(tipBool,@bool_xor_bool);
 //  opr:=tipBool.CreateOperator('NOT',2,'not');  //asignación
 //  opr.CreateOperation(tipBool,@bool_and_bool);
+
+//////// Funciones básicas ////////////
+  CreateFunction('MsgBox', tipInt, @fun_msgbox);
+  CreateFunction('puts', tipInt, @fun_puts);
 end;
 

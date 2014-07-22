@@ -1,16 +1,13 @@
 {Modelo de formulario de configuración que usa dos Frame de propiedades}
 unit FormConfig;
-
 {$mode objfpc}{$H+}
 
 interface
 
 uses
   Classes, SysUtils, FileUtil, Forms, Controls, Graphics, Dialogs, Buttons,
-  StdCtrls, iniFiles, SynEdit,
-  FrameCfgEdit,  //deben incluirse todos los frames de propiedades a usar
+  StdCtrls, iniFiles, SynEdit, FrameCfgEdit,
   ConfigFrame;   //para interceptar TFrame
-
 type
 
   { TConfig }
@@ -26,12 +23,9 @@ type
     procedure FormDestroy(Sender: TObject);
     procedure FormShow(Sender: TObject);
     procedure lstCategClick(Sender: TObject);
-  private
-    { private declarations }
   public
     msjError: string;    //para los mensajes de error
     arIni   : String;      //Archivo de configuración
-    //************  Modificar Aquí ***************//
     //frames de configuración
     Edit: TfraCfgEdit;
     procedure escribirArchivoIni;
@@ -43,7 +37,6 @@ var
   Config: TConfig;
 
 implementation
-
 {$R *.lfm}
 
 { TConfig }
@@ -85,11 +78,8 @@ begin
 end;
 
 procedure TConfig.FormDestroy(Sender: TObject);
-var
-  f: TFrame;
 begin
-  //Libera los frames de configuración
-  for f in ListOfFrames(self) do f.Free;
+  Free_AllConfigFrames(self);  //Libera los frames de configuración
 end;
 
 procedure TConfig.FormShow(Sender: TObject);
@@ -98,10 +88,8 @@ begin
 end;
 
 procedure TConfig.lstCategClick(Sender: TObject);
-var
-  f: TFrame;
 begin
-  for f in ListOfFrames(self) do f.visible := false;  //oculta todos
+  Hide_AllConfigFrames(self);   //oculta todos
   //************  Modificar Aquí ***************//
   if lstCateg.ItemIndex = 0 then Edit.ShowPos(120,0) ;
 //  if lstCateg.ItemIndex = 1 then Colores.ShowPos(120,0);

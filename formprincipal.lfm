@@ -1555,6 +1555,12 @@ object frmPrincipal: TfrmPrincipal
         Action = acEdiRecSyn
       end
     end
+    object MenuItem24: TMenuItem
+      Caption = '&Ver'
+      object MenuItem25: TMenuItem
+        Action = acVerConsol
+      end
+    end
     object MenuItem17: TMenuItem
       Caption = '&Herramientas'
       object MenuItem18: TMenuItem
@@ -1817,10 +1823,6 @@ object frmPrincipal: TfrmPrincipal
       Caption = 'Modo Columna'
       ImageIndex = 15
     end
-    object VerNumLin1: TAction
-      Category = 'Ver'
-      Caption = 'Ver &Núm. de Línea'
-    end
     object VerBarEst1: TAction
       Category = 'Ver'
       Caption = 'Ver Barra de &Estado'
@@ -1917,6 +1919,11 @@ object frmPrincipal: TfrmPrincipal
       Category = 'Herram'
       Caption = '&Plantilla de Codigo'
       OnExecute = acHerGenTemComExecute
+    end
+    object acVerConsol: TAction
+      Category = 'Ver'
+      Caption = 'C&onsola'
+      OnExecute = acVerConsolExecute
     end
   end
   object OpenDialog1: TOpenDialog

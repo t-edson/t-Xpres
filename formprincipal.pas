@@ -6,8 +6,8 @@ interface
 
 uses
   Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs,
-  ComCtrls, Menus, ActnList, StdActns, ExtCtrls, utilEditSyn,
-  SynHighlighterFacil, XpresComplet, uXpres, Process, Globales, FormConfig;
+  ComCtrls, Menus, ActnList, StdActns, ExtCtrls, utilEditSyn, SynHighlighterFacil,
+  XpresComplet, uXpres, Process, Globales, FormConfig, FormOut;
 
 type
 
@@ -44,6 +44,7 @@ type
     acHerComp: TAction;
     acEdiRecSyn: TAction;
     acHerGenTemCom: TAction;
+    acVerConsol: TAction;
     ActionList: TActionList;
     acVerPanArc: TAction;
     ImageList1: TImageList;
@@ -63,6 +64,8 @@ type
     MenuItem21: TMenuItem;
     MenuItem22: TMenuItem;
     MenuItem23: TMenuItem;
+    MenuItem24: TMenuItem;
+    MenuItem25: TMenuItem;
     mnRecientes: TMenuItem;
     MenuItem2: TMenuItem;
     MenuItem3: TMenuItem;
@@ -94,7 +97,6 @@ type
     ToolButton8: TToolButton;
     ToolButton9: TToolButton;
     VerBarEst1: TAction;
-    VerNumLin1: TAction;
     procedure acArcAbrirExecute(Sender: TObject);
     procedure acArcGuaComExecute(Sender: TObject);
     procedure acArcGuardarExecute(Sender: TObject);
@@ -110,6 +112,7 @@ type
     procedure acHerConfigExecute(Sender: TObject);
     procedure acHerEjecutarExecute(Sender: TObject);
     procedure acHerGenTemComExecute(Sender: TObject);
+    procedure acVerConsolExecute(Sender: TObject);
     procedure eArchivoCargado;
     procedure eCambiaInfArchivo;
     procedure eCambiaEstArchivo;
@@ -287,9 +290,10 @@ procedure TfrmPrincipal.acEdiUndoExecute(Sender: TObject);
 begin
   e.Undo;
 end;
-
 procedure TfrmPrincipal.acHerCompExecute(Sender: TObject);
 begin
+  frmOut.Show;  //muestra consola
+  self.SetFocus;
   Compilar(e.NomArc, edXpr.Lines, hlXpr);
   edAsm.ClearAll;
   edAsm.Lines.AddStrings(mem);
@@ -304,7 +308,6 @@ procedure TfrmPrincipal.acHerConfigExecute(Sender: TObject);
 begin
   Config.Mostrar;
 end;
-
 procedure TfrmPrincipal.MarcarError(nLin, nCol: integer);
 begin
   //posiciona curosr
@@ -359,6 +362,11 @@ procedure TfrmPrincipal.acHerGenTemComExecute(Sender: TObject);
 //Genera plantilla de código para el compilador, de acuerdo a los tipos definidos
 begin
   GenTemplCompiler;
+end;
+procedure TfrmPrincipal.acVerConsolExecute(Sender: TObject);
+//Muestra la consola
+begin
+   frmOut.Show;
 end;
 
 end.

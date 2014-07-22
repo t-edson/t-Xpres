@@ -390,7 +390,8 @@ end;
 procedure TObjEditor.itemClick(Sender: TObject);
 //Se selecciona un archivo de la lista de recientes
 begin
-   LoadFile(MidStr(TMenuItem(Sender).Caption,4,150));
+  if SaveQuery then Exit;   //Verifica cambios
+  LoadFile(MidStr(TMenuItem(Sender).Caption,4,150));
 end;
 procedure TObjEditor.menRecentsClick(Sender: TObject);
 //Evento del menú de archivos recientes

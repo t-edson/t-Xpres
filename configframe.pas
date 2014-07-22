@@ -1,17 +1,46 @@
-{                                   PropertyFrame 0.0
+{                                   ConfigFrame
  Unidad para interceptar la clase TFrame y usar un TFrame personalizado que facilite la
  administración de propiedades. Incluye el manejo de entrada y salida a archivos INI.
+ Por Tito Hinostroza 10/07/2014
 
-                                                         Por Tito Hinostroza 10/07/2014
+ Versión 0.1
+ Por Tito Hinostroza 20/07/2014
+ *Se agregan funciones adicionales para simplificar el código del formulario de
+ configuración.
+ * Se separan las constantes de cadena, para facilitar la traducción a otros idiomas.
 }
-unit PropertyFrame;
-
+unit ConfigFrame;
 {$mode objfpc}{$H+}
 
 interface
 
 uses
   Classes, SysUtils, Forms, StdCtrls, Spin, IniFiles, Dialogs, Graphics, Variants;
+
+const
+{  MSG_NO_INI_FOUND = 'No se encuentra archivo de configuración: ';
+  MSG_ERR_WRIT_INI = 'Error leyendo de archivo de configuración: ';
+  MSG_ERR_READ_INI = 'Error escribiendo en archivo de configuración: ';
+  MSG_INI_ONLY_READ = 'Error. Archivo de configuración es de solo lectura';
+  MSG_FLD_HAV_VAL = 'Campo debe contener un valor.';
+  MSG_ONLY_NUM_VAL ='Solo se permiten valores numéricos.';
+  MSG_NUM_TOO_LONG = 'Valor numérico muy grande.';
+  MSG_MAX_VAL_IS  = 'El mayor valor permitido es: ';
+  MSG_MIN_VAL_IS  = 'El menor valor permitido es: ';
+  MSG_DESIGN_ERROR = 'Error de diseño.';
+  MSG_NO_IMP_ENUM_T = 'Tipo enumerado no manejable.';}
+
+  MSG_NO_INI_FOUND = 'No INI file found: ';
+  MSG_ERR_WRIT_INI = 'Error writing to INI file: ';
+  MSG_ERR_READ_INI = 'Error reading from INI file: ';
+  MSG_INI_ONLY_READ = 'Error. INI file is only read';
+  MSG_FLD_HAV_VAL = 'Filed must contain a value.';
+  MSG_ONLY_NUM_VAL ='Only numeric values are allowed.';
+  MSG_NUM_TOO_LONG = 'Numeric value is too large.';
+  MSG_MAX_VAL_IS  = 'The maximun allowed value is: ';
+  MSG_MIN_VAL_IS  = 'The minimun allowed value is: ';
+  MSG_DESIGN_ERROR = 'Design error.';
+  MSG_NO_IMP_ENUM_T = 'Enumerated type no handled.';
 
 type
   //Tipos de asociaciones
@@ -67,7 +96,7 @@ type
     procedure SavePropToFile(var arcINI: TIniFile); virtual;
     //métodos para agregar pares- variable-control
     procedure Asoc_Int_TEdit(ptrInt: pointer; edit: TEdit; etiq: string;
-                             defVal, minVal, maxVal: integer);
+                             defVal: integer; minVal, maxVal: integer);
     procedure Asoc_Int_TSpnEdi(ptrInt: pointer; spEdit: TSpinEdit; etiq: string;
                              defVal, minVal, maxVal: integer);
     procedure Asoc_Str_TEdit(ptrStr: pointer; edit: TEdit; etiq: string;
@@ -87,20 +116,28 @@ type
     procedure Asoc_StrList(ptrStrList: pointer; etiq: string);
   end;
 
-TlistFrames = array of Tframe;
-  //utilidades para el formulario de configuración
+  TlistFrames = array of Tframe;
+
+  //Utilidades para el formulario de configuración
   function IsFrameProperty(c: TComponent): boolean;
   function ListOfFrames(form: TForm): TlistFrames;
   function GetIniName(ext: string = 'ini'): string;
+  procedure Free_AllConfigFrames(form: TForm);
+  procedure Hide_AllConfigFrames(form: TForm);
+  function ReadFileToProp_AllFrames(form: TForm; arIni: string): string;
+  function SavePropToFile_AllFrames(form: TForm; arIni: string): string;
+  function WindowToProp_AllFrames(form: TForm): string;
+  function PropToWindow_AllFrames(form: TForm): string;
+
 
 implementation
 
 function IsFrameProperty(c: TComponent): boolean;
-//Permite identificar si un componente es un Frame creado a partir de TFaame de
+//Permite identificar si un componente es un Frame creado a partir de TFrame de
 //esta unidad.
 begin
   if (c.ClassParent.ClassName='TFrame') and
-     (UpCase(c.ClassParent.UnitName) = UpCase('PropertyFrame')) then
+     (UpCase(c.ClassParent.UnitName) = UpCase('ConfigFrame')) then
      Result := true
   else
      Result := false;
@@ -128,11 +165,100 @@ var F:textfile;
 begin
   Result := ChangeFileExt(Application.ExeName,'.'+ext);
   if not FileExists(Result) then begin
-    ShowMessage('No se encuentra archivo de configuración: '+Result);
+    ShowMessage(MSG_NO_INI_FOUND +Result);
     //crea uno vacío para leer las opciones por defecto
-    AssignFile( F, Result);
-    Rewrite( F );
-    CloseFile( F );
+    AssignFile(F, Result);
+    Rewrite(F);
+    CloseFile(F);
+  end;
+end;
+procedure Free_AllConfigFrames(form: TForm);
+//Libera los frames de configuración
+var
+  f: TFrame;
+begin
+  for f in ListOfFrames(form) do f.Free;
+end;
+procedure Hide_AllConfigFrames(form: TForm);
+//oculta todos los frames de configuración
+var
+  f: TFrame;
+begin
+  for f in ListOfFrames(form) do
+    f.visible := false;
+end;
+function ReadFileToProp_AllFrames(form: TForm; arIni: string): string;
+//Lee de disco, todas las propiedades de todos los frames de configuración.
+//Si encuentra error devuelve el mensaje.
+var
+  appINI : TIniFile;
+  f: Tframe;
+begin
+  Result := '';
+  if not FileExists(arIni) then exit;  //para que no intente leer
+  Result := MSG_ERR_READ_INI + arIni;  //valor por defecto
+  try
+     appINI := TIniFile.Create(arIni);
+     //lee propiedades de los Frame de configuración
+     for f in ListOfFrames(form) do begin
+       f.ReadFileToProp(appINI);
+     end;
+     Result := '';  //Limpia
+  finally
+     appIni.Free;                   //libera
+  end;
+end;
+function SavePropToFile_AllFrames(form: TForm; arIni: string): string;
+//Escribe a disco, todas las propiedades de todos los frames de configuración.
+//Si encuentra error devuelve el mensaje.
+var
+   appINI : TIniFile;
+   f: Tframe;
+begin
+  Result := MSG_ERR_WRIT_INI + arIni;  //valor por defecto
+  try
+    If FileExists(arIni)  Then  begin  //ve si existe
+       If FileIsReadOnly(arIni) Then begin
+          Result := MSG_INI_ONLY_READ;
+          Exit;
+       End;
+    End;
+    appINI := TIniFile.Create(arIni);
+    //escribe propiedades de los Frame de configuración
+    for f in ListOfFrames(form) do begin
+      f.SavePropToFile(appINI);
+    end;
+    Result := '';  //Limpia
+  finally
+    appIni.Free;                   //libera
+  end;
+end;
+function WindowToProp_AllFrames(form: TForm): string;
+//Llama al método WindowToProp de todos los frames de configuración.
+//Si encuentra error devuelve el mensaje.
+var
+  f: TFrame;
+begin
+  Result := '';
+  //Fija propiedades de los controles
+  for f in ListOfFrames(form) do begin
+    f.WindowToProp;
+    Result := f.MsjErr;
+    if Result<>'' then exit;
+  end;
+end;
+function PropToWindow_AllFrames(form: TForm): string;
+//Llama al método PropToWindow de todos los frames de configuración.
+//Si encuentra error devuelve el mensaje.
+var
+  f: TFrame;
+begin
+  Result := '';
+  //llama a PropToWindow() de todos los PropertyFrame.Frames
+  for f in ListOfFrames(form) do begin
+    f.PropToWindow;
+    Result := f.MsjErr;
+    if Result<>'' then exit;
   end;
 end;
 
@@ -195,7 +321,7 @@ begin
             if n<=High(r.radButs) then
               r.radButs[n].checked := true;  //lo activa
           end else begin  //tamño no implementado
-            msjErr := 'Typo enumerado no manejable.';
+            msjErr := MSG_NO_IMP_ENUM_T;
             exit;
           end;
        end;
@@ -204,7 +330,7 @@ begin
     tp_Str:; //no tiene control asociado
     tp_StrList:; //no tiene control asociado
     else  //no se ha implementado bien
-      msjErr := 'Error de diseño.';
+      msjErr := MSG_DESIGN_ERROR;
       exit;
     end;
   end;
@@ -228,12 +354,12 @@ begin
     tp_Int_TSpnEdit: begin   //entero de TSpinEdit
           spEd := TSpinEdit(r.pCtl);
           if spEd.Value < r.minEnt then begin
-            MsjErr:='El menor valor permitido es: '+IntToStr(r.minEnt);
+            MsjErr:=MSG_MIN_VAL_IS+IntToStr(r.minEnt);
             if spEd.visible and spEd.enabled then spEd.SetFocus;
             exit;
           end;
           if spEd.Value > r.maxEnt then begin
-            MsjErr:='El mayor valor permitido es: '+IntToStr(r.maxEnt);
+            MsjErr:=MSG_MAX_VAL_IS+IntToStr(r.maxEnt);
             if spEd.visible and spEd.enabled then spEd.SetFocus;
             exit;
           end;
@@ -260,7 +386,7 @@ begin
                  Int32(r.Pvar^) := j;  //guarda
                  break;
                end else begin  //tamaño no implementado
-                 msjErr := 'Typo enumerado no manejable.';
+                 msjErr := MSG_NO_IMP_ENUM_T;
                  exit;
                end;
              end;
@@ -271,7 +397,7 @@ begin
     tp_Str:; //no tiene control asociado
     tp_StrList:; //no tiene control asociado
     else  //no se ha implementado bien
-      msjErr := 'Error de diseño.';
+      msjErr := MSG_DESIGN_ERROR;
       exit;
     end;
   end;
@@ -309,7 +435,7 @@ begin
          if r.lVar = 4 then begin
            Int32(r.Pvar^) := arcINI.ReadInteger(secINI, r.etiqVar, r.defEnt);
          end else begin  //tamaño no implementado
-           msjErr := 'Typo enumerado no manejable.';
+           msjErr := MSG_NO_IMP_ENUM_T;
            exit;
          end;
        end;
@@ -326,7 +452,7 @@ begin
          arcINI.ReadSection(secINI+'_'+r.etiqVar,TStringList(r.Pvar^));
        end;
     else  //no se ha implementado bien
-      msjErr := 'Error de diseño.';
+      msjErr := MSG_DESIGN_ERROR;
       exit;
     end;
   end;
@@ -376,7 +502,7 @@ begin
          n := Int32(r.Pvar^);   //lo guarda como entero
          arcINI.WriteInteger(secINI, r.etiqVar, n);
        end else begin  //tamaño no implementado
-         msjErr := 'Typo enumerado no manejable.';
+         msjErr := MSG_NO_IMP_ENUM_T;
          exit;
        end;
     end;
@@ -399,13 +525,13 @@ begin
             arcINI.WriteString(secINI+'_'+r.etiqVar,strlst[j],'');
        end;
     else  //no se ha implementado bien
-      msjErr := 'Error de diseño.';
+      msjErr := MSG_DESIGN_ERROR;
       exit;
     end;
   end;
 end;
 procedure TFrame.Asoc_Int_TEdit(ptrInt: pointer; edit: TEdit; etiq: string;
-  defVal, minVal, maxVal: integer);
+  defVal: integer; minVal, maxVal: integer);
 //Agrega un para variable entera - Control TEdit
 var n: integer;
   r: TParElem;
@@ -616,7 +742,7 @@ begin
   larMaxInt := length(IntToStr(MaxInt));
   tmp := trim(edit.Text);
   if tmp = '' then begin
-    MsjErr:='Campo debe contener un valor.';
+    MsjErr:= MSG_FLD_HAV_VAL;
     if edit.visible and edit.enabled then edit.SetFocus;
     exit;
   end;
@@ -626,25 +752,25 @@ begin
   end;
   for c in tmp do begin
     if not (c in ['0'..'9']) then begin
-      MsjErr:='Solo se permiten valores numéricos.';
+      MsjErr:= MSG_ONLY_NUM_VAL;
       if edit.visible and edit.enabled then edit.SetFocus;
       exit;
     end;
   end;
   if length(tmp) > larMaxInt then begin
-    MsjErr:='Valor numérico muy grande.';
+    MsjErr:= MSG_NUM_TOO_LONG;
     if edit.visible and edit.enabled then edit.SetFocus;
     exit;
   end;
   //lo leemos en Int64 por seguridad y validamos
   n := StrToInt64(signo + tmp);
   if n>max then begin
-    MsjErr:='El mayor valor permitido es: '+IntToStr(max);
+    MsjErr:= MSG_MAX_VAL_IS + IntToStr(max);
     if edit.visible and edit.enabled then edit.SetFocus;
     exit;
   end;
   if n<min then begin
-    MsjErr:='El menor valor permitido es: '+IntToStr(min);
+    MsjErr:= MSG_MIN_VAL_IS + IntToStr(min);
     if edit.visible and edit.enabled then edit.SetFocus;
     exit;
   end;

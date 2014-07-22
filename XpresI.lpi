@@ -72,7 +72,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="11">
+    <Units Count="12">
       <Unit0>
         <Filename Value="XpresI.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -137,6 +137,13 @@
         <ResourceBaseClass Value="Frame"/>
         <UnitName Value="FrameCfgEdit"/>
       </Unit10>
+      <Unit11>
+        <Filename Value="formout.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="frmOut"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="FormOut"/>
+      </Unit11>
     </Units>
   </ProjectOptions>
   <CompilerOptions>

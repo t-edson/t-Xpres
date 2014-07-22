@@ -8,7 +8,7 @@
   <Attribute Name="Structure"></Attribute>
   <Attribute Name="Others"></Attribute>
   <Symbols>
-    <Operator> + - * / \ % = &gt; &gt;= &lt; &lt;= &lt;&gt; := </Operator>
+    <Operator> + - * / \ % ** = &gt; &gt;= &lt; &lt;= &lt;&gt; &lt;=&gt; := </Operator>
     <Delimiter> ; </Delimiter>
     <Others> ( ) : , </Others>
   </Symbols>
@@ -30,7 +30,6 @@ THEN ELSE ELSIF END
 	destroy
 	sub
 	do begin
-put puts get gets
     </Keyword>
     <Operator> And Or Xor Not </Operator>
     <Types>
