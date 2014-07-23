@@ -104,7 +104,71 @@ begin
     b.used:=true;  //marca para saber que ahí está
   end;
 end;
-//rutinas obligatorias
+procedure LoadAcumInt(val: int64; op: string);
+//Carga en el acumulador(es) un valor entero, y genera t-code
+begin
+  if canUseA(p1,p2) then  begin
+    if not setRes(tipInt, STORED_ACU) then exit;
+    a.valInt:=val;
+    Code('A<-' + p1.expres + op + p2.expres);
+  end else if canUseB(p1,p2) then begin  //no se puede usar A
+    if not setRes(tipInt, STORED_ACUB) then exit;
+    b.valInt:=val;
+    Code('B<-' + p1.expres + op + p2.expres);
+  end else begin
+    Perr.GenError('Expresión muy compleja.', PosAct);
+    exit;
+  end;
+end;
+procedure LoadAcumFloat(val: extended; op: string);
+//Carga en el acumulador(es) un valor float, y genera t-code
+begin
+  if canUseA(p1,p2) then  begin
+    if not setRes(tipInt, STORED_ACU) then exit;
+    a.valFloat:=val;
+    Code('A<-' + p1.expres + op + p2.expres);
+  end else if canUseB(p1,p2) then begin  //no se puede usar A
+    if not setRes(tipInt, STORED_ACUB) then exit;
+    b.valFloat:=val;
+    Code('B<-' + p1.expres + op + p2.expres);
+  end else begin
+    Perr.GenError('Expresión muy compleja.', PosAct);
+    exit;
+  end;
+end;
+procedure LoadAcumBool(val: boolean; op: string);
+//Carga en el acumulador(es) un valor booleano, y genera t-code
+begin
+  if canUseA(p1,p2) then  begin
+    if not setRes(tipInt, STORED_ACU) then exit;
+    a.valBool:=val;
+    Code('A<-' + p1.expres + op + p2.expres);
+  end else if canUseB(p1,p2) then begin  //no se puede usar A
+    if not setRes(tipInt, STORED_ACUB) then exit;
+    b.valBool:=val;
+    Code('B<-' + p1.expres + op + p2.expres);
+  end else begin
+    Perr.GenError('Expresión muy compleja.', PosAct);
+    exit;
+  end;
+end;
+procedure LoadAcumStr(val: string; op: string);
+//Carga en el acumulador(es) un valor booleano, y genera t-code
+begin
+  if canUseA(p1,p2) then  begin
+    if not setRes(tipInt, STORED_ACU) then exit;
+    a.valStr:=val;
+    Code('A<-' + p1.expres + op + p2.expres);
+  end else if canUseB(p1,p2) then begin  //no se puede usar A
+    if not setRes(tipInt, STORED_ACUB) then exit;
+    b.valStr:=val;
+    Code('B<-' + p1.expres + op + p2.expres);
+  end else begin
+    Perr.GenError('Expresión muy compleja.', PosAct);
+    exit;
+  end;
+end;
+////////////rutinas obligatorias
 procedure Cod_StartData;
 //Codifica la parte inicial de declaración de variables estáticas
 begin
@@ -154,7 +218,8 @@ begin
   else Result := '???'
   end;
 end;
-//operaciones con Enteros
+
+////////////operaciones con Enteros
 procedure int_procLoad(var Op: TOperand);
 begin
   //carga el operando en res
@@ -183,41 +248,30 @@ begin
 //  res.used:=false;  //No hay obligación de que la asignación devuelva un valor.
   Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
+
 procedure int_igual_int;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valInt=p2.valInt;
-  Code('A<-' + p1.expres + '=' + p2.expres);
+  LoadAcumBool(p1.valInt=p2.valInt,'=');
 end;
 procedure int_difer_int;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valInt<>p2.valInt;
-  Code('A<-' + p1.expres + '<>' + p2.expres);
+  LoadAcumBool(p1.valInt<>p2.valInt,'<>');
 end;
 procedure int_mayor_int;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valInt>p2.valInt;
-  Code('A<-' + p1.expres + '>' + p2.expres);
+  LoadAcumBool(p1.valInt>p2.valInt,'>');
 end;
 procedure int_menor_int;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valInt<p2.valInt;
-  Code('A<-' + p1.expres + '<' + p2.expres);
+  LoadAcumBool(p1.valInt<p2.valInt,'<');
 end;
 procedure int_mayori_int;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valInt>=p2.valInt;
-  Code('A<-' + p1.expres + '>=' + p2.expres);
+  LoadAcumBool(p1.valInt>=p2.valInt,'>=');
 end;
 procedure int_menori_int;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valInt<=p2.valInt;
-  Code('A<-' + p1.expres + '<=' + p2.expres);
+  LoadAcumBool(p1.valInt<=p2.valInt,'<=');
 end;
 
 procedure int_suma_int;
@@ -226,84 +280,54 @@ begin
     //es una operación con constantes, se optimiza evaluando primero
 
   end;
-  if canUseA(p1,p2) then  begin
-    if not setRes(tipInt, STORED_ACU) then exit;
-    a.valInt:=p1.valInt+p2.valInt;
-    Code('A<-' + p1.expres + '+' + p2.expres);
-  end else if canUseB(p1,p2) then begin  //no se puede usar A
-    if not setRes(tipInt, STORED_ACUB) then exit;
-    b.valInt:=p1.valInt+p2.valInt;
-    Code('B<-' + p1.expres + '+' + p2.expres);
-  end else begin
-    Perr.GenError('Expresión muy compleja.', PosAct);
-    exit;
-  end;
+  LoadAcumInt(p1.valInt+p2.valInt,'+');
 end;
 procedure int_suma_float;
 begin
-  if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat:=p1.valInt+p2.valFloat;
-  Code('A<-' + p1.expres + '+' + p2.expres);
+  LoadAcumFloat(p1.valInt+p2.valFloat,'+');
 end;
 procedure int_resta_int;
 begin
-  if not setRes(tipInt, STORED_ACU) then exit;
-  a.valInt:=p1.valInt-p2.valInt;
-  Code('A<-' + p1.expres + '-' + p2.expres);
+  LoadAcumInt(p1.valInt-p2.valInt,'-');
 end;
 procedure int_resta_float;
 begin
-  if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat:=p1.valInt-p2.valFloat;
-  Code('A<-' + p1.expres + '-' + p2.expres);
+  LoadAcumFloat(p1.valInt-p2.valFloat,'-');
 end;
 procedure int_mult_int;
 begin
-  if canUseA(p1,p2) then  begin
-    if not setRes(tipInt, STORED_ACU) then exit;
-    a.valInt:=p1.valInt*p2.valInt;
-    Code('A<-' + p1.expres + '*' + p2.expres);
-  end else if canUseB(p1,p2) then begin  //no se puede usar A
-    if not setRes(tipInt, STORED_ACUB) then exit;
-    b.valInt:=p1.valInt*p2.valInt;
-    Code('B<-' + p1.expres + '*' + p2.expres);
-  end else begin
-    Perr.GenError('Expresión muy compleja.', PosAct);
-    exit;
-  end;
+  LoadAcumInt(p1.valInt*p2.valInt,'*');
 end;
 procedure int_mult_float;
 begin
-  if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat:=p1.valInt*p2.valFloat;
-  Code('A<-' + p1.expres + '*' + p2.expres);
+  LoadAcumFloat(p1.valInt*p2.valFloat,'*');
 end;
 procedure int_div_int;
 begin
-  if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat:=p1.valInt/p2.valInt;
-  Code('A<-' + p1.expres + '/' + p2.expres);
+  LoadAcumFloat(p1.valInt/p2.valInt,'/');
 end;
 procedure int_div_float;
 begin
-  if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat:=p1.valInt/p2.valFloat;
-  Code('A<-' + p1.expres + '/' + p2.expres);
+  LoadAcumFloat(p1.valInt/p2.valFloat,'/');
 end;
 procedure int_idiv_int;
 begin
-  if not setRes(tipInt, STORED_ACU) then exit;
-  a.valInt:=p1.valInt div p2.valInt;
-  Code('A<-' + p1.expres + '\' + p2.expres);
+  LoadAcumInt(p1.valInt div p2.valInt,'\');
 end;
 procedure int_resid_int;
 begin
-  if not setRes(tipInt, STORED_ACU) then exit;
-  a.valInt:=p1.valInt mod p2.valInt;
-  Code('A<-' + p1.expres + '%' + p2.expres);
+  LoadAcumInt(p1.valInt mod p2.valInt,'%');
 end;
 
-//operaciones con Flotantes
+////////////operaciones con Flotantes
+procedure float_procLoad(var Op: TOperand);
+begin
+  //carga el operando en res
+  if not setRes(tipFloat,Op.estOp) then exit;
+  if Op.estOp = STORED_LIT then res.cons.valFloat := Op.valFloat;
+//  a.valInt:=Op.valInt;
+///  Code('A<-' + Op.expres);
+end;
 procedure float_asig_int;
 begin
   if p1.catOp <> coVariable then begin  //validación
@@ -324,78 +348,74 @@ begin
 //  res.used:=false;  //No hay obligación de que la asignación devuelva un valor.
   Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
+
 procedure float_igual_float;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valFloat=p2.valFloat;
+  LoadAcumBool(p1.valFloat=p2.valFloat,'=');
 end;
 procedure float_difer_float;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valFloat<>p2.valFloat;
+  LoadAcumBool(p1.valFloat<>p2.valFloat,'<>');
 end;
 procedure float_mayor_float;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valFloat>p2.valFloat;
+  LoadAcumBool(p1.valFloat>p2.valFloat,'>');
 end;
 procedure float_menor_float;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valFloat<p2.valFloat;
+  LoadAcumBool(p1.valFloat<p2.valFloat,'<');
 end;
 procedure float_mayori_float;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valFloat>=p2.valFloat;
+  LoadAcumBool(p1.valFloat>=p2.valFloat,'>=');
 end;
 procedure float_menori_float;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valFloat<=p2.valFloat;
+  LoadAcumBool(p1.valFloat<=p2.valFloat,'<=');
 end;
 
 procedure float_suma_int;
 begin
-  if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat := p1.valFloat+p2.valInt;
+  LoadAcumFloat(p1.valFloat+p2.valInt,'+');;
 end;
 procedure float_suma_float;
 begin
-  if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat := p1.valFloat+p2.valFloat;
+  LoadAcumFloat(p1.valFloat+p2.valFloat,'+');
 end;
 procedure float_resta_int;
 begin
-  if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat := p1.valFloat-p2.valInt;
+  LoadAcumFloat(p1.valFloat-p2.valInt,'-');
 end;
 procedure float_resta_float;
 begin
-  if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat := p1.valFloat-p2.valFloat;
+  LoadAcumFloat(p1.valFloat-p2.valFloat,'-');
 end;
 procedure float_mult_int;
 begin
-  if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat := p1.valFloat*p2.valInt;
+  LoadAcumFloat(p1.valFloat*p2.valInt,'*');
 end;
 procedure float_mult_float;
 begin
-  if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat := p1.valFloat*p2.valFloat;
+  LoadAcumFloat(p1.valFloat*p2.valFloat,'*');
 end;
 procedure float_div_int;
 begin
-  if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat := p1.valFloat / p2.valInt;
+  LoadAcumFloat(p1.valFloat / p2.valInt,'/');;
 end;
 procedure float_div_float;
 begin
-  if not setRes(tipFloat, STORED_ACU) then exit;
-  a.valFloat := p1.valFloat / p2.valFloat;
+  LoadAcumFloat(p1.valFloat / p2.valFloat,'/');
 end;
-//operaciones con booleanos
+
+////////////operaciones con booleanos
+procedure bool_procLoad(var Op: TOperand);
+begin
+  //carga el operando en res
+  if not setRes(tipBool,Op.estOp) then exit;
+  if Op.estOp = STORED_LIT then res.cons.valBool := Op.valBool;
+//  a.valInt:=Op.valInt;
+///  Code('A<-' + Op.expres);
+end;
 procedure bool_asig_bool;
 begin
   if p1.catOp <> coVariable then begin  //validación
@@ -406,33 +426,37 @@ begin
 //  res.used:=false;  //No hay obligación de que la expresión devuelva un valor.
   Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
+
 procedure bool_igual_bool;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valBool=p2.valBool;
+  LoadAcumBool(p1.valBool=p2.valBool,'=');
 end;
 procedure bool_difer_bool;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valBool<>p2.valBool;
+  LoadAcumBool(p1.valBool<>p2.valBool,'<>');
 end;
 procedure bool_and_bool;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valBool and p2.valBool;
+  LoadAcumBool(p1.valBool and p2.valBool,'and');
 end;
 procedure bool_or_bool;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valBool or p2.valBool;
+  LoadAcumBool(p1.valBool or p2.valBool,'or');
 end;
 procedure bool_xor_bool;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valBool xor p2.valBool;
+  LoadAcumBool(p1.valBool xor p2.valBool,'xor');
 end;
 
-//operaciones con string
+////////////operaciones con string
+procedure str_procLoad(var Op: TOperand);
+begin
+  //carga el operando en res
+  if not setRes(tipStr,Op.estOp) then exit;
+  if Op.estOp = STORED_LIT then res.cons.valStr := Op.valStr;
+//  a.valInt:=Op.valInt;
+///  Code('A<-' + Op.expres);
+end;
 procedure str_asig_str;
 begin
   if p1.catOp <> coVariable then begin  //validación
@@ -443,20 +467,18 @@ begin
 //  res.used:=false;  //No hay obligación de que la expresión devuelva un valor.
   Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
+
 procedure str_igual_str;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valStr=p2.valStr;
+  LoadAcumBool(p1.valStr=p2.valStr,'=');
 end;
 procedure str_difer_str;
 begin
-  if not setRes(tipBool, STORED_ACU) then exit;
-  a.valBool:=p1.valStr<>p2.valStr;
+  LoadAcumBool(p1.valStr<>p2.valStr,'<>');
 end;
 procedure str_concat_str;
 begin
-  setRes(tipStr, STORED_ACU);
-  a.valStr:=p1.valStr+p2.valStr;
+  LoadAcumStr(p1.valStr+p2.valStr,'+');
 end;
 
 //funciones básicas
@@ -472,33 +494,79 @@ begin
   res.estOp:=0;
 end;
 
-
-procedure StartSyntax(lex0: TSynFacilSyn);
+procedure StartSyntax;
 var
   opr: TOperator;
 begin
-  lex := lex0;    //asigna lexer
-  //guarda referencia res los atributos
-  tkIdentif := lex.tkIdentif;
-  tkKeyword := lex.tkKeyword;
-  tkNumber := lex.tkNumber;
-  tkString   := lex.tkString;
-  tkOperator := lex.GetAttribByName('Operator');  //se debe haber creado
-  tkDelimiter:= lex.GetAttribByName('Delimiter'); //se debe haber creado
-  tkType     := lex.GetAttribByName('Types');    //se debe haber creado
-  tkBoolean  := lex.GetAttribByName('Boolean');   //se debe haber creado
-  tkOthers   := lex.GetAttribByName('Others');   //se debe haber creado
+  ///////////define la sintaxis del compilador
+  //crea y guarda referencia a los atributos
+  tkIdentif  := xLex.tkIdentif;
+  tkKeyword  := xLex.tkKeyword;
+  tkNumber   := xLex.tkNumber;
+  tkString   := xLex.tkString;
+  tkOperator := xLex.NewTokType('Operador');  //personalizado
+  tkDelimiter:= xLex.NewTokType('Delimiter'); //personalizado
+  tkType     := xLex.NewTokType('Types');    //personalizado
+  tkBoolean  := xLex.NewTokType('Boolean');   //personalizado
+  tkStruct   := xLex.NewTokType('Struct');   //personalizado
+  tkOthers   := xLex.NewTokType('Others');   //personalizado
+  //inicia la configuración
+  xLex.ClearMethodTables;           //limpìa tabla de métodos
+  xLex.ClearSpecials;               //para empezar a definir tokens
+  //crea tokens por contenido
+  xLex.DefTokIdentif('[$A..Za..z_]', 'A..Za..z0..9_');
+  xLex.DefTokContent('[0..9]', '0..9.', '', tkNumber);
+  if xLex.Err<>'' then ShowMessage(xLex.Err);
+  //define palabras claves
+  xLex.AddIdentSpecList('THEN ELSE ELSIF END var type', tkKeyword);
+  xLex.AddIdentSpecList('program public private method const', tkKeyword);
+  xLex.AddIdentSpecList('class create destroy sub do begin', tkKeyword);
+  xLex.AddIdentSpecList('true false', tkBoolean);
+  xLex.AddIdentSpecList('IF FOR', tkStruct);
+  xLex.AddIdentSpecList('and or xor not', tkOperator);
+  xLex.AddIdentSpecList('int float char string bool', tkType);
+  //símbolos especiales
+  xLex.AddSymbSpec('+',  tkOperator);
+  xLex.AddSymbSpec('-',  tkOperator);
+  xLex.AddSymbSpec('*',  tkOperator);
+  xLex.AddSymbSpec('/',  tkOperator);
+  xLex.AddSymbSpec('\',  tkOperator);
+  xLex.AddSymbSpec('%',  tkOperator);
+  xLex.AddSymbSpec('**', tkOperator);
+  xLex.AddSymbSpec('=',  tkOperator);
+  xLex.AddSymbSpec('>',  tkOperator);
+  xLex.AddSymbSpec('>=', tkOperator);
+  xLex.AddSymbSpec('<;', tkOperator);
+  xLex.AddSymbSpec('<=', tkOperator);
+  xLex.AddSymbSpec('<>', tkOperator);
+  xLex.AddSymbSpec('<=>',tkOperator);
+  xLex.AddSymbSpec(':=', tkOperator);
+  xLex.AddSymbSpec(';', tkDelimiter);
+  xLex.AddSymbSpec('(',  tkOthers);
+  xLex.AddSymbSpec(')',  tkOthers);
+  xLex.AddSymbSpec(':',  tkOthers);
+  xLex.AddSymbSpec(',',  tkOthers);
+  //crea tokens delimitados
+  xLex.DefTokDelim('''','''', tkString);
+  xLex.DefTokDelim('"','"', tkString);
+  xLex.DefTokDelim('//','', xLex.tkComment);
+  xLex.DefTokDelim('/*','*/', xLex.tkComment, tdMulLin);
+  //define bloques de sintaxis
+  xLex.AddBlock('{','}');
+  xLex.Rebuild;   //es necesario para terminar la definición
 
   ///////////Crea tipos y operaciones
   ClearTypes;
   tipInt  :=CreateType('int',t_integer,4);   //de 4 bytes
   tipInt.procLoad:=@int_procLoad;
   tipFloat:=CreateType('float',t_float,4);   //de 4 bytes
+  tipFloat.procLoad:=@float_procLoad;
   tipBool :=CreateType('bool',t_boolean,1);  //booleano
+  tipBool.procLoad:=@bool_procLoad;
   //debe crearse siempre el tipo char o string para manejar cadenas
 //  tipStr:=CreateType('char',t_string,1);   //de 1 byte
   tipStr:=CreateType('string',t_string,-1);   //de longitud variable
-//  tipInt.procLoad:=@str_procLoad;
+  tipStr.procLoad:=@str_procLoad;
 
   //////// Operaciones con String ////////////
   opr:=tipStr.CreateOperator(':=',2,'asig');  //asignación
@@ -601,7 +669,7 @@ begin
 //  opr.CreateOperation(tipBool,@bool_and_bool);
 
 //////// Funciones básicas ////////////
-  CreateFunction('MsgBox', tipInt, @fun_msgbox);
-  CreateFunction('puts', tipInt, @fun_puts);
+  CreateSysFunction('MsgBox', tipInt, @fun_msgbox);
+  CreateSysFunction('puts', tipInt, @fun_puts);
 end;
 

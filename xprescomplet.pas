@@ -144,23 +144,9 @@ type aaa = byte;
 begin
     If not agregar Then IdentAyudC.Clear;
     IdentAyudC.add('int;');
-    IdentAyudC.add('int8;');
-    IdentAyudC.add('int16;');
-    IdentAyudC.add('int32;');
-    IdentAyudC.add('int64;');
-
-    IdentAyudC.add('uint;');
-    IdentAyudC.add('uint8;');
-    IdentAyudC.add('uint16;');
-    IdentAyudC.add('uint32;');
-    IdentAyudC.add('uint64;');
-
     IdentAyudC.add('float;');
-    IdentAyudC.add('float32;');
 
     IdentAyudC.add('string;');
-    IdentAyudC.add('utf8;');
-    IdentAyudC.add('utf16;');
 
     IdentAyudC.add('bool;');
 End;

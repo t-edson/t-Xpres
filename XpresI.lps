@@ -4,7 +4,7 @@
     <PathDelim Value="\"/>
     <Version Value="9"/>
     <BuildModes Active="Debug"/>
-    <Units Count="24">
+    <Units Count="21">
       <Unit0>
         <Filename Value="XpresI.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -21,22 +21,19 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="FormPrincipal"/>
-        <EditorIndex Value="1"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="282"/>
-        <CursorPos X="1" Y="296"/>
-        <FoldState Value=" T8k122 T5k60]73kT040112D1215 TMmJ2205161 T0oWHD4K"/>
+        <TopLine Value="254"/>
+        <CursorPos X="33" Y="294"/>
+        <FoldState Value=" T8k122 T5k60]73lE03F1215 TMmG2206161 T0oTHD4h"/>
         <UsageCount Value="200"/>
-        <Loaded Value="True"/>
-        <LoadedDesigner Value="True"/>
       </Unit1>
       <Unit2>
         <Filename Value="synhighlighterfacil.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="SynHighlighterFacil"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="2541"/>
-        <CursorPos X="1" Y="2557"/>
+        <TopLine Value="2649"/>
+        <CursorPos X="3" Y="2655"/>
         <UsageCount Value="200"/>
       </Unit2>
       <Unit3>
@@ -64,13 +61,13 @@
         <UnitName Value="uXpres"/>
         <EditorIndex Value="0"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="741"/>
-        <CursorPos X="48" Y="873"/>
-        <FoldState Value=" TCX9D TMd410G12141716]431 p0y00[M4B]O111]K72 T7i7Dm]88i82H1 TLiA075]ku061A T5kd05]O3lc0EA piXjK0D717]BdlT0C1 pjBjP0V1124226]OauZ[q56ld0162]h0yL013 T0mHP44111A]541D[=4qVX75113F]DYlLR3]C532116 THo237 T2v26]^Fzd2HU"/>
+        <TopLine Value="1139"/>
+        <CursorPos X="6" Y="1136"/>
+        <FoldState Value=" TCa9D TMg410G12141D1D17 p0se01031P1G1B]Ft8]F2111113182 T7iADm]88iB2H1 TLiD075]gvR6]Z2]Aua063 T3m20EA piXjK0D6]9YjC059]9ajD0G]IkSl90V112]Ken50D3 pj2jJ0P11[n4gmd0A]$6m3015]e7 p0-a01]K0mOP4411115216]941D]pdsBX7647C]l7321[}K5 p0t3V22 THo937 T2wW61 TF;K2HC"/>
         <UsageCount Value="200"/>
         <Bookmarks Count="2">
-          <Item0 X="25" Y="1130" ID="2"/>
-          <Item1 X="1" Y="770" ID="1"/>
+          <Item0 X="25" Y="1254" ID="2"/>
+          <Item1 X="1" Y="880" ID="1"/>
         </Bookmarks>
         <Loaded Value="True"/>
       </Unit5>
@@ -79,8 +76,8 @@
         <IsPartOfProject Value="True"/>
         <UnitName Value="XpresComplet"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="115"/>
-        <CursorPos X="1" Y="132"/>
+        <TopLine Value="137"/>
+        <CursorPos X="1" Y="150"/>
         <UsageCount Value="200"/>
       </Unit6>
       <Unit7>
@@ -96,10 +93,12 @@
         <Filename Value="xpresbas.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="XpresBas"/>
+        <EditorIndex Value="1"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="228"/>
-        <CursorPos X="1" Y="244"/>
+        <TopLine Value="27"/>
+        <CursorPos X="13" Y="43"/>
         <UsageCount Value="200"/>
+        <Loaded Value="True"/>
       </Unit8>
       <Unit9>
         <Filename Value="formconfig.pas"/>
@@ -111,7 +110,7 @@
         <WindowIndex Value="0"/>
         <TopLine Value="80"/>
         <CursorPos X="13" Y="103"/>
-        <UsageCount Value="141"/>
+        <UsageCount Value="160"/>
       </Unit9>
       <Unit10>
         <Filename Value="FrameCfgEdit.pas"/>
@@ -124,14 +123,14 @@
         <TopLine Value="1"/>
         <CursorPos X="51" Y="15"/>
         <FoldState Value=" T3jU084P"/>
-        <UsageCount Value="141"/>
+        <UsageCount Value="160"/>
       </Unit10>
       <Unit11>
         <Filename Value="C:\lazarus\fpc\2.6.2\source\rtl\objpas\classes\classesh.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1608"/>
         <CursorPos X="17" Y="1624"/>
-        <UsageCount Value="2"/>
+        <UsageCount Value="0"/>
       </Unit11>
       <Unit12>
         <Filename Value="C:\lazarus\lcl\comctrls.pp"/>
@@ -139,89 +138,66 @@
         <WindowIndex Value="0"/>
         <TopLine Value="74"/>
         <CursorPos X="3" Y="91"/>
-        <UsageCount Value="9"/>
+        <UsageCount Value="7"/>
       </Unit12>
       <Unit13>
-        <Filename Value="C:\lazarus\fpc\2.6.2\source\rtl\objpas\strutils.pp"/>
-        <UnitName Value="strutils"/>
-        <WindowIndex Value="0"/>
-        <TopLine Value="43"/>
-        <CursorPos X="15" Y="65"/>
-        <UsageCount Value="0"/>
-      </Unit13>
-      <Unit14>
-        <Filename Value="C:\lazarus\components\synedit\synedithighlighter.pp"/>
-        <UnitName Value="SynEditHighlighter"/>
-        <WindowIndex Value="0"/>
-        <TopLine Value="289"/>
-        <CursorPos X="5" Y="306"/>
-        <UsageCount Value="0"/>
-      </Unit14>
-      <Unit15>
-        <Filename Value="C:\lazarus\fpc\2.6.2\source\rtl\objpas\sysutils\sysstrh.inc"/>
-        <WindowIndex Value="0"/>
-        <TopLine Value="153"/>
-        <CursorPos X="1" Y="169"/>
-        <UsageCount Value="0"/>
-      </Unit15>
-      <Unit16>
         <Filename Value="C:\lazarus\fpc\2.6.2\source\rtl\inc\systemh.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="853"/>
         <CursorPos X="11" Y="871"/>
-        <UsageCount Value="9"/>
-      </Unit16>
-      <Unit17>
+        <UsageCount Value="7"/>
+      </Unit13>
+      <Unit14>
         <Filename Value="codgen8086.pas"/>
         <UnitName Value="codgen8086"/>
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="6" Y="67"/>
-        <UsageCount Value="36"/>
-      </Unit17>
-      <Unit18>
+        <UsageCount Value="34"/>
+      </Unit14>
+      <Unit15>
         <Filename Value="C:\lazarus\components\lazutils\LazLoggerIntf.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="4"/>
         <CursorPos X="1" Y="1"/>
-        <UsageCount Value="8"/>
-      </Unit18>
-      <Unit19>
+        <UsageCount Value="6"/>
+      </Unit15>
+      <Unit16>
         <Filename Value="interprete1.pas"/>
         <UnitName Value="interprete1"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
         <WindowIndex Value="0"/>
-        <TopLine Value="14"/>
-        <CursorPos X="32" Y="161"/>
-        <FoldState Value=" TM5210212211126]5O15 p0uZ01 T5S0U TCFEB T0iJ08M T3iS0B7]fB piYlV05G]9ZjH04C THkI27 T6s301%"/>
-        <UsageCount Value="69"/>
+        <TopLine Value="507"/>
+        <CursorPos X="31" Y="525"/>
+        <FoldState Value=" TM521021221112A]5a p0u1]L41 T5S0U TCFEB T0iL:15C514 T3jK0F8 piXjF0C91912E255 THld27b"/>
+        <UsageCount Value="79"/>
         <Loaded Value="True"/>
-      </Unit19>
-      <Unit20>
+      </Unit16>
+      <Unit17>
         <Filename Value="C:\lazarus\fpc\2.6.2\source\rtl\inc\mathh.inc"/>
         <WindowIndex Value="0"/>
         <TopLine Value="64"/>
         <CursorPos X="14" Y="80"/>
-        <UsageCount Value="9"/>
-      </Unit20>
-      <Unit21>
+        <UsageCount Value="7"/>
+      </Unit17>
+      <Unit18>
         <Filename Value="configframe.pas"/>
         <UnitName Value="ConfigFrame"/>
         <WindowIndex Value="0"/>
         <TopLine Value="106"/>
         <CursorPos X="34" Y="126"/>
-        <UsageCount Value="10"/>
-      </Unit21>
-      <Unit22>
+        <UsageCount Value="8"/>
+      </Unit18>
+      <Unit19>
         <Filename Value="C:\lazarus\lcl\menus.pp"/>
         <UnitName Value="Menus"/>
         <WindowIndex Value="0"/>
         <TopLine Value="210"/>
         <CursorPos X="33" Y="225"/>
-        <UsageCount Value="3"/>
-      </Unit22>
-      <Unit23>
+        <UsageCount Value="1"/>
+      </Unit19>
+      <Unit20>
         <Filename Value="formout.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="frmOut"/>
@@ -230,8 +206,8 @@
         <WindowIndex Value="0"/>
         <TopLine Value="1"/>
         <CursorPos X="6" Y="1"/>
-        <UsageCount Value="23"/>
-      </Unit23>
+        <UsageCount Value="42"/>
+      </Unit20>
     </Units>
     <General>
       <ActiveWindowIndexAtStart Value="0"/>
@@ -239,123 +215,123 @@
     <JumpHistory Count="30" HistoryIndex="29">
       <Position1>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="1034" Column="1" TopLine="878"/>
+        <Caret Line="438" Column="18" TopLine="338"/>
       </Position1>
       <Position2>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="1036" Column="1" TopLine="878"/>
+        <Caret Line="459" Column="14" TopLine="390"/>
       </Position2>
       <Position3>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="1037" Column="1" TopLine="878"/>
+        <Caret Line="773" Column="1" TopLine="760"/>
       </Position3>
       <Position4>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="1039" Column="1" TopLine="878"/>
+        <Caret Line="835" Column="1" TopLine="760"/>
       </Position4>
       <Position5>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="1040" Column="1" TopLine="878"/>
+        <Caret Line="836" Column="1" TopLine="760"/>
       </Position5>
       <Position6>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="1041" Column="1" TopLine="878"/>
+        <Caret Line="837" Column="1" TopLine="760"/>
       </Position6>
       <Position7>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="1093" Column="1" TopLine="879"/>
+        <Caret Line="838" Column="1" TopLine="760"/>
       </Position7>
       <Position8>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="1101" Column="6" TopLine="1031"/>
+        <Caret Line="839" Column="1" TopLine="760"/>
       </Position8>
       <Position9>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="1103" Column="1" TopLine="1031"/>
+        <Caret Line="843" Column="1" TopLine="760"/>
       </Position9>
       <Position10>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="1104" Column="1" TopLine="1032"/>
+        <Caret Line="848" Column="1" TopLine="773"/>
       </Position10>
       <Position11>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="1105" Column="1" TopLine="1033"/>
+        <Caret Line="849" Column="1" TopLine="814"/>
       </Position11>
       <Position12>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="1106" Column="1" TopLine="1034"/>
+        <Caret Line="835" Column="1" TopLine="814"/>
       </Position12>
       <Position13>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="922" Column="1" TopLine="888"/>
+        <Caret Line="836" Column="1" TopLine="814"/>
       </Position13>
       <Position14>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="924" Column="1" TopLine="888"/>
+        <Caret Line="837" Column="1" TopLine="814"/>
       </Position14>
       <Position15>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="925" Column="1" TopLine="888"/>
+        <Caret Line="838" Column="1" TopLine="814"/>
       </Position15>
       <Position16>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="926" Column="1" TopLine="888"/>
+        <Caret Line="839" Column="1" TopLine="814"/>
       </Position16>
       <Position17>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="921" Column="9" TopLine="888"/>
+        <Caret Line="843" Column="1" TopLine="814"/>
       </Position17>
       <Position18>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="928" Column="1" TopLine="888"/>
+        <Caret Line="859" Column="12" TopLine="838"/>
       </Position18>
       <Position19>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="929" Column="1" TopLine="888"/>
+        <Caret Line="508" Column="11" TopLine="445"/>
       </Position19>
       <Position20>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="936" Column="1" TopLine="920"/>
+        <Caret Line="837" Column="21" TopLine="753"/>
       </Position20>
       <Position21>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="937" Column="1" TopLine="920"/>
+        <Caret Line="1200" Column="11" TopLine="1040"/>
       </Position21>
       <Position22>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="955" Column="1" TopLine="935"/>
+        <Caret Line="867" Column="40" TopLine="846"/>
       </Position22>
       <Position23>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="1023" Column="14" TopLine="956"/>
+        <Caret Line="848" Column="33" TopLine="824"/>
       </Position23>
       <Position24>
         <Filename Value="uxpres.pas"/>
-        <Caret Line="1" Column="1" TopLine="1"/>
+        <Caret Line="754" Column="20" TopLine="506"/>
       </Position24>
       <Position25>
-        <Filename Value="interprete1.pas"/>
-        <Caret Line="495" Column="24" TopLine="480"/>
+        <Filename Value="uxpres.pas"/>
+        <Caret Line="1095" Column="20" TopLine="702"/>
       </Position25>
       <Position26>
-        <Filename Value="interprete1.pas"/>
-        <Caret Line="162" Column="1" TopLine="13"/>
+        <Filename Value="uxpres.pas"/>
+        <Caret Line="1105" Column="21" TopLine="759"/>
       </Position26>
       <Position27>
-        <Filename Value="interprete1.pas"/>
-        <Caret Line="163" Column="1" TopLine="108"/>
+        <Filename Value="uxpres.pas"/>
+        <Caret Line="1120" Column="24" TopLine="874"/>
       </Position27>
       <Position28>
-        <Filename Value="interprete1.pas"/>
-        <Caret Line="508" Column="20" TopLine="14"/>
+        <Filename Value="uxpres.pas"/>
+        <Caret Line="1140" Column="20" TopLine="1098"/>
       </Position28>
       <Position29>
-        <Filename Value="interprete1.pas"/>
-        <Caret Line="161" Column="1" TopLine="14"/>
+        <Filename Value="uxpres.pas"/>
+        <Caret Line="754" Column="15" TopLine="854"/>
       </Position29>
       <Position30>
-        <Filename Value="interprete1.pas"/>
-        <Caret Line="162" Column="1" TopLine="4"/>
+        <Filename Value="uxpres.pas"/>
+        <Caret Line="876" Column="12" TopLine="861"/>
       </Position30>
     </JumpHistory>
   </ProjectSession>

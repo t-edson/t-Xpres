@@ -5,7 +5,7 @@ unit uXpres;
 interface
 uses
   Classes, SysUtils, fgl, SynHighlighterFacil, Forms, LCLType,
-  SynEditHighlighter,  //Para mostrar mensajes con Application.MessageBox()
+  SynEditHighlighter, Dialogs,
   XpresBas, Globales, lclProc, FormOut;
 
 type
@@ -26,6 +26,9 @@ type
     coVariable,  //variable
     coExpres     //expresión
   );
+
+  //tipo de identificador
+  TIdentifType = (idtNone, idtVar, idtFunc, idtCons);
 
   TType = class;
   TOperator = class;
@@ -104,7 +107,7 @@ type
 
   //registro para almacenar información de las variables
   Tfunc = record
-    nom : string;   //nombre de la función
+    name: string;   //nombre de la función
     typ : Ttype;    //tipo que devuelve
     pars: array of Ttype;  //parámetros de entrada
     amb : string;   //ámbito o alcance de la función
@@ -171,24 +174,28 @@ var //variables públicas del compilador
   mem: TStringList;  //texto de salida del compilador
   p1, p2: TOperand;  //operandos de la operación actual
   res: TOperand;     //resultado de la evaluación de la última expresión.
+  xLex : TSynFacilSyn;  //resaltador - lexer
 
-procedure StartSyntax(lex0: TSynFacilSyn);   //Prepara la secuencia de preprocesamiento
 function LeePosContAct: TPosCont;
 procedure FijPosContAct(pc: TPosCont);
 property PosAct: TPosCont read LeePosContAct write FijPosContAct;
-procedure Compilar(NombArc: string; LinArc: Tstrings; lex0: TSynFacilSyn);
+procedure Compilar(NombArc: string; LinArc: Tstrings);
 
 procedure GenTemplCompiler;
 
 implementation
 
 var  //variables privadas del compilador
-  lex : TSynFacilSyn;
   types: TTypes;   //lista de tipos
 //    oper: string;      //indica el operador actual
   //tipos de tokens
   vars  : array of Tvar;  //lista de variables
-  funcs : array of Tfunc;  //lista de funciones
+  funcs : array of Tfunc; //lista de funciones
+  cons  : array of Tvar;  //lista de constantes
+  nIntVar : integer;   //número de variables internas
+  nIntFun : integer;   //núemro de funciones internas
+  nIntCon : integer;   //núemro de constantes internas
+
   tkIdentif : TSynHighlighterAttributes;
   tkKeyword : TSynHighlighterAttributes;
   tkNumber  : TSynHighlighterAttributes;
@@ -196,8 +203,9 @@ var  //variables privadas del compilador
   tkOperator: TSynHighlighterAttributes;
   tkDelimiter: TSynHighlighterAttributes;
   tkType    : TSynHighlighterAttributes;
-  tkOthers  : TSynHighlighterAttributes;
   tkBoolean : TSynHighlighterAttributes;
+  tkStruct  : TSynHighlighterAttributes;
+  tkOthers  : TSynHighlighterAttributes;
 
   ConsE: TListaCont;   //Lista de contextos de entrada
   //Variables del Contexto actual
@@ -206,7 +214,6 @@ var  //variables privadas del compilador
   ExprLevel: Integer;  //Nivel de anidamiento de la rutina de evaluación de expresiones
 
 { TOperator }
-
 
 function TOperator.CreateOperation(OperadType: Ttype; proc: TProcExecOperat): TxOperation;
 var
@@ -314,7 +321,7 @@ procedure Code(cod: string);
 begin
   mem.Add(cod);
 end;
-function FindVar(varname:string): integer;
+function FindVar(varName:string): integer;
 //Busca el nombre dado para ver si se trata de una variable definida
 var
   tmp: String;
@@ -328,19 +335,56 @@ begin
     end;
   end;
 end;
-function FindFunc(varname:string): integer;
+function FindFunc(funName:string): integer;
 //Busca el nombre dado para ver si se trata de una función definida
 var
   tmp: String;
   i: Integer;
 begin
   Result := -1;
-  tmp := upCase(varName);
+  tmp := upCase(funName);
   for i:=0 to high(funcs) do begin
-    if Upcase(funcs[i].nom)=tmp then begin
+    if Upcase(funcs[i].name)=tmp then begin
       exit(i);
     end;
   end;
+end;
+function FindCons(conName:string): integer;
+//Busca el nombre dado para ver si se trata de una constante definida
+var
+  tmp: String;
+  i: Integer;
+begin
+  Result := -1;
+  tmp := upCase(conName);
+  for i:=0 to high(cons) do begin
+    if Upcase(cons[i].nom)=tmp then begin
+      exit(i);
+    end;
+  end;
+end;
+function FindPredefName(name: string): TIdentifType;
+//Busca un identificador e indica si ya existe el nombre, sea como variable,
+//función o constante.
+var i: integer;
+begin
+  //busca como variable
+  i := FindVar(name);
+  if i<>-1 then begin
+     exit(idtVar);
+  end;
+  //busca como función
+  i := FindFunc(name);
+  if i<>-1 then begin
+     exit(idtFunc);
+  end;
+  //busca como constante
+  i := FindCons(name);
+  if i<>-1 then begin
+     exit(idtCons);
+  end;
+  //no lo encuentra
+  exit(idtNone);
 end;
 //Manejo de tipos
 function CreateType(nom0: string; cat0: TtipDato; siz0: smallint): TType;
@@ -370,39 +414,68 @@ procedure ClearTypes;  //Limpia los tipos
 begin
   types.Clear;
 end;
-procedure ClearVars;  //Limpia los tipos
+procedure ClearVars;
+//Limpia todas las variables creadas por el usuario.
 begin
+  setlength(vars, nIntVar);  //deja las del sistema
+end;
+procedure ClearAllVars;
+//Elimina todas las variables, incluyendo las predefinidas.
+begin
+  nIntVar := 0;
   setlength(vars,0);
 end;
 procedure ClearFuncs;
+//Limpia todas las funciones creadas por el usuario.
 begin
+  setlength(funcs,nIntFun);  //deja las del sistema
+end;
+procedure ClearAllFuncs;
+//Elimina todas las funciones, incluyendo las predefinidas.
+begin
+  nIntFun := 0;
   setlength(funcs,0);
+end;
+procedure ClearAllConst;
+//Elimina todas las funciones, incluyendo las predefinidas.
+begin
+  nIntCon := 0;
+  setlength(cons,0);
 end;
 
 ////////////////Rutinas de generación de código para el compilador////////////
+function GetExpression(const jerar: Integer): TOperand; forward;
+function GetBoolExpression: TOperand; forward;
 function HayError: boolean;
 begin
   Result := PErr.HayError;
 end;
-function CogExpresion(const jerar: Integer): TOperand; forward;
 procedure CreateFunction(funName: string; typ: ttype; proc: TProcExecOperat);
-//Crea una nueva función
+//Crea una nueva función.
 var
   r : Tfunc;
   n: Integer;
 begin
   //verifica nombre
-  if FindFunc(funName)<>-1 then begin
+  if FindPredefName(funName) <> idtNone then begin
     Perr.GenError('Identificador duplicado: "' + funName + '".', PosAct);
     exit;
   end;
   //registra la función en la tabla
-  r.nom:=funName;
+  r.name:= funName;
   r.typ := typ;
   r.proc:= proc;
+  //agrega
   n := high(funcs)+1;
   setlength(funcs, n+1);
   funcs[n] := r;
+end;
+procedure CreateSysFunction(funName: string; typ: ttype; proc: TProcExecOperat);
+//Crea una función del sistema o interna. Estas funciones estan siempre disponibles.
+//Las funciones internas deben crearse todas al inicio.
+begin
+  CreateFunction(funName, typ, proc);
+  Inc(nIntFun);  //leva la cuenta
 end;
 procedure CreateFunction(funName, varType: string);
 //Define una nueva función en memoria.
@@ -484,7 +557,7 @@ procedure NuevoContexEntTxt(txt: string; arc0: String);
 //Fija el Contexto Actual "cEnt" como el Contexto creado.
 begin
   cEnt := TContexto.Create; //crea Contexto
-  cEnt.DefSyn(lex);     //asigna lexer
+  cEnt.DefSyn(xLex);     //asigna lexer
   ConsE.Add(cEnt);      //Registra Contexto
   cEnt.FijCad(txt);     //inicia con texto
   cEnt.arc := arc0;     {Se guarda el nombre del archivo actual, solo para poder procesar
@@ -500,7 +573,7 @@ begin
     Exit;
   end;
   cEnt := TContexto.Create; //crea Contexto
-  cEnt.DefSyn(lex);     //asigna lexer
+  cEnt.DefSyn(xLex);     //asigna lexer
   ConsE.Add(cEnt);   //Registra Contexto
   cEnt.FijArc(arc0);     //inicia con archivo
   cEnt.CurPosIni;       //posiciona al inicio
@@ -510,7 +583,7 @@ procedure NuevoContexEntArc(arc0: String; lins: Tstrings);
 //Fija el Contexto Actual "cEnt" como el Contexto creado.
 begin
   cEnt := TContexto.Create; //crea Contexto
-  cEnt.DefSyn(lex);     //asigna lexer
+  cEnt.DefSyn(xLex);     //asigna lexer
   ConsE.Add(cEnt);   //Registra Contexto
   cEnt.FijArc(arc0, lins);   //inicia con archivo contenido en TStrings
   cEnt.CurPosIni;       //posiciona al inicio
@@ -740,7 +813,7 @@ begin
     cEnt.Next;    //Pasa al siguiente
   end else if (cEnt.tokType = tkOthers) and (cEnt.tok = '(') then begin  //"("
     cEnt.Next;
-    Result := CogExpresion(0);
+    Result := GetExpression(0);
     if PErr.HayError then exit;
     If cEnt.tok = ')' Then begin
        cEnt.Next;  //lo toma
@@ -759,9 +832,46 @@ begin
        exit;
      end;
     cEnt.Next;    //Pasa al siguiente
-{ end else if (cEnt.tokType = tkOperator then begin
+  end else if (cEnt.tokType = tkStruct) then begin  //es una estructura
+    //una estructura se trata también como una expresión
+    if tokAct = 'if' then begin  //condicional
+      cEnt.Next;  //toma IF
+      GetBoolExpression; //evalua expresión
+      if PErr.HayError then exit;
+      if tokAct<> 'then' then begin
+        Perr.GenError('Se esperaba "then".', PosAct);
+        exit;
+      end;
+      cEnt.Next;  //toma el THEN
+      //cuerpo del if
+      Result := GetExpression(0);  //evalua expresión
+      if PErr.HayError then exit;
+      while tokAct = 'elsif' do begin
+        cEnt.Next;  //toma ELSIF
+        GetBoolExpression; //evalua expresión
+        if PErr.HayError then exit;
+        if tokAct<> 'then' then begin
+          Perr.GenError('Se esperaba "then".', PosAct);
+          exit;
+        end;
+        cEnt.Next;  //toma el THEN
+        //cuerpo del if
+        Result := GetExpression(0);  //evalua expresión
+        if PErr.HayError then exit;
+      end;
+      if tokAct = 'else' then begin
+        cEnt.Next;  //toma ELSE
+        Result := GetExpression(0);  //evalua expresión
+        if PErr.HayError then exit;
+      end;
+      if tokAct<> 'end' then begin
+        Perr.GenError('Se esperaba "end".', PosAct);
+        exit;
+      end;
+    end;
+{  end else if (cEnt.tokType = tkOperator then begin
    //los únicos símbolos válidos son +,-, que son parte de un número
-    end;}
+    }
   end else begin
     //No se reconoce el operador
     PErr.GenError('Se esperaba operando',PosAct);
@@ -787,7 +897,7 @@ begin
     exit;
   end;
   //verifica nombre
-  if Findvar(varName)<>-1 then begin
+  if FindPredefName(varName) <> idtNone then begin
     Perr.GenError('Identificador duplicado: "' + varName + '".', PosAct);
     exit;
   end;
@@ -918,7 +1028,7 @@ begin
     //codifica el contenido
     while not cEnt.Eof do begin
       //se espera una expresión
-      tmp := CogExpresion(0);
+      tmp := GetExpression(0);
       if perr.HayError then exit;   //aborta
       //se espera delimitador
       if cEnt.Eof then break;  //sale
@@ -935,14 +1045,12 @@ begin
   end;
   Cod_EndProgram;
 end;
-procedure Compilar(NombArc: string; LinArc: Tstrings; lex0 : TSynFacilSyn);
+procedure Compilar(NombArc: string; LinArc: Tstrings);
 //Compila el contenido de un archivo a ensamblador
 begin
   Perr.IniError;
   ClearVars;       //limpia las variables
   ClearFuncs;      //limpia las funciones
-  StartSyntax(lex0); //!!!!!Debería hacerse solo una vez al inicio
-  if PErr.HayError then exit;
   mem.Clear;       //limpia salida
   ConsE.Clear;     //elimina todos los Contextos de entrada
   ExprLevel := 0;  //inicia
@@ -1091,9 +1199,9 @@ begin
   end;  //hasta que ya no siga un operador
   Result := Op1;  //aquí debe haber quedado el resultado
 end;
-function CogExpresion(const jerar: Integer): TOperand;
+function GetExpression(const jerar: Integer): TOperand;
 //Envoltura para GetExpressionCore().
-{ TODO : Para optimizar debería existir solo CogExpresion() y no GetExpressionCore() }
+{ TODO : Para optimizar debería existir solo GetExpression() y no GetExpressionCore() }
 begin
   Inc(ExprLevel);  //cuenta el anidamiento
   debugln(space(ExprLevel)+'>Inic.expr');
@@ -1104,6 +1212,22 @@ begin
   Dec(ExprLevel);
   if ExprLevel = 0 then debugln('');
 end;
+function GetBoolExpression: TOperand;
+//Simplifica la evaluación de expresiones booleanas, validadno el tipo
+begin
+  Result := GetExpression(0);  //evalua expresión
+  if PErr.HayError then exit;
+  if Result.catTyp <> t_boolean then begin
+    PErr.GenError('Se esperaba expresión booleana',PosAct);
+  end;
+end;
+{function GetNullExpression(): TOperand;
+//Simplifica la evaluación de expresiones sin dar error cuando encuentra algún delimitador
+begin
+  if
+  Result := GetExpression(0);  //evalua expresión
+  if PErr.HayError then exit;
+end;}
 procedure GenTemplCompiler;
 //Genera una plantilla de código para implementar este mismo compilador
 var
@@ -1245,11 +1369,17 @@ initialization
   cEnt := nil;
   //Inicia lista de tipos
   types := TTypes.Create(true);
-  //Inicia lista de variables
-  setlength(vars,0);
+  //Inicia variables, funciones y constantes
+  ClearAllVars;
+  ClearAllFuncs;
+  ClearAllConst;
   //crea el operador NULL
   nullOper := TOperator.Create;
+  //inicia la sintaxis
+  xLex := TSynFacilSyn.Create(nil);   //crea lexer
+  StartSyntax; //!!!!!Debería hacerse solo una vez al inicio
 finalization;
+  xLex.Free;
   nullOper.Free;
   types.Free;
   //Limpia lista de Contextos

@@ -139,7 +139,7 @@ var
 implementation
 {$R *.lfm}
 var
-  hlXpr, hlAsm: TSynFacilSyn;
+  hlAsm: TSynFacilSyn;
 
 { TfrmPrincipal }
 
@@ -150,8 +150,8 @@ begin
   splitter1.Align:=alLeft;
   edAsm.Align:=alClient;
   //crea el resaltador-lexer, para el editor y el compilador
-  hlXpr := TSynFacilSyn.Create(self);
-  hlXpr.LoadFromFile('lang_Xpres.xml');
+//  hlXpr := TSynFacilSyn.Create(self);
+//  hlXpr.LoadFromFile('lang_Xpres.xml');
 //  if hlXpr.Err<>'' then msgerr(hlXpr.Err);
   PreparaEditor;
 end;
@@ -166,7 +166,7 @@ procedure TfrmPrincipal.PreparaEditor;
 //Configura el editor para empezar a trabajar
 begin
   //configura editor de Xpres
-  edXpr.Highlighter:=hlXpr;
+  edXpr.Highlighter:=xLex;  //usa el resaltador del compilador
 
   //configura editor de ASM
   hlAsm := TSynFacilSyn.Create(self);
@@ -188,14 +188,12 @@ procedure TfrmPrincipal.FormCloseQuery(Sender: TObject; var CanClose: boolean);
 begin
   if e.SaveQuery then CanClose := false;   //cancela
 end;
-
 procedure TfrmPrincipal.FormDropFiles(Sender: TObject; const FileNames: array of String);
 begin
   //Carga archivo arrastrados
   if e.SaveQuery then Exit;   //Verifica cambios
   e.LoadFile(FileNames[0]);
 end;
-
 procedure TfrmPrincipal.FormShow(Sender: TObject);
 begin
   InicAyudaContext(edXpr, Self,'');
@@ -203,6 +201,11 @@ begin
   //inicia el menú "Recientes". Se debe hacer después de iniciar "Config", para poder
   //acceder a "Config.Edit.ArcRecientes".
   e.InitMenuRecents(mnRecientes, Config.Edit.ArcRecientes);
+end;
+procedure TfrmPrincipal.FormClose(Sender: TObject; var CloseAction: TCloseAction
+  );
+begin
+  Config.escribirArchivoIni;  //guarda la configuración actual
 end;
 
 procedure TfrmPrincipal.eCambiaInfArchivo;
@@ -222,12 +225,6 @@ procedure TfrmPrincipal.edXprKeyUp(Sender: TObject; var Key: Word;
   Shift: TShiftState);
 begin
   AyudContextKeyUp(Key, Shift);
-end;
-
-procedure TfrmPrincipal.FormClose(Sender: TObject; var CloseAction: TCloseAction
-  );
-begin
-  Config.escribirArchivoIni;  //guarda la configuración actual
 end;
 
 procedure TfrmPrincipal.eArchivoCargado;
@@ -278,8 +275,8 @@ end;
 procedure TfrmPrincipal.acEdiRecSynExecute(Sender: TObject);
 //Recarga el archivo de sintaxis
 begin
-  hlXpr.LoadFromFile('lang_Xpres.xml');
-  edXpr.Invalidate;
+//  hlXpr.LoadFromFile('lang_Xpres.xml');
+//  edXpr.Invalidate;
 end;
 
 procedure TfrmPrincipal.acEdiRedoExecute(Sender: TObject);
@@ -294,7 +291,7 @@ procedure TfrmPrincipal.acHerCompExecute(Sender: TObject);
 begin
   frmOut.Show;  //muestra consola
   self.SetFocus;
-  Compilar(e.NomArc, edXpr.Lines, hlXpr);
+  Compilar(e.NomArc, edXpr.Lines);
   edAsm.ClearAll;
   edAsm.Lines.AddStrings(mem);
   if Perr.HayError then begin
