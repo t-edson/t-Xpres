@@ -17,7 +17,6 @@ type
     used    : boolean;  //indica si está usado
     typ     : Ttype;    //tipo de dato
     catOp   : CatOperan;  //categoría de operando
-//  	catTyp  : tTipDato; //Categoría de Tipo de dato
     //valores de la variable.
     valFloat: extended; //Valor en caso de que sea un flotante
     valInt  : Int64;    //valor en caso de que sea un entero
@@ -53,7 +52,12 @@ var
   de código.
   * El estado del registro (usado o libre)
    }
+const STACK_SIZE = 32;
+var
   a, b: Tregister;
+  //pila
+  sp: integer;  //puntero de pila
+  stack: array[0..STACK_SIZE-1] of Tregister;
   //banderas
 //  ALused: Boolean;  //indica que el registro Al está siendo usado
 
@@ -87,11 +91,6 @@ function setRes(const typ: TType; const estRes: integer): boolean;
 //Si encuentra error, lo geenra y devuelve FALSE.
 begin
   Result := true;
-//  if res.used then begin
-//    Perr.GenError('No se puede compilar expresión.', PosAct);
-//    Result := false;
-//    exit;
-//  end;
   res.typ := typ;
 //  res.catOp:=cat;
   res.estOp:=estRes;   //indica el estado del resultado
@@ -108,11 +107,11 @@ procedure LoadAcumInt(val: int64; op: string);
 //Carga en el acumulador(es) un valor entero, y genera t-code
 begin
   if canUseA(p1,p2) then  begin
-    if not setRes(tipInt, STORED_ACU) then exit;
+    setRes(tipInt, STORED_ACU);
     a.valInt:=val;
     Code('A<-' + p1.expres + op + p2.expres);
   end else if canUseB(p1,p2) then begin  //no se puede usar A
-    if not setRes(tipInt, STORED_ACUB) then exit;
+    setRes(tipInt, STORED_ACUB);
     b.valInt:=val;
     Code('B<-' + p1.expres + op + p2.expres);
   end else begin
@@ -124,11 +123,11 @@ procedure LoadAcumFloat(val: extended; op: string);
 //Carga en el acumulador(es) un valor float, y genera t-code
 begin
   if canUseA(p1,p2) then  begin
-    if not setRes(tipInt, STORED_ACU) then exit;
+    setRes(tipFloat, STORED_ACU);
     a.valFloat:=val;
     Code('A<-' + p1.expres + op + p2.expres);
   end else if canUseB(p1,p2) then begin  //no se puede usar A
-    if not setRes(tipInt, STORED_ACUB) then exit;
+    setRes(tipFloat, STORED_ACUB);
     b.valFloat:=val;
     Code('B<-' + p1.expres + op + p2.expres);
   end else begin
@@ -140,11 +139,11 @@ procedure LoadAcumBool(val: boolean; op: string);
 //Carga en el acumulador(es) un valor booleano, y genera t-code
 begin
   if canUseA(p1,p2) then  begin
-    if not setRes(tipInt, STORED_ACU) then exit;
+    setRes(tipBool, STORED_ACU);
     a.valBool:=val;
     Code('A<-' + p1.expres + op + p2.expres);
   end else if canUseB(p1,p2) then begin  //no se puede usar A
-    if not setRes(tipInt, STORED_ACUB) then exit;
+    setRes(tipBool, STORED_ACUB);
     b.valBool:=val;
     Code('B<-' + p1.expres + op + p2.expres);
   end else begin
@@ -156,17 +155,42 @@ procedure LoadAcumStr(val: string; op: string);
 //Carga en el acumulador(es) un valor booleano, y genera t-code
 begin
   if canUseA(p1,p2) then  begin
-    if not setRes(tipInt, STORED_ACU) then exit;
+    setRes(tipStr, STORED_ACU);
     a.valStr:=val;
     Code('A<-' + p1.expres + op + p2.expres);
   end else if canUseB(p1,p2) then begin  //no se puede usar A
-    if not setRes(tipInt, STORED_ACUB) then exit;
+    setRes(tipStr, STORED_ACUB);
     b.valStr:=val;
     Code('B<-' + p1.expres + op + p2.expres);
   end else begin
     Perr.GenError('Expresión muy compleja.', PosAct);
     exit;
   end;
+end;
+procedure PushResult;
+//Coloca el resultado de una expresión en la pila
+begin
+  if sp>=STACK_SIZE then begin
+    Perr.GenError('Desborde de pila.', PosAct);
+    exit;
+  end;
+  stack[sp].typ := res.typ;
+  case res.Typ.cat of
+  t_string:  stack[sp].valStr  := res.valStr;
+  t_integer: stack[sp].valInt  := res.valInt;
+  t_float:   stack[sp].valFloat:= res.valFloat;
+  t_boolean: stack[sp].valBool := res.valBool;
+  end;
+  Inc(sp);
+end;
+procedure PopResult;
+//Reduce el puntero de pila, de modo que queda apuntando al último dato agregado
+begin
+  if sp<=0 then begin
+    Perr.GenError('Desborde de pila.', PosAct);
+    exit;
+  end;
+  Dec(sp);
 end;
 ////////////rutinas obligatorias
 procedure Cod_StartData;
@@ -177,6 +201,7 @@ end;
 procedure Cod_StartProgram;
 //Codifica la parte inicial del programa
 begin
+  sp := 0;  //inicia pila
   Code('.CODE');   //inicia la sección de código
 end;
 procedure Cod_EndProgram;
@@ -198,9 +223,16 @@ begin
 //      Code('  push al');  //lo guarda
   end;
 end;
-procedure expr_end;
+procedure expr_end(isParam: boolean);
 //Se ejecuta al final de una expresión, si es que no ha habido error.
 begin
+  if isParam then begin
+    //Se terminó de evaluar un parámetro
+    PushResult;   //pone parámetro en pila
+    if Perr.HayError then exit;
+    a.used:=false;  //se libera registro
+    b.used:=false;  //se libera registro
+  end;
   if exprLevel = 1 then begin  //el último nivel
     Code('  ;fin expres');
   end;
@@ -223,7 +255,7 @@ end;
 procedure int_procLoad(var Op: TOperand);
 begin
   //carga el operando en res
-  if not setRes(tipInt,Op.estOp) then exit;
+  setRes(tipInt,Op.estOp);
   if Op.estOp = STORED_LIT then res.cons.valInt := Op.valInt;
 //  a.valInt:=Op.valInt;
 ///  Code('A<-' + Op.expres);
@@ -323,7 +355,7 @@ end;
 procedure float_procLoad(var Op: TOperand);
 begin
   //carga el operando en res
-  if not setRes(tipFloat,Op.estOp) then exit;
+  setRes(tipFloat,Op.estOp);
   if Op.estOp = STORED_LIT then res.cons.valFloat := Op.valFloat;
 //  a.valInt:=Op.valInt;
 ///  Code('A<-' + Op.expres);
@@ -411,7 +443,7 @@ end;
 procedure bool_procLoad(var Op: TOperand);
 begin
   //carga el operando en res
-  if not setRes(tipBool,Op.estOp) then exit;
+  setRes(tipBool,Op.estOp);
   if Op.estOp = STORED_LIT then res.cons.valBool := Op.valBool;
 //  a.valInt:=Op.valInt;
 ///  Code('A<-' + Op.expres);
@@ -452,7 +484,7 @@ end;
 procedure str_procLoad(var Op: TOperand);
 begin
   //carga el operando en res
-  if not setRes(tipStr,Op.estOp) then exit;
+  setRes(tipStr,Op.estOp);
   if Op.estOp = STORED_LIT then res.cons.valStr := Op.valStr;
 //  a.valInt:=Op.valInt;
 ///  Code('A<-' + Op.expres);
@@ -485,30 +517,44 @@ end;
 procedure fun_msgbox;
 begin
   msgbox('eureka');
-  res.estOp:=0;
+  //el tipo devuelto lo fijará el framework, al tipo definido
+  res.estOp:=STORED_LIT;  //el valor devuelto no importa, pero debe devolver algo
 end;
 procedure fun_puts;
 //envia un texto a consola
 begin
-  frmOut.puts('eureka');
-  res.estOp:=0;
+  PopResult;  //saca parámetro 1
+  if Perr.HayError then exit;
+  frmOut.puts(stack[sp].valStr);  //sabemos que debe ser String
+  //el tipo devuelto lo fijará el framework, al tipo definido
+  res.estOp:=STORED_LIT;  //el valor devuelto no importa, pero debe devolver algo
 end;
 
 procedure StartSyntax;
+//Se ejecuta solo una vez al inicio
 var
   opr: TOperator;
+  f: integer;  //índice para funciones
 begin
   ///////////define la sintaxis del compilador
   //crea y guarda referencia a los atributos
   tkIdentif  := xLex.tkIdentif;
   tkKeyword  := xLex.tkKeyword;
+  tkKeyword.Foreground:=clGreen;
+  tkKeyword.Style := [fsBold];     //en negrita
   tkNumber   := xLex.tkNumber;
   tkString   := xLex.tkString;
-  tkOperator := xLex.NewTokType('Operador');  //personalizado
-  tkDelimiter:= xLex.NewTokType('Delimiter'); //personalizado
+  //personalizados
+  tkOperator := xLex.NewTokType('Operador'); //personalizado
+  tkExpDelim := xLex.NewTokType('ExpDelim');//delimitador de expresión ";"
+  tkBlkDelim := xLex.NewTokType('BlkDelim'); //delimitador de bloque
+  tkBlkDelim.Foreground:=clGreen;
+  tkBlkDelim.Style := [fsBold];     //en negrita
   tkType     := xLex.NewTokType('Types');    //personalizado
-  tkBoolean  := xLex.NewTokType('Boolean');   //personalizado
+  tkBoolean  := xLex.NewTokType('Boolean');  //personalizado
   tkStruct   := xLex.NewTokType('Struct');   //personalizado
+  tkStruct.Foreground:=clGreen;
+  tkStruct.Style := [fsBold];     //en negrita
   tkOthers   := xLex.NewTokType('Others');   //personalizado
   //inicia la configuración
   xLex.ClearMethodTables;           //limpìa tabla de métodos
@@ -518,9 +564,10 @@ begin
   xLex.DefTokContent('[0..9]', '0..9.', '', tkNumber);
   if xLex.Err<>'' then ShowMessage(xLex.Err);
   //define palabras claves
-  xLex.AddIdentSpecList('THEN ELSE ELSIF END var type', tkKeyword);
+  xLex.AddIdentSpecList('THEN var type', tkKeyword);
   xLex.AddIdentSpecList('program public private method const', tkKeyword);
   xLex.AddIdentSpecList('class create destroy sub do begin', tkKeyword);
+  xLex.AddIdentSpecList('END ELSE ELSIF', tkBlkDelim);
   xLex.AddIdentSpecList('true false', tkBoolean);
   xLex.AddIdentSpecList('IF FOR', tkStruct);
   xLex.AddIdentSpecList('and or xor not', tkOperator);
@@ -541,7 +588,7 @@ begin
   xLex.AddSymbSpec('<>', tkOperator);
   xLex.AddSymbSpec('<=>',tkOperator);
   xLex.AddSymbSpec(':=', tkOperator);
-  xLex.AddSymbSpec(';', tkDelimiter);
+  xLex.AddSymbSpec(';', tkExpDelim);
   xLex.AddSymbSpec('(',  tkOthers);
   xLex.AddSymbSpec(')',  tkOthers);
   xLex.AddSymbSpec(':',  tkOthers);
@@ -669,7 +716,9 @@ begin
 //  opr.CreateOperation(tipBool,@bool_and_bool);
 
 //////// Funciones básicas ////////////
-  CreateSysFunction('MsgBox', tipInt, @fun_msgbox);
-  CreateSysFunction('puts', tipInt, @fun_puts);
+  f := CreateSysFunction('MsgBox', tipInt, @fun_msgbox);
+  CreateParam(f,'',tipStr);
+  f := CreateSysFunction('puts', tipInt, @fun_puts);
+  CreateParam(f,'',tipStr);
 end;
 

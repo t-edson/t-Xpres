@@ -105,7 +105,7 @@ type
   TProcLoadOperand = procedure(var Op: TOperand);
   TProcExecOperat = procedure;
 
-  //registro para almacenar información de las variables
+  //registro para almacenar información de las funciones
   Tfunc = record
     name: string;   //nombre de la función
     typ : Ttype;    //tipo que devuelve
@@ -184,6 +184,7 @@ procedure Compilar(NombArc: string; LinArc: Tstrings);
 procedure GenTemplCompiler;
 
 implementation
+uses Graphics;
 
 var  //variables privadas del compilador
   types: TTypes;   //lista de tipos
@@ -201,7 +202,8 @@ var  //variables privadas del compilador
   tkNumber  : TSynHighlighterAttributes;
   tkString  : TSynHighlighterAttributes;
   tkOperator: TSynHighlighterAttributes;
-  tkDelimiter: TSynHighlighterAttributes;
+  tkExpDelim:TSynHighlighterAttributes;
+  tkBlkDelim: TSynHighlighterAttributes;
   tkType    : TSynHighlighterAttributes;
   tkBoolean : TSynHighlighterAttributes;
   tkStruct  : TSynHighlighterAttributes;
@@ -388,7 +390,7 @@ begin
 end;
 //Manejo de tipos
 function CreateType(nom0: string; cat0: TtipDato; siz0: smallint): TType;
-//Crea una nueva definición de tipo en el compilador. Devuelve referecnia al tipo recien creado
+//Crea una nueva definición de tipo en el compilador. Devuelve referencia al tipo recien creado
 var r: TType;
   i: Integer;
 begin
@@ -443,15 +445,18 @@ begin
   setlength(cons,0);
 end;
 
-////////////////Rutinas de generación de código para el compilador////////////
-function GetExpression(const jerar: Integer): TOperand; forward;
+//declaraciones adelantadas
+function GetExpression(const prec: Integer; isParam: boolean = false): TOperand; forward;
 function GetBoolExpression: TOperand; forward;
+procedure CompileCurBlock; forward;
+
+////////////////Rutinas de generación de código para el compilador////////////
 function HayError: boolean;
 begin
   Result := PErr.HayError;
 end;
-procedure CreateFunction(funName: string; typ: ttype; proc: TProcExecOperat);
-//Crea una nueva función.
+function CreateFunction(funName: string; typ: ttype; proc: TProcExecOperat): integer;
+//Crea una nueva función y devuelve un índice a la función.
 var
   r : Tfunc;
   n: Integer;
@@ -465,16 +470,18 @@ begin
   r.name:= funName;
   r.typ := typ;
   r.proc:= proc;
+  setlength(r.pars,0);  //inicia arreglo
   //agrega
   n := high(funcs)+1;
   setlength(funcs, n+1);
   funcs[n] := r;
+  Result := n;
 end;
-procedure CreateSysFunction(funName: string; typ: ttype; proc: TProcExecOperat);
+function CreateSysFunction(funName: string; typ: ttype; proc: TProcExecOperat): integer;
 //Crea una función del sistema o interna. Estas funciones estan siempre disponibles.
 //Las funciones internas deben crearse todas al inicio.
 begin
-  CreateFunction(funName, typ, proc);
+  Result := CreateFunction(funName, typ, proc);
   Inc(nIntFun);  //leva la cuenta
 end;
 procedure CreateFunction(funName, varType: string);
@@ -497,6 +504,16 @@ begin
   //Ya encontró tipo, llama a evento
 //  if t.procDefine<>nil then t.procDefine(funName, '');
 end;
+procedure CreateParam(ifun: integer; name: string; typ: ttype);
+//Crea un parámetro para una función
+var
+  n: Integer;
+begin
+  //agrega
+  n := high(funcs[ifun].pars)+1;
+  setlength(funcs[ifun].pars, n+1);
+  funcs[ifun].pars[n] := typ;  //agrega referencia
+end;
 {$I interprete1.pas}
 function TokAct: string; inline;
 //Devuelve el token actual, ignorando la caja.
@@ -507,7 +524,7 @@ function CapturaDelim: boolean;
 //Verifica si sigue un delimitador de expresión. Si encuentra devuelve false.
 begin
   cEnt.CapBlancos;
-  if cEnt.tokType=tkDelimiter then begin //encontró
+  if cEnt.tokType=tkExpDelim then begin //encontró
     cEnt.Next;   //pasa al siguiente
     exit(true);
   end else if tokAct = 'end' then begin   //es un error
@@ -756,6 +773,7 @@ function GetOperand: TOperand;
 var
   ivar: Integer;
   ifun: Integer;
+  i: Integer;
 begin
   PErr.Limpiar;
   cEnt.CapBlancos;
@@ -788,13 +806,30 @@ begin
       if ifun <> -1 then begin
         //es una función
         Result.ifun:=ifun;   //guarda referencia a la función
-        Result.catOp:=coVariable;    //variable
+        Result.catOp :=coExpres;    //expresión
+        Result.txt:= cEnt.tok;     //toma el texto
+        cEnt.Next;    //Pasa al siguiente
+        //lee parámetros
+        for i:=0 to High(funcs[ifun].pars) do begin
+          GetExpression(0, true);  //captura parámetro
+          if perr.HayError then exit;   //aborta
+          if res.typ<>funcs[ifun].pars[i] then begin
+            Perr.GenError('Parámetro de tipo erroneo.', PosAct);
+            exit;
+          end;
+          if i <> High(funcs[ifun].pars) then begin
+            if tokAct<> ',' then begin
+              Perr.GenError('Se esperaba ","', PosAct);
+              exit;
+            end;
+            cEnt.Next;  //toma el THEN
+          end;
+        end;
         Result.catTyp:= funcs[ifun].typ.cat;  //categoría
         Result.typ:=funcs[ifun].typ;
 //        Result.estOp:=STORED_VAR;  el estado lo decidirá la función
         funcs[ifun].proc;  //llama al código de la función
-        Result.txt:= cEnt.tok;     //toma el texto
-        cEnt.Next;    //Pasa al siguiente
+        Result.estOp:=res.estOp;
       end else begin
         PErr.GenError('Identificador desconocido: "' + cEnt.tok + '"',PosAct);
         exit;
@@ -832,43 +867,6 @@ begin
        exit;
      end;
     cEnt.Next;    //Pasa al siguiente
-  end else if (cEnt.tokType = tkStruct) then begin  //es una estructura
-    //una estructura se trata también como una expresión
-    if tokAct = 'if' then begin  //condicional
-      cEnt.Next;  //toma IF
-      GetBoolExpression; //evalua expresión
-      if PErr.HayError then exit;
-      if tokAct<> 'then' then begin
-        Perr.GenError('Se esperaba "then".', PosAct);
-        exit;
-      end;
-      cEnt.Next;  //toma el THEN
-      //cuerpo del if
-      Result := GetExpression(0);  //evalua expresión
-      if PErr.HayError then exit;
-      while tokAct = 'elsif' do begin
-        cEnt.Next;  //toma ELSIF
-        GetBoolExpression; //evalua expresión
-        if PErr.HayError then exit;
-        if tokAct<> 'then' then begin
-          Perr.GenError('Se esperaba "then".', PosAct);
-          exit;
-        end;
-        cEnt.Next;  //toma el THEN
-        //cuerpo del if
-        Result := GetExpression(0);  //evalua expresión
-        if PErr.HayError then exit;
-      end;
-      if tokAct = 'else' then begin
-        cEnt.Next;  //toma ELSE
-        Result := GetExpression(0);  //evalua expresión
-        if PErr.HayError then exit;
-      end;
-      if tokAct<> 'end' then begin
-        Perr.GenError('Se esperaba "end".', PosAct);
-        exit;
-      end;
-    end;
 {  end else if (cEnt.tokType = tkOperator then begin
    //los únicos símbolos válidos son +,-, que son parte de un número
     }
@@ -986,6 +984,72 @@ begin
     frmOut.puts('Estado descon.');
   end;
 end;
+procedure CompileCurBlock;
+//Compila el bloque de código actual hasta encontrar un delimitador de bloque.
+begin
+  cEnt.CapBlancos;
+  while (cEnt.tokType <> tkBlkDelim) and (not cEnt.Eof) do begin
+    //se espera una expresión o estructura
+    if cEnt.tokType = tkStruct then begin  //es una estructura
+      if tokAct = 'if' then begin  //condicional
+        cEnt.Next;  //toma IF
+        GetBoolExpression; //evalua expresión
+        if PErr.HayError then exit;
+        if tokAct<> 'then' then begin
+          Perr.GenError('Se esperaba "then".', PosAct);
+          exit;
+        end;
+        cEnt.Next;  //toma el THEN
+        //cuerpo del if
+        CompileCurBlock;  //procesa bloque
+//        Result := res;  //toma resultado
+        if PErr.HayError then exit;
+        while tokAct = 'elsif' do begin
+          cEnt.Next;  //toma ELSIF
+          GetBoolExpression; //evalua expresión
+          if PErr.HayError then exit;
+          if tokAct<> 'then' then begin
+            Perr.GenError('Se esperaba "then".', PosAct);
+            exit;
+          end;
+          cEnt.Next;  //toma el THEN
+          //cuerpo del if
+          CompileCurBlock;  //evalua expresión
+//          Result := res;  //toma resultado
+          if PErr.HayError then exit;
+        end;
+        if tokAct = 'else' then begin
+          cEnt.Next;  //toma ELSE
+          CompileCurBlock;  //evalua expresión
+//          Result := res;  //toma resultado
+          if PErr.HayError then exit;
+        end;
+        if tokAct<> 'end' then begin
+          Perr.GenError('Se esperaba "end".', PosAct);
+          exit;
+        end;
+      end else begin
+        Perr.GenError('Error de diseño. Estructura no implementada.', PosAct);
+        exit;
+      end;
+    end else begin  //debe ser una expresión
+      GetExpression(0);
+      if perr.HayError then exit;   //aborta
+    end;
+    //se espera delimitador
+    if cEnt.Eof then break;  //sale por fin de archivo
+    //busca delimitador
+    cEnt.CapBlancos;
+    if cEnt.tokType=tkExpDelim then begin //encontró delimitador de expresión
+      cEnt.Next;   //lo toma
+      cEnt.CapBlancos;  //quita espacios
+    end else if cEnt.tokType = tkBlkDelim then begin  //hay delimitador de bloque
+      exit;  //no lo toma
+    end else begin  //hay otra cosa
+      exit;  //debe ser un error
+    end;
+  end;
+end;
 procedure CompilarArc;
 //Compila un programa en el contexto actual
 var
@@ -1023,22 +1087,19 @@ begin
   end;
   if tokAct = 'begin' then begin
     Cod_StartProgram;
-
     cEnt.Next;   //coge "begin"
     //codifica el contenido
-    while not cEnt.Eof do begin
-      //se espera una expresión
-      tmp := GetExpression(0);
-      if perr.HayError then exit;   //aborta
-      //se espera delimitador
-      if cEnt.Eof then break;  //sale
-      if not CapturaDelim then break;
-      cEnt.CapBlancos;
-      if tokAct = 'end' then begin  //verifica si termina el programa
-        cEnt.Next;   //lo toma
-        break;       //sale
-      end;
+    CompileCurBlock;   //compila el cuerpo
+    if Perr.HayError then exit;
+    if cEnt.Eof then begin
+      Perr.GenError('Inesperado fin de archivo. Se esperaba "end".', PosAct);
+      exit;       //sale
     end;
+    if tokAct <> 'end' then begin  //verifica si termina el programa
+      Perr.GenError('Se esperaba "end".', PosAct);
+      exit;       //sale
+    end;
+    cEnt.Next;   //coge "end"
   end else begin
     Perr.GenError('Se esperaba "begin", "var", "type" o "const".', PosAct);
     exit;
@@ -1188,7 +1249,7 @@ begin
       end;
     end;}
     //--------------------coger segundo operando--------------------
-    Op2 := GetOperandP(Opr1.jer);   //toma oeprando con precedencia
+    Op2 := GetOperandP(Opr1.jer);   //toma operando con precedencia
     debugln(space(ExprLevel)+' Op2='+Op2.txt);
     if pErr.HayError then exit;
     //prepara siguiente operación
@@ -1199,15 +1260,22 @@ begin
   end;  //hasta que ya no siga un operador
   Result := Op1;  //aquí debe haber quedado el resultado
 end;
-function GetExpression(const jerar: Integer): TOperand;
-//Envoltura para GetExpressionCore().
+function GetExpression(const prec: Integer; isParam: boolean = false
+    //indep: boolean = false
+    ): TOperand;
+//Envoltura para GetExpressionCore(). Se coloca así porque GetExpressionCore()
+//tiene diversos puntos de salida y Se necesita llamar siempre a expr_end() al
+//terminar.
+//"isParam" indica que la expresión evaluada es el parámetro de una función.
+//"indep", indica que la expresión que se está evaluando es anidada pero es independiente
+//de la expresion que la contiene, así que se puede liberar los registros o pila.
 { TODO : Para optimizar debería existir solo GetExpression() y no GetExpressionCore() }
 begin
   Inc(ExprLevel);  //cuenta el anidamiento
   debugln(space(ExprLevel)+'>Inic.expr');
   expr_start;  //llama a evento
-  Result := GetExpressionCore(jerar);
-  expr_end;    //llama al evento de salida
+  Result := GetExpressionCore(prec);
+  expr_end(isParam);    //llama al evento de salida
   debugln(space(ExprLevel)+'>Fin.expr');
   Dec(ExprLevel);
   if ExprLevel = 0 then debugln('');
@@ -1217,7 +1285,7 @@ function GetBoolExpression: TOperand;
 begin
   Result := GetExpression(0);  //evalua expresión
   if PErr.HayError then exit;
-  if Result.catTyp <> t_boolean then begin
+  if Result.Typ.cat <> t_boolean then begin
     PErr.GenError('Se esperaba expresión booleana',PosAct);
   end;
 end;
@@ -1325,11 +1393,11 @@ function TOperand.GetValStr: string;
 begin
   if estOp = STORED_VAR then  //lee de la variable
     Result := vars[ivar].valStr
-  else if estOp = STORED_ACU then  //expresiones están en res
+  else if estOp = STORED_ACU then  //expresiones están en A
     Result := a.valStr
-  else if estOp = STORED_ACUB then  //expresiones están en res
+  else if estOp = STORED_ACUB then  //expresiones están en B
     Result := b.valStr
-  else  //debe ser constante o expresión
+  else  //debe ser constante literal
     Result := cons.valStr;
 end;
 {procedure TOperand.SetValStr(AValue: string);
