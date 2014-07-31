@@ -1,4 +1,19 @@
-unit uXpres;
+{Rutinas principales del framework.
+ Aquí se define el analizador de expresiones aritméticas, el lazo principal del
+ parser y las rutinas del analizador sintáctico, que reconocen a las estructuras
+ del lenguaje.
+ Aquí también se incluye el archivo en donde se implementará un intérprete/compilador.
+ Las variables importantes de este módulo son:
+
+ xLex -> es el analizador léxico y resaltador de sintaxis.
+ PErr -> es el objeto que administra lso errores.
+ vars[]  -> almacena a las variables declaradas
+ types[] -> almacena a los tipos declarados
+ funcs[] -> almacena a las funciones declaradas
+ cons[]  -> almacena a las constantes declaradas
+
+}
+unit XpresParser;
 
 {$mode objfpc}{$H+}
 
@@ -6,7 +21,7 @@ interface
 uses
   Classes, SysUtils, fgl, SynHighlighterFacil, Forms, LCLType,
   SynEditHighlighter, Dialogs,
-  XpresBas, Globales, lclProc, FormOut;
+  XpresBas, lclProc, FormOut;
 
 type
   //categorías básicas de tipo de datos
@@ -180,8 +195,6 @@ function LeePosContAct: TPosCont;
 procedure FijPosContAct(pc: TPosCont);
 property PosAct: TPosCont read LeePosContAct write FijPosContAct;
 procedure Compilar(NombArc: string; LinArc: Tstrings);
-
-procedure GenTemplCompiler;
 
 implementation
 uses Graphics;
@@ -1296,42 +1309,6 @@ begin
   Result := GetExpression(0);  //evalua expresión
   if PErr.HayError then exit;
 end;}
-procedure GenTemplCompiler;
-//Genera una plantilla de código para implementar este mismo compilador
-var
-  txt: TStringList;
-  i: Integer;
-  nomProc: String;
-begin
-  txt := TSTringList.Create;
-  txt.Add('{plantilla de código para realizar una implementación del compilador');
-  txt.Add('en una arquitectura específica.}');
-  txt.Add('');
-  txt.Add('//Tipos definidos:');
-  for i:=0 to Types.Count-1 do begin
-    txt.Add('// '+Types[i].name+' ');
-  end;
-  txt.Add('');
-  txt.Add('//Métodos a implementar:');
-  for i:=0 to Types.Count-1 do begin
-    nomProc:='Execute_'+Types[i].name;
-    txt.Add('procedure '+nomProc+'(var Op1: TOperan; opr: TOperad; Op2: TOperan);');
-    txt.Add('begin');
-    txt.Add('');
-    txt.Add('  Result.tipNum:=t_int8;  //de 8 bits');
-    txt.Add('  Result.valInt:=(Op1.valInt + Op2.valInt) and $FF;  //resultado');
-    txt.Add('end;');
-  end;
-  txt.Add('//código de preparación');
-  for i:=0 to Types.Count-1 do begin
-    nomProc:='Execute_'+Types[i].name;
-    txt.Add(' Types['+IntToStr(i)+'].ProcExecOperat:=@'+nomProc+';');
-  end;
-
-  txt.SaveToFile('CodeTemplateForCompiler.txt');
-  Shell('notepad.exe CodeTemplateForCompiler.txt');
-  txt.Free;
-end;
 
 { TOperand }
 

@@ -102,9 +102,9 @@
         <UnitName Value="SynCompletionQ"/>
       </Unit4>
       <Unit5>
-        <Filename Value="uxpres.pas"/>
+        <Filename Value="XPresParser.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="uXpres"/>
+        <UnitName Value="XpresParser"/>
       </Unit5>
       <Unit6>
         <Filename Value="xprescomplet.pas"/>
@@ -117,7 +117,7 @@
         <UnitName Value="Globales"/>
       </Unit7>
       <Unit8>
-        <Filename Value="xpresbas.pas"/>
+        <Filename Value="XpresBas.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="XpresBas"/>
       </Unit8>
@@ -138,7 +138,7 @@
         <UnitName Value="FrameCfgEdit"/>
       </Unit10>
       <Unit11>
-        <Filename Value="formout.pas"/>
+        <Filename Value="FormOut.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="frmOut"/>
         <ResourceBaseClass Value="Form"/>

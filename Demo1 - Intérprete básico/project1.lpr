@@ -1,4 +1,4 @@
-program XpresI;
+program project1;
 
 {$mode objfpc}{$H+}
 
@@ -7,8 +7,7 @@ uses
   cthreads,
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
-  Forms, synhighlighterfacil, utileditsyn, syncompletionq, FormPrincipal,
-XpresParser, XpresComplet, Globales, XpresBas, formconfig, FrameCfgEdit, FormOut
+  Forms, Unit1, FormOut
   { you can add units after this };
 
 {$R *.res}
@@ -16,8 +15,7 @@ XpresParser, XpresComplet, Globales, XpresBas, formconfig, FrameCfgEdit, FormOut
 begin
   RequireDerivedFormResource := True;
   Application.Initialize;
-  Application.CreateForm(TfrmPrincipal, frmPrincipal);
-  Application.CreateForm(TConfig, Config);
+  Application.CreateForm(TForm1, Form1);
   Application.CreateForm(TfrmOut, frmOut);
   Application.Run;
 end.

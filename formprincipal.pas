@@ -7,7 +7,7 @@ interface
 uses
   Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs,
   ComCtrls, Menus, ActnList, StdActns, ExtCtrls, utilEditSyn, SynHighlighterFacil,
-  XpresComplet, uXpres, Process, Globales, FormConfig, FormOut;
+  XpresComplet, XpresParser, Process, Globales, FormConfig, FormOut;
 
 type
 
@@ -358,7 +358,7 @@ end;
 procedure TfrmPrincipal.acHerGenTemComExecute(Sender: TObject);
 //Genera plantilla de código para el compilador, de acuerdo a los tipos definidos
 begin
-  GenTemplCompiler;
+
 end;
 procedure TfrmPrincipal.acVerConsolExecute(Sender: TObject);
 //Muestra la consola

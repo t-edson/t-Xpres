@@ -516,7 +516,7 @@ end;
 //funciones básicas
 procedure fun_msgbox;
 begin
-  msgbox('eureka');
+  showmessage('eureka');
   //el tipo devuelto lo fijará el framework, al tipo definido
   res.estOp:=STORED_LIT;  //el valor devuelto no importa, pero debe devolver algo
 end;

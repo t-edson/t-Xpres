@@ -1,7 +1,7 @@
 object frmPrincipal: TfrmPrincipal
-  Left = 246
+  Left = 250
   Height = 480
-  Top = 106
+  Top = 147
   Width = 724
   AllowDropFiles = True
   Caption = 'frmPrincipal'
