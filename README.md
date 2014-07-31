@@ -23,21 +23,6 @@ Los generadores de código pueden desarrollarse para generar código intermedio,
 
 El framework se ha definido para un lenguaje especial al que se le ha llamado también Xpres, pero en teoría podría implementarse cualquier otro similar que se ajuste al modo de trabajo de los analizadores léxico y sintáctico; y de las librerías. 
 
-Lenguaje Xpres
-==============
-
-El lenguaje Xpres es un lenguaje simple, tipado e imperativo. En su versión actual, no soporta el manejo de objetos, pero se espera incluirlo en el futuro. Está pensado para poder implementar compiladores de bajo nivel para microcontroladores (de hecho el desarrollo del framework estuvo motivado en el desarrollo de un compilador para microcontroladores PIC). Por ello, se definen tipos de 8 bits, y la arquitectura del generador de código permite optimizar las operaciones.
-
-Xpres, es un lenguaje que se define empezando por los tipos, luego se definen los operadores que se apliquen a esos tipos, y luego las operaciones (sobre que tipo se aplica) que se permiten para cada operador. Por ejemplo:
-
-Si se define el tipo 'int8'. Luego se puede definir el operador '+' para 'int8', y luego se puede definir la operación 'suma de int8', que es la suma de un dato 'int8' con otro dato 'int8'.
-
-En este sentido, no existen operadores como elementos fundamentales del lenguaje, lo que si ocurre en la mayoría de lenguajes (como Pascal o C). Tampoco puede existir la sobrecarga de operadores, porque por definición, los operadores se definen para cada tipo de datos.
-
-Se espera que una implementación del lenguaje incluya ya las definiciones de tipos,  operadores y expresiones, de modo que no tengan que cambiarse luego.
-
-La definición del lenguaje Xpres, es también parte de este proyecto. Sin embargo, no se incluirá una implementación que cumpla con el 100% del lenguaje, al menos a corto plazo. El lenguaje se define, dejando abierta las puertas para implementaciones parciales. Por ejemplo, no se espera poder implementar aritmética en coma flotante de 64 bits, para microcontroladores sencillo de 8 bits. Las rutinas básicas del framework, detectan cuando no se ha implementado una operación u operador, y generan el mensaje de error correspondiente. De esta forma, el tratamiento de error se simplica considerablemente.
-
 En los ejemplos se incluye un caso minimalista con intérprete y un ejemplo de compilador para el intel 8086 en 16 bits.
 
 Xpres, aún está en fase de desarrollo. El estado del framework, es todavía incipiente, pero permite realizar implementaciones básicas. 
@@ -61,3 +46,19 @@ begin
   x;  //para mostrar el resultado
 end;
 ```
+
+Lenguaje Xpres
+==============
+
+El lenguaje Xpres es un lenguaje simple, tipado e imperativo. En su versión actual, no soporta el manejo de objetos, pero se espera incluirlo en el futuro. Está pensado para poder implementar compiladores de bajo nivel para microcontroladores (de hecho el desarrollo del framework estuvo motivado en el desarrollo de un compilador para microcontroladores PIC). Por ello, se definen tipos de 8 bits, y la arquitectura del generador de código permite optimizar las operaciones.
+
+Xpres, es un lenguaje que se define empezando por los tipos, luego se definen los operadores que se apliquen a esos tipos, y luego las operaciones (sobre que tipo se aplica) que se permiten para cada operador. Por ejemplo:
+
+Si se define el tipo 'int8'. Luego se puede definir el operador '+' para 'int8', y luego se puede definir la operación 'suma de int8', que es la suma de un dato 'int8' con otro dato 'int8'.
+
+En este sentido, no existen operadores como elementos fundamentales del lenguaje, lo que si ocurre en la mayoría de lenguajes (como Pascal o C). Tampoco puede existir la sobrecarga de operadores, porque por definición, los operadores se definen para cada tipo de datos.
+
+Se espera que una implementación del lenguaje incluya ya las definiciones de tipos,  operadores y expresiones, de modo que no tengan que cambiarse luego.
+
+La definición del lenguaje Xpres, es también parte de este proyecto. Sin embargo, no se incluirá una implementación que cumpla con el 100% del lenguaje, al menos a corto plazo. El lenguaje se define, dejando abierta las puertas para implementaciones parciales. Por ejemplo, no se espera poder implementar aritmética en coma flotante de 64 bits, para microcontroladores sencillo de 8 bits. Las rutinas básicas del framework, detectan cuando no se ha implementado una operación u operador, y generan el mensaje de error correspondiente. De esta forma, el tratamiento de error se simplica considerablemente.
+

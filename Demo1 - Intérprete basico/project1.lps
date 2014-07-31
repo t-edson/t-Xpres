@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectSession>
+    <PathDelim Value="\"/>
+    <Version Value="9"/>
+    <BuildModes Active="Default"/>
+    <Units Count="7">
+      <Unit0>
+        <Filename Value="project1.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="project1"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="1" Y="21"/>
+        <UsageCount Value="21"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="unit1.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="Form1"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="Unit1"/>
+        <EditorIndex Value="0"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1"/>
+        <CursorPos X="13" Y="12"/>
+        <UsageCount Value="21"/>
+        <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="formout.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="frmOut"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="FormOut"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="5"/>
+        <CursorPos X="10" Y="16"/>
+        <UsageCount Value="21"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="XPresParser.pas"/>
+        <UnitName Value="XpresParser"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="290"/>
+        <CursorPos X="25" Y="431"/>
+        <FoldState Value=" T4K03 T5kY061 TMiE410D121414181B]A84 TCi89D]W7jRG32 T3lb0EA piXjK0D6]9YjC059[I5D0E6[94]I{G3 pkRmg0W12]u6lc01L TLmA01C T0mGP4P[+4oMB47 pjLjBVIF]IcjHd35]IEfPQE]HZieR28]H6jHafC]90iRL3G]9RkUT31 THo137 T2wd61 TF;82HC"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="interprete1.pas"/>
+        <UnitName Value="interprete1"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="97"/>
+        <CursorPos X="29" Y="121"/>
+        <FoldState Value=" T3ie08u"/>
+        <UsageCount Value="10"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="C:\lazarus\components\synedit\synedithighlighter.pp"/>
+        <UnitName Value="SynEditHighlighter"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="1523"/>
+        <CursorPos X="1" Y="1539"/>
+        <UsageCount Value="10"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="XpresBas.pas"/>
+        <UnitName Value="XpresBas"/>
+        <WindowIndex Value="0"/>
+        <TopLine Value="294"/>
+        <CursorPos X="5" Y="314"/>
+        <UsageCount Value="10"/>
+      </Unit6>
+    </Units>
+    <General>
+      <ActiveWindowIndexAtStart Value="0"/>
+    </General>
+    <JumpHistory Count="3" HistoryIndex="2">
+      <Position1>
+        <Filename Value="XPresParser.pas"/>
+        <Caret Line="1120" Column="78" TopLine="1113"/>
+      </Position1>
+      <Position2>
+        <Filename Value="XPresParser.pas"/>
+        <Caret Line="1142" Column="21" TopLine="1113"/>
+      </Position2>
+      <Position3>
+        <Filename Value="XPresParser.pas"/>
+        <Caret Line="1143" Column="34" TopLine="1112"/>
+      </Position3>
+    </JumpHistory>
+  </ProjectSession>
+  <EditorMacros Count="0"/>
+</CONFIG>

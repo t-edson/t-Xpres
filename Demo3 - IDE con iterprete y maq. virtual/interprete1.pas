@@ -176,10 +176,10 @@ begin
   end;
   stack[sp].typ := res.typ;
   case res.Typ.cat of
-  t_string:  stack[sp].valStr  := res.valStr;
-  t_integer: stack[sp].valInt  := res.valInt;
-  t_float:   stack[sp].valFloat:= res.valFloat;
-  t_boolean: stack[sp].valBool := res.valBool;
+  t_string:  stack[sp].valStr  := res.GetvalStr;
+  t_integer: stack[sp].valInt  := res.GetvalInt;
+  t_float:   stack[sp].valFloat:= res.GetvalFloat;
+  t_boolean: stack[sp].valBool := res.GetvalBool;
   end;
   Inc(sp);
 end;
@@ -237,9 +237,11 @@ begin
     Code('  ;fin expres');
   end;
 end;
+///// Métodos de TOperand, que se deben implementar cuando se define un intérprete /////
 function TOperand.expres: string;
 //Devuelve una cadena con un texto que representa el valor del operador. Depende de los
-//estados de los oepradores que se haya definido.
+//estados de los oepradores que se haya definido. Se usa para generar texto de ayuda o código
+//intermedio.
 begin
   case estOp of
 //  NO_STORED:
@@ -250,13 +252,57 @@ begin
   else Result := '???'
   end;
 end;
+function TOperand.GetValBool: boolean;
+begin
+  if estOp = STORED_VAR then  //lee de la variable
+    Result := vars[ivar].valBool
+  else if estOp = STORED_ACU then  //expresiones están en res
+    Result := a.valBool
+  else if estOp = STORED_ACUb then  //expresiones están en res
+    Result := b.valBool
+  else  //debe ser constante o expresión
+    Result := cons.valBool;
+end;
+function TOperand.GetValInt: int64;
+begin
+  if estOp = STORED_VAR then  //lee de la variable
+    Result := vars[ivar].valInt
+  else if estOp = STORED_ACU then  //expresiones están en res
+    Result := a.valInt
+  else if estOp = STORED_ACUB then  //expresiones están en res
+    Result := b.valInt
+  else  //debe ser constante
+    Result := cons.valInt;
+end;
+function TOperand.GetValFloat: extended;
+begin
+  if estOp = STORED_VAR then  //lee de la variable
+    Result := vars[ivar].valFloat
+  else if estOp = STORED_ACU then  //expresiones están en res
+    Result := a.valFloat
+  else if estOp = STORED_ACUB then  //expresiones están en res
+    Result := b.valFloat
+  else  //debe ser constante o expresión
+    Result := cons.valFloat;
+end;
+function TOperand.GetValStr: string;
+begin
+  if estOp = STORED_VAR then  //lee de la variable
+    Result := vars[ivar].valStr
+  else if estOp = STORED_ACU then  //expresiones están en A
+    Result := a.valStr
+  else if estOp = STORED_ACUB then  //expresiones están en B
+    Result := b.valStr
+  else  //debe ser constante literal
+    Result := cons.valStr;
+end;
 
 ////////////operaciones con Enteros
 procedure int_procLoad(var Op: TOperand);
 begin
   //carga el operando en res
   setRes(tipInt,Op.estOp);
-  if Op.estOp = STORED_LIT then res.cons.valInt := Op.valInt;
+  if Op.estOp = STORED_LIT then res.cons.valInt := Op.GetvalInt;
 //  a.valInt:=Op.valInt;
 ///  Code('A<-' + Op.expres);
 end;
@@ -266,7 +312,7 @@ begin
     Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
-  vars[p1.ivar].valInt:=p2.valInt;
+  vars[p1.ivar].valInt:=p2.GetvalInt;
 //  res.used:=false;  //No hay obligación de que la asignación devuelva un valor.
   Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
@@ -276,34 +322,34 @@ begin
     Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
-  vars[p1.ivar].valInt:=Trunc(p2.valFloat);  //en la VM se puede mover directamente
+  vars[p1.ivar].valInt:=Trunc(p2.GetvalFloat);  //en la VM se puede mover directamente
 //  res.used:=false;  //No hay obligación de que la asignación devuelva un valor.
   Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
 
 procedure int_igual_int;
 begin
-  LoadAcumBool(p1.valInt=p2.valInt,'=');
+  LoadAcumBool(p1.GetValInt=p2.GetValInt,'=');
 end;
 procedure int_difer_int;
 begin
-  LoadAcumBool(p1.valInt<>p2.valInt,'<>');
+  LoadAcumBool(p1.GetValInt<>p2.GetValInt,'<>');
 end;
 procedure int_mayor_int;
 begin
-  LoadAcumBool(p1.valInt>p2.valInt,'>');
+  LoadAcumBool(p1.GetValInt>p2.GetValInt,'>');
 end;
 procedure int_menor_int;
 begin
-  LoadAcumBool(p1.valInt<p2.valInt,'<');
+  LoadAcumBool(p1.GetValInt<p2.GetValInt,'<');
 end;
 procedure int_mayori_int;
 begin
-  LoadAcumBool(p1.valInt>=p2.valInt,'>=');
+  LoadAcumBool(p1.GetValInt>=p2.GetValInt,'>=');
 end;
 procedure int_menori_int;
 begin
-  LoadAcumBool(p1.valInt<=p2.valInt,'<=');
+  LoadAcumBool(p1.GetValInt<=p2.GetValInt,'<=');
 end;
 
 procedure int_suma_int;
@@ -312,43 +358,43 @@ begin
     //es una operación con constantes, se optimiza evaluando primero
 
   end;
-  LoadAcumInt(p1.valInt+p2.valInt,'+');
+  LoadAcumInt(p1.GetValInt+p2.GetValInt,'+');
 end;
 procedure int_suma_float;
 begin
-  LoadAcumFloat(p1.valInt+p2.valFloat,'+');
+  LoadAcumFloat(p1.GetValInt+p2.GetValFloat,'+');
 end;
 procedure int_resta_int;
 begin
-  LoadAcumInt(p1.valInt-p2.valInt,'-');
+  LoadAcumInt(p1.GetValInt-p2.GetValInt,'-');
 end;
 procedure int_resta_float;
 begin
-  LoadAcumFloat(p1.valInt-p2.valFloat,'-');
+  LoadAcumFloat(p1.GetValInt-p2.GetValFloat,'-');
 end;
 procedure int_mult_int;
 begin
-  LoadAcumInt(p1.valInt*p2.valInt,'*');
+  LoadAcumInt(p1.GetValInt*p2.GetValInt,'*');
 end;
 procedure int_mult_float;
 begin
-  LoadAcumFloat(p1.valInt*p2.valFloat,'*');
+  LoadAcumFloat(p1.GetValInt*p2.GetValFloat,'*');
 end;
 procedure int_div_int;
 begin
-  LoadAcumFloat(p1.valInt/p2.valInt,'/');
+  LoadAcumFloat(p1.GetValInt/p2.GetValInt,'/');
 end;
 procedure int_div_float;
 begin
-  LoadAcumFloat(p1.valInt/p2.valFloat,'/');
+  LoadAcumFloat(p1.GetValInt/p2.GetValFloat,'/');
 end;
 procedure int_idiv_int;
 begin
-  LoadAcumInt(p1.valInt div p2.valInt,'\');
+  LoadAcumInt(p1.GetValInt div p2.GetValInt,'\');
 end;
 procedure int_resid_int;
 begin
-  LoadAcumInt(p1.valInt mod p2.valInt,'%');
+  LoadAcumInt(p1.GetValInt mod p2.GetValInt,'%');
 end;
 
 ////////////operaciones con Flotantes
@@ -356,7 +402,7 @@ procedure float_procLoad(var Op: TOperand);
 begin
   //carga el operando en res
   setRes(tipFloat,Op.estOp);
-  if Op.estOp = STORED_LIT then res.cons.valFloat := Op.valFloat;
+  if Op.estOp = STORED_LIT then res.cons.valFloat := Op.GetValFloat;
 //  a.valInt:=Op.valInt;
 ///  Code('A<-' + Op.expres);
 end;
@@ -366,7 +412,7 @@ begin
     Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
-  vars[p1.ivar].valFloat:=p2.valInt;
+  vars[p1.ivar].valFloat:=p2.GetValInt;
 //  res.used:=false;  //No hay obligación de que la asignación devuelva un valor.
   Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
@@ -376,67 +422,67 @@ begin
     Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
-  vars[p1.ivar].valFloat:=p2.valFloat;
+  vars[p1.ivar].valFloat:=p2.GetValFloat;
 //  res.used:=false;  //No hay obligación de que la asignación devuelva un valor.
   Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
 
 procedure float_igual_float;
 begin
-  LoadAcumBool(p1.valFloat=p2.valFloat,'=');
+  LoadAcumBool(p1.GetValFloat=p2.GetValFloat,'=');
 end;
 procedure float_difer_float;
 begin
-  LoadAcumBool(p1.valFloat<>p2.valFloat,'<>');
+  LoadAcumBool(p1.GetValFloat<>p2.GetValFloat,'<>');
 end;
 procedure float_mayor_float;
 begin
-  LoadAcumBool(p1.valFloat>p2.valFloat,'>');
+  LoadAcumBool(p1.GetValFloat>p2.GetValFloat,'>');
 end;
 procedure float_menor_float;
 begin
-  LoadAcumBool(p1.valFloat<p2.valFloat,'<');
+  LoadAcumBool(p1.GetValFloat<p2.GetValFloat,'<');
 end;
 procedure float_mayori_float;
 begin
-  LoadAcumBool(p1.valFloat>=p2.valFloat,'>=');
+  LoadAcumBool(p1.GetValFloat>=p2.GetValFloat,'>=');
 end;
 procedure float_menori_float;
 begin
-  LoadAcumBool(p1.valFloat<=p2.valFloat,'<=');
+  LoadAcumBool(p1.GetValFloat<=p2.GetValFloat,'<=');
 end;
 
 procedure float_suma_int;
 begin
-  LoadAcumFloat(p1.valFloat+p2.valInt,'+');;
+  LoadAcumFloat(p1.GetValFloat+p2.GetValInt,'+');;
 end;
 procedure float_suma_float;
 begin
-  LoadAcumFloat(p1.valFloat+p2.valFloat,'+');
+  LoadAcumFloat(p1.GetValFloat+p2.GetValFloat,'+');
 end;
 procedure float_resta_int;
 begin
-  LoadAcumFloat(p1.valFloat-p2.valInt,'-');
+  LoadAcumFloat(p1.GetValFloat-p2.GetValInt,'-');
 end;
 procedure float_resta_float;
 begin
-  LoadAcumFloat(p1.valFloat-p2.valFloat,'-');
+  LoadAcumFloat(p1.GetValFloat-p2.GetValFloat,'-');
 end;
 procedure float_mult_int;
 begin
-  LoadAcumFloat(p1.valFloat*p2.valInt,'*');
+  LoadAcumFloat(p1.GetValFloat*p2.GetValInt,'*');
 end;
 procedure float_mult_float;
 begin
-  LoadAcumFloat(p1.valFloat*p2.valFloat,'*');
+  LoadAcumFloat(p1.GetValFloat*p2.GetValFloat,'*');
 end;
 procedure float_div_int;
 begin
-  LoadAcumFloat(p1.valFloat / p2.valInt,'/');;
+  LoadAcumFloat(p1.GetValFloat / p2.GetValInt,'/');;
 end;
 procedure float_div_float;
 begin
-  LoadAcumFloat(p1.valFloat / p2.valFloat,'/');
+  LoadAcumFloat(p1.GetValFloat / p2.GetValFloat,'/');
 end;
 
 ////////////operaciones con booleanos
@@ -444,7 +490,7 @@ procedure bool_procLoad(var Op: TOperand);
 begin
   //carga el operando en res
   setRes(tipBool,Op.estOp);
-  if Op.estOp = STORED_LIT then res.cons.valBool := Op.valBool;
+  if Op.estOp = STORED_LIT then res.cons.valBool := Op.GetValBool;
 //  a.valInt:=Op.valInt;
 ///  Code('A<-' + Op.expres);
 end;
@@ -454,30 +500,30 @@ begin
     Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
-  vars[p1.ivar].valBool:=p2.valBool;
+  vars[p1.ivar].valBool:=p2.GetValBool;
 //  res.used:=false;  //No hay obligación de que la expresión devuelva un valor.
   Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
 
 procedure bool_igual_bool;
 begin
-  LoadAcumBool(p1.valBool=p2.valBool,'=');
+  LoadAcumBool(p1.GetValBool=p2.GetValBool,'=');
 end;
 procedure bool_difer_bool;
 begin
-  LoadAcumBool(p1.valBool<>p2.valBool,'<>');
+  LoadAcumBool(p1.GetValBool<>p2.GetValBool,'<>');
 end;
 procedure bool_and_bool;
 begin
-  LoadAcumBool(p1.valBool and p2.valBool,'and');
+  LoadAcumBool(p1.GetValBool and p2.GetValBool,'and');
 end;
 procedure bool_or_bool;
 begin
-  LoadAcumBool(p1.valBool or p2.valBool,'or');
+  LoadAcumBool(p1.GetValBool or p2.GetValBool,'or');
 end;
 procedure bool_xor_bool;
 begin
-  LoadAcumBool(p1.valBool xor p2.valBool,'xor');
+  LoadAcumBool(p1.GetValBool xor p2.GetValBool,'xor');
 end;
 
 ////////////operaciones con string
@@ -485,7 +531,7 @@ procedure str_procLoad(var Op: TOperand);
 begin
   //carga el operando en res
   setRes(tipStr,Op.estOp);
-  if Op.estOp = STORED_LIT then res.cons.valStr := Op.valStr;
+  if Op.estOp = STORED_LIT then res.cons.valStr := Op.GetValStr;
 //  a.valInt:=Op.valInt;
 ///  Code('A<-' + Op.expres);
 end;
@@ -495,22 +541,22 @@ begin
     Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
-  vars[p1.ivar].valStr:=p2.valStr;
+  vars[p1.ivar].valStr:=p2.GetValStr;
 //  res.used:=false;  //No hay obligación de que la expresión devuelva un valor.
   Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
 
 procedure str_igual_str;
 begin
-  LoadAcumBool(p1.valStr=p2.valStr,'=');
+  LoadAcumBool(p1.GetValStr=p2.GetValStr,'=');
 end;
 procedure str_difer_str;
 begin
-  LoadAcumBool(p1.valStr<>p2.valStr,'<>');
+  LoadAcumBool(p1.GetValStr<>p2.GetValStr,'<>');
 end;
 procedure str_concat_str;
 begin
-  LoadAcumStr(p1.valStr+p2.valStr,'+');
+  LoadAcumStr(p1.GetValStr+p2.GetValStr,'+');
 end;
 
 //funciones básicas

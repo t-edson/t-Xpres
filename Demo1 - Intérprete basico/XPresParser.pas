@@ -504,7 +504,7 @@ begin
   setlength(funcs[ifun].pars, n+1);
   funcs[ifun].pars[n] := typ;  //agrega referencia
 end;
-{$I interprete1.pas}
+{$I interprete_bas.pas}
 function TokAct: string; inline;
 //Devuelve el token actual, ignorando la caja.
 begin
@@ -1136,9 +1136,10 @@ begin
    p1 := Op1;    //fija operando 1
    p2 := Op2;    //fija operando 2
    o.proc;      //Llama al evento asociado
-   Result.typ := res.typ;    //lee tipo
-   Result.catOp:=res.catOp;  //tipo de operando
-   Result.estOp:=res.estOp;  //actualiza estado
+//   Result.typ := res.typ;    //lee tipo
+//   Result.catOp:=res.catOp;  //tipo de operando
+//   Result.estOp:=res.estOp;  //actualiza estado
+   Result := res;  //necesario para un intérprete
    //Completa campos de evaluar
    Result.txt := Op1.txt + opr.txt + Op2.txt;   //texto de la expresión
 //   Evaluar.uop := opr;   //última operación ejecutada

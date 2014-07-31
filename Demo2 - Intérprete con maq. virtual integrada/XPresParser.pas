@@ -69,22 +69,6 @@ type
   TOperand = object
   private
     cons: Tvar;        //valor en caso de que sea una constante
-{    procedure cons_SetvalInt(AValue: Int64);
-    procedure var_SetvalInt(AValue: Int64);
-    procedure cons_SetvalFloat(AValue: extended);
-    procedure var_SetvalFloat(AValue: extended);
-    procedure cons_SetvalBool(AValue: boolean);
-    procedure var_SetvalBool(AValue: boolean);
-    procedure cons_SetvalStr(AValue: string);
-    procedure var_SetvalStr(AValue: string);}
-    function GetValBool: boolean;
-//    procedure SetValBol(AValue: boolean);
-    function GetValInt: int64;
-//    procedure SetValInt(AValue: Int64);
-    function GetValFloat: extended;
-//    procedure SetValFloat(AValue: extended);
-    function GetValStr: string;
-//    procedure SetValStr(AValue: string);
   public
 //    name : string;
     typ  : TType;     //referencia al tipo de dato
@@ -100,20 +84,13 @@ type
     function FindOperator(const oper: string): TOperator; //devuelve el objeto operador
     function GetOperator: Toperator;
 
-    //metodos para facilitar la implementación del intérprete
+    //Métodos para facilitar la implementación del intérprete
     function expres: string;  //devuelve una cadena que expresa al operando
-    property valInt: Int64 read GetValInt; // write SetvalInt;
-    property valFloat: extended read GetValFloat; // write SetValFloat;
-    property valStr: string read GetValStr; // write SetValStr;
-    property valBool: boolean read GetValBool;// write SetValBol;
-{    property cons_valInt: Int64 write cons_SetvalInt;
-     property var_valInt: Int64 write var_SetvalInt;
-     property cons_valFloat: extended write cons_SetvalFloat;
-     property var_valFloat: extended write var_SetvalFloat;
-     property cons_valBool: boolean write cons_SetvalBool;
-     property var_valBool: boolean write var_SetvalBool;
-     property cons_valStr: string write cons_SetvalStr;
-     property var_valStr: string write var_SetvalStr;}
+    //permite para obtener valores del operando
+    function GetValBool: boolean;
+    function GetValInt: int64;
+    function GetValFloat: extended;
+    function GetValStr: string;
   end;
 
   TProcDefineVar = procedure(const varName, varInitVal: string);
@@ -207,8 +184,8 @@ var  //variables privadas del compilador
   funcs : array of Tfunc; //lista de funciones
   cons  : array of Tvar;  //lista de constantes
   nIntVar : integer;   //número de variables internas
-  nIntFun : integer;   //núemro de funciones internas
-  nIntCon : integer;   //núemro de constantes internas
+  nIntFun : integer;   //número de funciones internas
+  nIntCon : integer;   //número de constantes internas
 
   tkIdentif : TSynHighlighterAttributes;
   tkKeyword : TSynHighlighterAttributes;
@@ -527,7 +504,7 @@ begin
   setlength(funcs[ifun].pars, n+1);
   funcs[ifun].pars[n] := typ;  //agrega referencia
 end;
-{$I interprete1.pas}
+{$I interprete_vm.pas}
 function TokAct: string; inline;
 //Devuelve el token actual, ignorando la caja.
 begin
@@ -980,10 +957,10 @@ var
 begin
   tmp := 'Result ' + CategName(Op.typ.cat) + '(' + Op.typ.name + ') = ';
   case Op.Typ.cat of
-  t_integer: frmOut.puts(tmp + IntToStr(Op.valInt));
-  t_float :  frmOut.puts(tmp + FloatToStr(Op.valFloat));
-  t_string:  frmOut.puts(tmp + Op.valStr);
-  t_boolean: if Op.valBool then frmOut.puts(tmp + 'TRUE')
+  t_integer: frmOut.puts(tmp + IntToStr(Op.GetValInt));
+  t_float :  frmOut.puts(tmp + FloatToStr(Op.GetValFloat));
+  t_string:  frmOut.puts(tmp + Op.GetValStr);
+  t_boolean: if Op.GetValBool then frmOut.puts(tmp + 'TRUE')
              else frmOut.puts(tmp + 'FALSE');
   end;
 end;
@@ -992,9 +969,8 @@ procedure ShowResult;
 begin
   case res.estOp of
   NO_STORED : frmOut.puts('Resultado no almacen.');
-  STORED_LIT, STORED_VAR, STORED_ACU, STORED_ACUB : ShowOperand(res);
-  else
-    frmOut.puts('Estado descon.');
+  else  //se supone que está en un estado válido
+    ShowOperand(res);
   end;
 end;
 procedure CompileCurBlock;
@@ -1312,78 +1288,6 @@ end;}
 
 { TOperand }
 
-function TOperand.GetValBool: boolean;
-begin
-  if estOp = STORED_VAR then  //lee de la variable
-    Result := vars[ivar].valBool
-  else if estOp = STORED_ACU then  //expresiones están en res
-    Result := a.valBool
-  else if estOp = STORED_ACUb then  //expresiones están en res
-    Result := b.valBool
-  else  //debe ser constante o expresión
-    Result := cons.valBool;
-end;
-{procedure TOperand.SetValBol(AValue: boolean);
-begin
-  if estOp = STORED_VAR then  //solo permite escribir en variable
-    vars[ivar].valBol := AValue;
-//  else  //es expresión
-//    cons.valInt := AValue;
-end;}
-function TOperand.GetValInt: int64;
-begin
-  if estOp = STORED_VAR then  //lee de la variable
-    Result := vars[ivar].valInt
-  else if estOp = STORED_ACU then  //expresiones están en res
-    Result := a.valInt
-  else if estOp = STORED_ACUB then  //expresiones están en res
-    Result := b.valInt
-  else  //debe ser constante
-    Result := cons.valInt;
-end;
-{procedure TOperand.SetValInt(AValue: Int64);
-begin
-  if estOp = STORED_VAR then  //solo permite escribir en variable
-    vars[ivar].valInt := AValue;
-//  else  //es expresión
-//    cons.valInt := AValue;
-end;}
-function TOperand.GetValFloat: extended;
-begin
-  if estOp = STORED_VAR then  //lee de la variable
-    Result := vars[ivar].valFloat
-  else if estOp = STORED_ACU then  //expresiones están en res
-    Result := a.valFloat
-  else if estOp = STORED_ACUB then  //expresiones están en res
-    Result := b.valFloat
-  else  //debe ser constante o expresión
-    Result := cons.valFloat;
-end;
-{procedure TOperand.SetValFloat(AValue: extended);
-begin
-  if estOp = STORED_VAR then  //solo permite escribir en variable
-    vars[ivar].valFloat := AValue;
-//  else  //es expresión
-//    cons.valInt := AValue;
-end;}
-function TOperand.GetValStr: string;
-begin
-  if estOp = STORED_VAR then  //lee de la variable
-    Result := vars[ivar].valStr
-  else if estOp = STORED_ACU then  //expresiones están en A
-    Result := a.valStr
-  else if estOp = STORED_ACUB then  //expresiones están en B
-    Result := b.valStr
-  else  //debe ser constante literal
-    Result := cons.valStr;
-end;
-{procedure TOperand.SetValStr(AValue: string);
-begin
-  if estOp = STORED_VAR then  //solo permite escribir en variable
-    vars[ivar].valStr := AValue;
-//  else  //es expresión
-//    cons.valInt := AValue;
-end;}
 procedure TOperand.Load;
 begin
   //llama al evento de carga

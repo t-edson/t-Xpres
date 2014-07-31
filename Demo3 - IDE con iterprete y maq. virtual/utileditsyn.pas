@@ -2,6 +2,9 @@
 * Se eliminan los métodos GuardarADisco() y LeerDeDisco(), y se hace pública la
 lista ArcRecientes, para que pueda ser guardada por un proceso externo.
 * Se cambia el nombre de la lista ArcRecientes a RecentFiles.
+* Se argega validación de archivo modificado, cuando se carga uno nuevo desde el
+menú de recientes.
+* Se agrega iniicalización de error a OpenDialog().
 
                                   Modif. Por Tito Hinostroza 12/07/2014
 }
@@ -554,6 +557,7 @@ function TObjEditor.OpenDialog(OpenDialog1: TOpenDialog): boolean;
 //pedir confirmación para grabar el contenido actual.
 var arc0: string;
 begin
+  Error := '';
   if SaveQuery then Exit;   //Verifica cambios
   if Error<>'' then exit;  //hubo error
   if not OpenDialog1.Execute then exit;    //se canceló

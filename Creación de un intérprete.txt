@@ -1,0 +1,15 @@
+30/07/2014  -- Por Tito Hinostroza
+
+Se describe la implementación de un intérprete sencillo, trabajando en Lazarus 1.2.
+
+Para implementar un inérprete sencillo se requieren mínimamente las siguientes uniades:
+
+* synhighlighterfacil.pas
+* XpresBas.pas
+* XPresParser.pas
+
+Se debe además incluir el formulario FormOut, que será el formulario de salida para mostrar 
+los mensajes generados con la instrucción puts().
+
+LUego se debe escribir el código del intérprete. Se puede usar como base el Demo1 y a partir 
+de allí agregar los operadores y operaciones necesarias.

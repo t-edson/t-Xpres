@@ -37,7 +37,7 @@ Por Tito Hinostroza  30/07/2014
 
 const
   //////// Constantes para indicar el estado de los operadores //////////
-  //Este estados debe existir siempre.
+  //Estos estados deben existir siempre.
   NO_STORED = 0;  //No cargado.
   STORED_LIT = 1; //El resultado es una constante. Está cargado directamente.
   STORED_VAR = 2; //Indica que el resultado está en memoria, en una variable.
@@ -108,8 +108,8 @@ begin
   end;
   stack[sp].typ := res.typ;
   case res.Typ.cat of
-  t_string:  stack[sp].valStr  := res.valStr;
-  t_integer: stack[sp].valInt  := res.valInt;
+  t_string:  stack[sp].valStr  := res.GetValStr;
+  t_integer: stack[sp].valInt  := res.GetValInt;
   end;
   Inc(sp);
 end;
@@ -163,6 +163,7 @@ begin
     Code('  ;fin expres');
   end;
 end;
+///// Métodos de TOperand, que se deben implementar cuando se define un intérprete /////
 function TOperand.expres: string;
 //Devuelve una cadena con un texto que representa el valor del operador. Depende de los
 //estados de los oepradores que se haya definido.
@@ -176,13 +177,57 @@ begin
   else Result := '???'
   end;
 end;
+function TOperand.GetValBool: boolean;
+begin
+  if estOp = STORED_VAR then  //lee de la variable
+    Result := vars[ivar].valBool
+  else if estOp = STORED_ACU then  //expresiones están en res
+    Result := a.valBool
+  else if estOp = STORED_ACUb then  //expresiones están en res
+    Result := b.valBool
+  else  //debe ser constante o expresión
+    Result := cons.valBool;
+end;
+function TOperand.GetValInt: int64;
+begin
+  if estOp = STORED_VAR then  //lee de la variable
+    Result := vars[ivar].valInt
+  else if estOp = STORED_ACU then  //expresiones están en res
+    Result := a.valInt
+  else if estOp = STORED_ACUB then  //expresiones están en res
+    Result := b.valInt
+  else  //debe ser constante
+    Result := cons.valInt;
+end;
+function TOperand.GetValFloat: extended;
+begin
+  if estOp = STORED_VAR then  //lee de la variable
+    Result := vars[ivar].valFloat
+  else if estOp = STORED_ACU then  //expresiones están en res
+    Result := a.valFloat
+  else if estOp = STORED_ACUB then  //expresiones están en res
+    Result := b.valFloat
+  else  //debe ser constante o expresión
+    Result := cons.valFloat;
+end;
+function TOperand.GetValStr: string;
+begin
+  if estOp = STORED_VAR then  //lee de la variable
+    Result := vars[ivar].valStr
+  else if estOp = STORED_ACU then  //expresiones están en A
+    Result := a.valStr
+  else if estOp = STORED_ACUB then  //expresiones están en B
+    Result := b.valStr
+  else  //debe ser constante literal
+    Result := cons.valStr;
+end;
 
 ////////////operaciones con Enteros
 procedure int_procLoad(var Op: TOperand);
 begin
   //carga el operando en res
   setRes(tipInt,Op.estOp);
-  if Op.estOp = STORED_LIT then res.cons.valInt := Op.valInt;
+  if Op.estOp = STORED_LIT then res.cons.valInt := Op.GetValInt;
 //  a.valInt:=Op.valInt;
 ///  Code('A<-' + Op.expres);
 end;
@@ -192,18 +237,18 @@ begin
     Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
-  vars[p1.ivar].valInt:=p2.valInt;
+  vars[p1.ivar].valInt:=p2.GetValInt;
 //  res.used:=false;  //No hay obligación de que la asignación devuelva un valor.
   Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
 
 procedure int_suma_int;
 begin
-  LoadAcumInt(p1.valInt+p2.valInt,'+');
+  LoadAcumInt(p1.GetValInt+p2.GetValInt,'+');
 end;
 procedure int_resta_int;
 begin
-  LoadAcumInt(p1.valInt-p2.valInt,'-');
+  LoadAcumInt(p1.GetValInt-p2.GetValInt,'-');
 end;
 
 ////////////operaciones con string
@@ -211,7 +256,7 @@ procedure str_procLoad(var Op: TOperand);
 begin
   //carga el operando en res
   setRes(tipStr,Op.estOp);
-  if Op.estOp = STORED_LIT then res.cons.valStr := Op.valStr;
+  if Op.estOp = STORED_LIT then res.cons.valStr := Op.GetValStr;
 //  a.valInt:=Op.valInt;
 ///  Code('A<-' + Op.expres);
 end;
@@ -221,14 +266,14 @@ begin
     Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
-  vars[p1.ivar].valStr:=p2.valStr;
+  vars[p1.ivar].valStr:=p2.GetValStr;
 //  res.used:=false;  //No hay obligación de que la expresión devuelva un valor.
   Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
 
 procedure str_concat_str;
 begin
-  LoadAcumStr(p1.valStr+p2.valStr,'+');
+  LoadAcumStr(p1.GetValStr+p2.GetValStr,'+');
 end;
 
 //funciones básicas

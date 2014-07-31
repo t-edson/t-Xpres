@@ -448,9 +448,11 @@ object Form1: TForm1
     MouseSelActions = <>
     Lines.Strings = (
       '//programa ejemplo'
+      'var x: int;'
       'begin'
+      '  x := 1+2;'
       '  puts "Hola mundo";'
-      '  1+1;  //devolverá 2 como último resultado'
+      '  x+1;  //devolverá 4 como último resultado'
       'end'
     )
     VisibleSpecialChars = [vscSpace, vscTabAtLast]
