@@ -162,11 +162,13 @@ type
 
 
 var //variables públicas del compilador
-  PErr : TPError;    //Objeto de Error
-  mem: TStringList;  //texto de salida del compilador
-  p1, p2: TOperand;  //operandos de la operación actual
-  res: TOperand;     //resultado de la evaluación de la última expresión.
-  xLex : TSynFacilComplet;  //resaltador - lexer
+  PErr  : TPError;     //Objeto de Error
+  mem   : TStringList; //texto de salida del compilador
+  p1, p2: TOperand;    //operandos de la operación actual
+  res   : TOperand;    //resultado de la evaluación de la última expresión.
+  xLex  : TSynFacilComplet; //resaltador - lexer
+  ejecProg: boolean;   //Indica que se está ejecutando un programa o compilando
+
 
 procedure Compilar(NombArc: string; LinArc: Tstrings);
 
@@ -184,6 +186,7 @@ var  //variables privadas del compilador
   nIntFun : integer;   //número de funciones internas
   nIntCon : integer;   //número de constantes internas
 
+  tkEol     : TSynHighlighterAttributes;
   tkIdentif : TSynHighlighterAttributes;
   tkKeyword : TSynHighlighterAttributes;
   tkNumber  : TSynHighlighterAttributes;
@@ -440,6 +443,7 @@ end;
 function GetExpression(const prec: Integer; isParam: boolean = false): TOperand; forward;
 function GetBoolExpression: TOperand; forward;
 procedure CompileCurBlock; forward;
+procedure CreateVariable(varName, varType: string); forward;
 
 ////////////////Rutinas de generación de código para el compilador////////////
 function HayError: boolean;
@@ -536,7 +540,13 @@ var
 begin
   if pos('.',toknum) <> 0 then begin  //es flotante
     Op.catTyp := t_float;   //es flotante
-    f := StrToFloat(toknum);  //carag con la mayor precisión posible
+    try
+      f := StrToFloat(toknum);  //carga con la mayor precisión posible
+    except
+      Op.typ := nil;
+      PErr.GenError('Número decimal no válido.',PosAct);
+      exit;
+    end;
     //busca el tipo numérico más pequeño que pueda albergar a este número
     Op.size := 4;   //se asume que con 4 bytes bastará
     {Aquí se puede decidir el tamaño de acuerdo a la cantidad de decimales indicados}
@@ -1011,24 +1021,39 @@ end;
 procedure Compilar(NombArc: string; LinArc: Tstrings);
 //Compila el contenido de un archivo a ensamblador
 begin
-  Perr.IniError;
-  ClearVars;       //limpia las variables
-  ClearFuncs;      //limpia las funciones
-  mem.Clear;       //limpia salida
-  cIn.ClearAll;     //elimina todos los Contextos de entrada
-  ExprLevel := 0;  //inicia
-  //compila el archivo abierto
+  //se pone en un "try" para capturar errores y para tener un punto salida de salida
+  //único
+  if ejecProg then begin
+    PErr.GenError('Ya se está compialndo un programa actualmente.',PosAct);
+    exit;  //sale directamente
+  end;
+  try
+    ejecProg := true;  //marca bandera
 
-//  con := PosAct;   //Guarda posición y referencia a contenido actual
-  cIn.NuevoContexEntArc(NombArc,LinArc);   //Crea nuevo contenido
-  if PErr.HayError then exit;
-  CompilarArc;     //puede dar error
-  cIn.QuitaContexEnt;   //es necesario por dejar limpio
-  if PErr.HayError then exit;   //sale
-//  PosAct := con;   //recupera el contenido actual
+    Perr.IniError;
+    ClearVars;       //limpia las variables
+    ClearFuncs;      //limpia las funciones
+    mem.Clear;       //limpia salida
+    cIn.ClearAll;     //elimina todos los Contextos de entrada
+    ExprLevel := 0;  //inicia
+    //compila el archivo abierto
 
-//  PPro.GenArchivo(ArcSal);
-  ShowResult;  //muestra el resultado
+  //  con := PosAct;   //Guarda posición y referencia a contenido actual
+    cIn.NuevoContexEntArc(NombArc,LinArc);   //Crea nuevo contenido
+    if PErr.HayError then exit;
+    CompilarArc;     //puede dar error
+
+    cIn.QuitaContexEnt;   //es necesario por dejar limpio
+    if PErr.HayError then exit;   //sale
+  //  PosAct := con;   //recupera el contenido actual
+
+  //  PPro.GenArchivo(ArcSal);
+    ShowResult;  //muestra el resultado
+  finally
+    ejecProg := false;
+    //tareas de finalización
+    //como actualizar estado
+  end;
 end;
 function Evaluar(var Op1: TOperand; opr: TOperator; var Op2: TOperand): TOperand;
 //Ejecuta una operación con dos operandos y un operador. "opr" es el operador de Op1.

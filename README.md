@@ -1,7 +1,7 @@
 t-Xpres
 =======
 
-Sencillo marco de trabajo (framework) para implementar compiladores o intérpretes para un lenguajes imperativos y tipados. Como parte del proyecto, se define un nuevo lenguaje, al que también se le llama Xpres.
+Sencillo marco de trabajo (framework) para implementar compiladores o intérpretes para  lenguajes imperativos y tipados. Como parte del proyecto, se define un nuevo lenguaje, al que también se le llama Xpres.
 
 Esta desarrollado en Lazarus e incluye una sencilla IDE.
 
@@ -19,7 +19,7 @@ Xpres está diseñado para trabajar con el paquete SynEdit de Lazarus, porque el
 
 Además, al ser el analizador léxico, también un resaltador de sintaxis, se puede resaltar el código fuente con las mismas rutinas del analizador léxico, sin necesidad de implementar algún otro resaltador. De esta forma se garantiza una correspondencia al 100% entre los tokens del analizador léxico, y el coloreado que se puede lograr en pantalla.
 
-Hay que notar que de SynFacilSyn, solo se está usando su capacidad de lexer, más no de manejo de bloques de sintaxis. De momento los bloques de sintaxis, los maneja el analizador sintáctico. He intentado usar las opciones de manejo de bloques de SynFacilSyn como parte del analizador sintáctico, ero de momento no lo he logrado exitósamente.
+Hay que notar que de SynFacilSyn, solo se está usando su capacidad de lexer, más no de manejo de bloques de sintaxis. De momento los bloques de sintaxis, los maneja internamente el analizador sintáctico. He intentado usar las opciones de manejo de bloques de SynFacilSyn como parte del analizador sintáctico, pero de momento no he logrado implementarlo exitósamente.
 
 Los generadores de código pueden desarrollarse para generar código intermedio, como el bytecode de Java, o cualquier otro. Este proyecto no incluye ninguna máquina virtual.
 
