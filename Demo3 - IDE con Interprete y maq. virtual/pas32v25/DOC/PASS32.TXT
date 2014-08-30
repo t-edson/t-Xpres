@@ -1,0 +1,1522 @@
+****************************************************************************
+*                                                                          *
+*   PASS32 32 Bit Assembler               written by Dieter Pawelczak      *
+*                                                                          *
+*                          Version 2.5                                     *
+*                                                                          *
+*                      Short Instruction Manual                            *
+*                                                                          *
+*   (c) 1996-1999 by Dieter Pawelczak, Fasanenweg 41, 85540 Haar, Germany  *
+*                                                                          *
+****************************************************************************
+
+
+1. Operators
+
+-        ()  Marks priority evaluation
+-        []  Marks memory location
+-         *  Multiplies two integer expressions
+-         +  adds to integer expressions
+-         -  sign of integer expression
+          -  subtracts two integer expressions
+-         /  divides two integer expressions
+-         %  modulo of two integer expressions
+-       and  logical and of two expressions
+-       not  logical invert of expression
+-        or  logical or of two expressions
+-       xor  logical xor of two expressions
+-  byte ptr  forces memory location to be byte size
+-  word ptr  forces memory location to be word (2 bytes) size
+- dword ptr  forces memory location to be doubleword (4 bytes) size
+- qword ptr  forces memory location to be quadword (8 bytes) size
+- tbyte ptr  forces memory location to be 10-byte size
+- fword ptr  forces memory location to be 32-bit far pointer size
+-      size  returns reserved byte count for the data identifier
+
+2. Directives
+
+
+-    .ALIGN  forces data alignment or code alignment - use in the segment
+-  .ALLWARN  enables all warnings
+-    .BLOCK  the following data are stored as one block (alignment ignored)
+-     .CODE  the following instructions belong to the code segment;
+             assembler instructions following
+-  .COMMENT  marks the start of a comment
+-    .CONST  the following instructions belong to the code segment;
+             constant data definitions following
+-     .DATA  the following instructions belong to the data segment;
+             data definitions following
+-    .DATA?  the following instructions belong to the uninitialized
+             data segment; indeterminate data definitions following
+-    .DEBUG  use debugger for the following instructions
+-.DEBUGFILE  use other debugger module instead of DEBUG32.INC/DEBUG.INC
+-  .DISPLAY  displays message during assembling
+-        DB  allocates and initializes a byte storage for data and code
+-        DD  allocates and initializes a doubleword (4 bytes) storage
+-    DF, DP  allocates and initializes a 32-bit far pointer (6 bytes)
+             storage
+-        DQ  allocates and initializes a quadword (8 bytes) storage
+-        DT  allocates and initializes a ten bytes storage
+-        DW  allocates and initializes a word (2 bytes) storage
+-       DUP  duplicate storage
+-     .ELSE  alternative conditional assembly block - part of the
+             .IF directive
+-  END Name  specifies the entry point of the program
+-       END  marks the end of the assembler source
+-    .ENDIF  end of conditional assembly block - marks the end of the
+             .IF directive
+-      ENDP  marks the end of a procedure
+-      EMDM  marks the end of a macro
+-      .EQU  definition for a replacement
+-      .ERR  forces the assembler to generate an error
+-    .ERROR  forces the assembler to generate an error
+-   .EXTERN  marks identifier of other module as public - marks label of
+             other procedure as public
+-      .FAR  all procedure calls are treated as far (forward far calls)
+-       FAR  marks a procedure as far
+-       .IF  initiates a conditional assembly, expression must be unequal 0
+-      .IFE  initiates a conditional assembly, expression must be equal
+-      .IFM  initiates a conditional assembly, module must be included
+-  .IFMODEL  initiates a conditional assembly, depending on the model type  
+-     .IFPM  initiates a conditional assembly, target must be for protected mode
+-      .IFR  initiates a conditional assembly, expression must be a register
+-   .IFR R8  initiates a conditional assembly, expression must be an 8 bit reg.
+-  .IFR R16  initiates a conditional assembly, expression must be a 16 bit reg.
+-  .IFR R32  initiates a conditional assembly, expression must be a 32 bit reg.
+-      .IFS  initiates a conditional assembly, expression must be a string
+-.INTERFACE  marks the start of interface definitions for DLL/OVL type
+-  .INCLUDE  includes assembly file, any file will be included only once
+-.INCLUDEDIR sets directory to search for include files
+-   .INVOKE  to call a win32 API function (only Win32 model)
+-  .LOADBIN  links binary file directly into program code
+-    .MACRO  defines a MACRO
+-      NEAR  marks a procedure as near
+-  .NOALIGN  no data alignment
+-  .NOBLOCK  marks the end of a data block
+-  .NODEBUG  disables debugger: no debugging beyond this line
+-    .NOFAR  far calls are treated individually (no forward reference)
+-   .NOWARN  disables warnings
+-    .MODEL  defines the memory model TINY/FLAT/OVL/DLL
+-      .ORG  defines the code segment start
+-      .OUT  displays message during assembling
+-      PROC  defines procedure [attributes FAR / NEAR / START]
+-        RS  allocates and initializes a single real constant (4 bytes)
+-        RD  allocates and initializes a double real constant (8 bytes)
+-    RT, RE  allocates and initializes an extended (temp) real constant
+             (10 bytes)
+-     SHORT  uses a 8 bit rel. jump instruction
+-    .SMART  enables all code optimizations
+-   .SMART1  enables code optimizations for subroutines
+-   .SMART2  enables code optimizations for register instructions
+-   .SMART3  enables code optimizations for jump instructions
+-     START  marks a procedure as a start-up procedure
+-     .TYPE  multiple .EQU declaration for enumeration types
+-     .WARN  forces the assembler to generate a warning message
+-    .WIN32  to insert a win32 API function (only Win32 model)
+
+
+3. Extender/Linker Variables
+
+
+-      .MEM  specifies the mainmemory variable (FLAT/WIN32 model)
+-      .MIN  specifies the minimum amount of memory needed to run the program
+-      .MAX  specifies the maximum amount of memory used by the program
+-       .NM  disables extra messages
+-       .NB  disables DPMI break function
+-   .PLUGIN  forces the dos extender to load plugin
+-    .STACK  defines the stack size in KBytes  (FLAT/WIN32 model)
+-      .UCU  disables 1 sec loop for copyright message
+             (for uncommercial use only)
+-     .DOSX  to load other dos extender as stub
+
+4. Pass32 Arguments
+
+  The general syntax for the Pass32 Assembler is:
+
+    PASS32 Filename[.ASM] [-OPTIONS]
+  or
+    PASS32 Filename[.ASM] [/OPTIONS]
+
+  Here is a list of the Pass32 options:
+
+    Linker options:
+
+         -t               create com file (.COM)
+                          in combination with the TINY model
+         -f               create flat model binary (.BIN)
+                          in combination with the FLAT memory model
+         -w               create Win32 PE file (.EXE)
+         -ovl             create flat model overlay (.OVL)
+         -dll             create flat/Win32 model DLL (.DLL)
+         -3               create flat model 3os file (.3OS)
+         -out:name        specify output (.EXE/.COM) file name
+
+    Assembling options:
+
+         -a               enable all warnings
+         -nw              enable no warnings
+         -e               do not halt on first error
+         -o               optimize maximal
+         -os              optimize for size (exclude unused procedures)
+         -or              optimize instructions
+         -oj              optimize short jump instructions
+         -i:name          use directory name to search for include files
+         -im:name         include assembler file in source
+         -s               silent: no output of the assembling
+         -spp             skip preprocessor: assemble without using the pp
+
+
+    Debugger options:
+
+         -m               create map file:
+                          A file with the extendion .MAP is created.
+                          This file displays all symbols created during
+                          the assembling.
+
+         -mm / -dmp       create debug file:
+                          A file with the extendion .DMP is created.
+                          This file displays the whole source (including
+                          all sub-modules) with the correspondending
+                          offset address for each line.
+
+         -d               add debug information:
+                          Debug information is added to the executable file.
+                          Note: Debug information is added until the first
+                                .NODEBUG directive!
+                          Combination of -mm and -d allows to display the
+                          source code during debugging...
+
+         -error:HHHHH     displays error at offset HHHHH (hex):
+                          The source is assembled without creating an
+                          executable program file.
+                          When the error address is found, the
+                          correspondending source line will be displayed.
+
+
+    Extender/Linker options: (ignored when assembling with -t -dll -ovl -f option)
+
+         -mem:XXXXX      -allocate xxxxx KBytes of XMS:
+                          The initial program code/data segment is
+                          xxxxx KBytes in size.
+                         -allocate xxxxx Kbytes heap for the Win32 program
+         -min:XXXXX      -the program needs at least xxxxx KBytes of XMS.
+                          This option is equal to -mem
+                         -the minimum program heap for the Win32 program
+         -max:XXXXX       the program uses max. xxxxx KBytes of XMS.
+                         -the maximum program heap for the Win32 program
+         -st:XXXXX        sets the size of stack in KBytes
+
+         -nm              display no message:
+                          Usually the Dos Extender displays the linear
+                          address of the program segment. When DPMI is
+                          emulated, the DPMI Version number is displayed.
+                          These messages won't be displayed when assembling
+                          with this argument.
+         -nb              no control of CRTL-Break / CRTL+C:
+                          In emulated DPMI the Dos Extender takes control
+                          of [CRTL]+[Break] and [CRTL+C]. To avoid program
+                          abortion with [CRTL]+[Break]/[CRTL+C] you should
+                          use this option.
+         -c               write core on error:
+                          For post debugging the emulated DPMI can generate
+                          a core image of the program. When an exception
+                          occurs, the current program code (and data) segment
+                          will be stored in the file CORE.COR, which can be
+                          analysed by a disassembler / debugger.
+                          (not supported by the Pro32 GOLD series)
+         -core:XXXXX      write xxxxx KBytes core on error:
+                          Usually the core size is the .CODE and .DATA size.
+                          To store uninitialized data (.DATA?) you can alter
+                          the core size.
+                          (not supported by the Pro32 GOLD series)
+         -plug:NAME       forces the Pro32 dos extender to load a plug-in.
+                          (Pro32 GOLD)
+
+
+
+
+
+5. Examples
+
+- Expressions:  - binary, hexadecimal, octal and decimal constants:
+                  01100b  0ABCDEF12h   234o      123457
+                - arithmetic and logical operations
+                  01100b + 011b or 20h
+                  (8*(100+25*4-11h)+2048/8) xor 0ffffh
+                - data and code references
+                  OFFSET HelloMesg + SIZE HelloMesg
+                  HelloMesg + 2
+                  OFFSET Startprocedure
+- .EQU replacements: Maxdata     .EQU   1024
+                     MemorySize  .EQU   1024*1024
+                     ErrorMesg   .EQU  'Attention - Error!',10,13,'$'
+                     ClearRegs   .EQU  xor EAX,EAX//xor EBX,EBX//xor ECX,ECX
+- Data definitions
+                    .DATA
+                    ByteData   db 0111001b or 01000110b
+                    ByteRow    db 0,1,2,4,8,16,20h,40h,80h,,,0e0h
+                    TextStr    db 'This is a text string!',10,13,0
+                    TextEqu    db ErrorMesg   ; see .EQU replacements
+                    ByteArray  db 1024 dup(0) ; 1024 Bytes with value 0
+                    WordData   dw 0A00h
+                    WordRow    dw 0,100h,2*100h,4*100h,8*100h,10*100h
+                    WordArray  db 4096 dup(0FEEFh) ; 4096 words with $FEEF
+                    Double     dd ?                ; undefined
+                    TwoDouble  dd 12345678h, 9ABCDEFh
+                    QuadWord   dq 0,1024*1024,1892345689
+                    QuadArray  dq 100 dup(?)
+                    TenBytes   dt 0,?,?,1,?,?
+                    SingleReal rs 1.5
+                    RealRow    rs 2.7E15, 3.1919234E-8, 3.91217, 7.44117E-3
+                    DoubleReal rd 1.999975E+304
+                    TempReal   rt 99999.11111E+4111
+                    .DATA
+                    .PUBLIC public_id DD ?
+                    .PUBLIC .DATA
+                     more_public_id   DD ?
+                     public_too       DD ?
+
+- Block Definitions
+                    .DATA
+                    .ALIGN
+                    .BLOCK         ; the following data are stored as follows,
+                                   ; the first entry is aligned
+                    PrgEnvSeg      dw  ?
+                    PrgCommandPtr  dw  ?  ; OFFSET
+                                   dw  ?  ; SEGMENT
+                    FCB1           dd  ?
+                    FCB2           dd  ?
+                    EntryPointPtr  dd  ?
+                    StackPosition  dd  ?
+                    .NOBLOCK       ; the following entries are aligned:
+                    ProgramName    db  'TEST.EXE',0
+                    ProgramSize    dd  ?
+
+- Constant definitions
+                    .CONST
+                    ConstData  db 01111b xor 01001b and 001b
+                    ConstEpr   dd 99*(1024-11*90h+35*7h+32o)
+                    ConstStr   db 'This is a constant string!',10,13,0
+                    ConstReal  rt 1.0
+                    ModuloC    dw 1111 % 7
+
+- Undefined data
+                    .DATA?
+                    VideoBuffer db 256*1024 dup(?)
+                    VideoSegm   dw ?
+                    VideoSel    dw ?
+
+- Macro definitions
+
+                   .MACRO Create_Message(name,string)
+                      .DATA
+                       name db string,0   ; create string message
+                      .CODE
+                    ENDMACRO Create_Message
+
+                    .MACRO WRITE(stringoffs)
+                       mov edi,stringoffs
+                    .LOCAL @start:
+                        mov dl,[edi]
+                        cmp dl,0
+                        je short .LOCAL @end
+                        mov ah,2
+                        int 21h            ; display string char by char
+                        inc edi
+                        jmp .LOCAL  @start
+                    .LOCAL @end:
+                    ENDM WRITE
+
+                    .MACRO PrintError(Message)
+                       Create_Message(.LOCAL ERROR,'ERROR: ')
+                       Write(offset .LOCAL ERROR)
+                       Create_Message(.LOCAL MESG,Message)
+                       Write(offset .LOCAL MESG)
+                     ENDMACRO
+
+                     .CODE
+                       PrintError('Too many open files...')
+                       mov ah,4ch
+                       int 21h
+                     END
+
+- Procedure Definitions
+                    PROC MAIN NEAR
+                      ; this is the main procedure
+                    ENDP MAIN
+
+                    MAIN PROC NEAR
+                      ; this is the main procedure
+                    MAIN ENDP
+
+                    MAIN PROC FAR
+                      ; this is a far procedure
+                    ENDP MAIN
+
+                    STARTUP PROC START
+                      ; this procedure is called before main
+                    ENDP STARTUP
+
+                    END MAIN ; Programentry is procedure main
+
+- Label Definitions
+                    ThisIsTheLoop:
+                      ...
+                      loop ThisIsTheLoop
+
+                    TEST_AX:
+                      cmp ax,0
+                      je @CASEZERO
+                      cmp ax,1
+                      je @CASEONE
+                      cmp ax,2
+                      je @CASETWO
+                      ...
+                    @CASEZERO:
+                      ...
+                    @CASEONE:
+                      ...
+                    @CASETWO:
+                      ...
+
+                    _LOOP:
+                      ...
+                      loop _LOOP
+
+                    NAME_AND_NUMBERS_2:
+                    NAME_AND_NUMBERS_3:
+
+                    PROC ONE
+                    .PUBLIC publiclabel:   ; this label is defined public
+                      ...
+                    PROC TWO
+                      jmp publiclabel
+
+- Assembler Instructions
+                 .CODE
+                 Program_Entry:
+                    mov al,ByteData
+                    mov cl,ByteRow
+                    mov eax, dword ptr ByteRow
+                    shl eax,cl
+                    movzx eax,ax
+                    int 10h
+                    mov ecx, 100h+99*8-32/3+11*19
+                    test al,1001001b
+                    and al,20h or 40h or 80h
+                    shld eax,ecx,10h
+                    shrd edx,eax,cl
+                    bt [esp+5],3
+                    mov es:[0],ax
+                    cmp byte ptr fs:[edi],0
+                    mov [ecx+eax*4],eax
+                    mov [eax+8*edx+OFFSET QuadWord],eax
+                    mov word ptr Quadword+eax+2*ecx,ax
+                    mov ByteData+22*501h-33+ecx*2,al
+                    emms
+                    movd mm0,eax
+                    movd mm1,ecx
+                    paddb mm0,mm1
+                    movd eax,mm0
+                 END Program_Entry
+
+- Jump and calls
+                .DATA
+                   FarProcedurePtr   DF ?
+                   FarProcPtr2       DD 0100h
+                                     DW ?
+                .CODE
+                   call FarProcedurePtr
+                   CALL FWORD PTR FarProcPtr2
+                   cmp eax,0
+                   je EAX_IS_ZERO
+                   xor eax,eax
+                EAX_IS_ZERO:
+                   call MAIN
+                   jmp MAIN;     Jump to Procedure
+                   jmp EAX_IS_ZERO
+                   jmp FarProcedurePtr
+
+                   MAIN PROC NEAR
+                   ENDP MAIN
+
+- Extender Variables
+               .MEM 1024        ; reserves 1 MByte
+               .CORE 1024       ; enables core dump (1 MByte Core)
+               .NB              ; break function disabled
+               .NM              ; no messages from the Extender
+
+- Modular Programming
+  - Include assembler files:
+                .INCLUDE Modul        ; inserts MODUL.ASM at current
+                                      ; cursor position
+                .INCLUDE dpmi.inc
+                .INCLUDE E:\PASS32\DPMI.INC
+  - Include overlay interface
+                .INCLUDE demoovl.asm  ; includes only the interface part of
+                                      ; DEMOOVL.ASM
+                                      ; all interface procedure types can be
+                                      ; used as part of the program
+                                      ; make sure the OVL file is load !
+  - Include dynamic link library interface
+                .INCLUDE demodll.asm  ; includes only the interface part of
+                                      ; DEMODLL.ASM
+                                      ; all interface procedure types can be
+                                      ; used as part of the program
+                                      ; make sure the DLL file is load !
+  - link binary to program code
+                .CODE
+                .PUBLIC ColorPalette:
+                .LOADBIN GRAHPICS.PAL ; copies the binary file GRAPHICS.PAL
+                                      ; to the code segment at the current
+                                      ; offset
+                                      ; you get the location of the binary
+                                      ; with OFFSET ColorPalette
+                .LOADBIN List         ; adds LIST.BIN to the code segment
+
+
+
+
+6. Supported Assembler Instructions
+   Note: This list had been automatically created with the Pass32 source code.
+
+  AAA
+
+  AAD
+
+  AAM
+
+  AAS
+
+  ADC       reg8, r/m8
+  ADC       reg16, r/m16
+  ADC       reg32, r/m32
+  ADC       r/m8, imm8
+  ADC       r/m8, reg8
+  ADC       r/m16, imm8
+  ADC       r/m16, imm16
+  ADC       r/m16, reg16
+  ADC       r/m32, imm8
+  ADC       r/m32, imm32
+  ADC       r/m32, reg32
+  ADC       AL, imm8
+  ADC       AX, imm16
+  ADC       EAX, imm32
+
+  ADD       reg8, r/m8
+  ADD       reg16, r/m16
+  ADD       reg32, r/m32 
+  ADD       r/m8, imm8
+  ADD       r/m8, imm8 
+  ADD       r/m8, reg8 
+  ADD       r/m16, imm8 
+  ADD       r/m16, imm16
+  ADD       r/m16, reg16 
+  ADD       r/m32, imm8 
+  ADD       r/m32, imm32 
+  ADD       r/m32, reg32
+  ADD       AL, imm8 
+  ADD       AX, imm16 
+  ADD       EAX, imm32
+
+  AND       reg8, r/m8 
+  AND       reg16, r/m16
+  AND       reg32, r/m32 
+  AND       r/m8, imm8 
+  AND       r/m8, reg8
+  AND       r/m16, imm8
+  AND       r/m16, imm16 
+  AND       r/m16, reg16 
+  AND       r/m32, imm8 
+  AND       r/m32, imm32 
+  AND       r/m32, reg32 
+  AND       AL, imm8
+  AND       AX, imm16 
+  AND       EAX, imm32 
+
+  ARPL      r/m16
+
+  BOUND     r/m16
+  BOUND     r/m32
+
+  BSF       reg16, r/m16 
+  BSF       reg32, r/m32
+
+  BSR       reg16, r/m16
+  BSR       reg32, r/m32 
+
+  BSWAP     reg32
+
+  BT        r/m16, imm8 
+  BT        r/m16, reg16 
+  BT        r/m32, imm8 
+  BT        r/m32, reg32
+
+  BTC       r/m16, imm8 
+  BTC       r/m16, reg16
+  BTC       r/m32, imm8
+  BTC       r/m32, reg32 
+
+  BTR       r/m16, imm8
+  BTR       r/m16, reg16 
+  BTR       r/m32, imm8 
+  BTR       r/m32, reg32
+
+  BTS       r/m16, imm8 
+  BTS       r/m16, reg16 
+  BTS       r/m32, imm8 
+  BTS       r/m32, reg32 
+
+  CALL      rel16
+  CALL      rel32
+  CALL      mem16
+  CALL      mem32
+  CALL      mem48
+
+  CBW
+
+  CDQ
+
+  CLC
+
+  CLD       
+
+  CLI       
+
+  CLTS      
+
+  CMC       
+
+  CMP       reg8, r/m8 
+  CMP       reg16, r/m16 
+  CMP       reg32, r/m32
+  CMP       r/m8, imm8
+  CMP       r/m8, reg8 
+  CMP       r/m16, imm8
+  CMP       r/m16, imm16 
+  CMP       r/m16, reg16
+  CMP       r/m32, imm8 
+  CMP       r/m32, imm32
+  CMP       r/m32, reg32
+  CMP       AL, imm8 
+  CMP       AX, imm16
+  CMP       EAX, imm32 
+
+  CMPSB     
+
+  CMPSD     
+
+  CMPSW     
+
+  CMPXCHG   r/m8, reg8 
+  CMPXCHG   r/m16, reg16
+  CMPXCHG   r/m32, reg32
+
+  CPUID
+
+  CWD
+
+  CWDE
+
+  DAA       
+
+  DAS
+
+  DEC       reg16
+  DEC       reg32
+  DEC       r/m8
+  DEC       r/m16
+  DEC       r/m32
+
+  DIV       r/m8
+  DIV       r/m16
+  DIV       r/m32
+
+  EMMS
+
+  ENTER     imm16, imm8
+
+  F2XM1
+
+  FABS
+
+  FADD      st, st(i)
+  FADD      st(i), st
+  FADD      mem32
+  FADD      mem64
+
+  FADDP     st(i), st
+
+  FBLD      mem80
+
+  FBSTP     mem80
+
+  FCHS      
+
+  FCLEX
+
+  FCOM      st(i)
+  FCOM      mem32
+  FCOM      mem64
+
+  FCOMP     st(i)
+  FCOMP     mem32
+  FCOMP     mem64
+
+  FCOMPP    
+
+  FCOS      
+
+  FDECSTP
+
+  FDIV      st, st(i) 
+  FDIV      st(i), st 
+  FDIV      mem32
+  FDIV      mem64
+
+  FDIVP     st(i), st 
+
+  FDIVR     st, st(i) 
+  FDIVR     st(i), st
+  FDIVR     mem32
+  FDIVR     mem64
+
+  FDIVRP    st(i), st 
+
+  FFREE     st(i)
+
+  FFREEP    st(i)
+
+  FIADD     mem16
+  FIADD     mem32
+
+  FICOM     mem16
+  FICOM     mem32
+
+  FICOMP    mem16
+  FICOMP    mem32
+
+  FIDIV     mem16
+  FIDIV     mem32
+
+  FIDIVR    mem16
+  FIDIVR    mem32
+
+  FILD      mem16
+  FILD      mem32
+  FILD      mem64
+
+  FIMUL     mem16
+  FIMUL     mem32
+
+  FINCSTP   
+
+  FINIT     
+
+  FIST      mem16
+  FIST      mem32
+
+  FISTP     mem16
+  FISTP     mem32
+
+  FISUB     mem16
+  FISUB     mem32
+
+  FISUBR    mem16
+  FISUBR    mem32
+
+  FLD       st(i)
+  FLD       mem32
+  FLD       mem64
+  FLD       mem80
+
+  FLD1      
+
+  FLDCW     mem16
+
+  FLDENV    r/m16
+
+  FLDL2E
+
+  FLDL2T    
+
+  FLDLG2    
+
+  FLDLN2    
+
+  FLDPI     
+
+  FLDZ      
+
+  FMUL      st, st(i) 
+  FMUL      st(i), st 
+  FMUL      mem32
+  FMUL      mem64
+
+  FMULP     st(i), st
+
+  FNINIT    
+
+  FNOP
+
+  FNSTENV   r/m16
+
+  FPATAN    
+
+  FPREM     
+
+  FPREM1    
+
+  FPTAN     
+
+  FRNDINT
+
+  FRSTOR    r/m16
+
+  FSAVE     r/m16
+
+  FSCALE    
+
+  FSETPM
+
+  FSIN      
+
+  FSINCOS   
+
+  FSQRT     
+
+  FST       st(i)
+  FST       mem32
+  FST       mem64
+
+  FSTCW     mem16
+
+  FSTENV    r/m16
+
+  FSTP      st(i)
+  FSTP      mem32
+  FSTP      mem64
+  FSTP      mem80
+
+  FSTSW     r/m16
+  FSTSW     AX
+
+  FSUB      st, st(i) 
+  FSUB      st(i), st 
+  FSUB      mem32
+  FSUB      mem64
+
+  FSUBP     st(i), st 
+
+  FSUBR     st, st(i) 
+  FSUBR     st(i), st 
+  FSUBR     mem32
+  FSUBR     mem64
+
+  FSUBRP    st(i), st
+
+  FTST      
+
+  FUCOM     st(i)
+
+  FUCOMP    st(i)
+
+  FUCOMPP   
+
+  FWAIT     
+
+  FXAM      
+
+  FXCH      st(i)
+
+  FXTRACT   
+
+  FYL2X     
+
+  FYL2XP1
+
+  HLT       
+
+  IDIV      r/m8
+  IDIV      r/m16
+  IDIV      r/m32
+
+  IMUL      reg16, r/m16
+  IMUL      reg32, r/m32
+  IMUL      reg16, r/m16, imm8
+  IMUL      reg32, r/m32, imm8
+  IMUL      r/m8
+  IMUL      r/m16
+  IMUL      r/m16, imm8 
+  IMUL      r/m16, imm16 
+  IMUL      r/m32
+  IMUL      r/m32, imm8 
+  IMUL      r/m32, imm32 
+
+  IN        AL, imm8
+  IN        AL, DX
+  IN        AX, imm8
+  IN        AX, DX
+  IN        EAX, imm8
+  IN        EAX, DX
+
+  INC       reg16
+  INC       reg32
+  INC       r/m8
+  INC       r/m16
+  INC       r/m32
+
+  INSB      
+
+  INSD
+
+  INSW      
+
+  INT       
+
+  INT3      
+
+  INTO
+
+  INVD      
+
+  INVLPG    
+
+  IRET      
+
+  IRETD
+
+  JA        rel8
+  JA        rel16
+  JA        rel32
+
+  JAE       rel8
+  JAE       rel16
+  JAE       rel32
+
+  JB        rel8
+  JB        rel16
+  JB        rel32
+
+  JBE       rel8
+  JBE       rel16
+  JBE       rel32
+
+  JC        rel8
+  JC        rel16
+  JC        rel32
+
+  JCXZ      rel8
+  JECXZ     rel8
+
+  JE        rel8
+  JE        rel16
+  JE        rel32
+
+  JG        rel8
+  JG        rel16
+  JG        rel32
+
+  JGE       rel8
+  JGE       rel16
+  JGE       rel32
+
+  JL        rel8
+  JL        rel16
+  JL        rel32
+
+  JLE       rel8
+  JLE       rel16
+  JLE       rel32
+
+  JMP       rel8
+  JMP       rel16
+  JMP       rel32
+
+  JNA       rel8
+  JNA       rel16
+  JNA       rel32
+
+  JNAE      rel8
+  JNAE      rel16
+  JNAE      rel32
+
+  JNB       rel8
+  JNB       rel16
+  JNB       rel32
+
+  JNBE      rel8
+  JNBE      rel16
+  JNBE      rel32
+
+  JNC       rel8
+  JNC       rel16
+  JNC       rel32
+
+  JNE       rel8
+  JNE       rel16
+  JNE       rel32
+
+  JNG       rel8
+  JNG       rel16
+  JNG       rel32
+
+  JNGE      rel8
+  JNGE      rel16
+  JNGE      rel32
+
+  JNL       rel8
+  JNL       rel16
+  JNL       rel32
+
+  JNLE      rel8
+  JNLE      rel16
+  JNLE      rel32
+
+  JNO       rel8
+  JNO       rel16
+  JNO       rel32
+
+  JNP       rel8
+  JNP       rel16
+  JNP       rel32
+
+  JNS       rel8
+  JNS       rel16
+  JNS       rel32
+
+  JNZ       rel8
+  JNZ       rel16
+  JNZ       rel32
+
+  JO        rel8
+  JO        rel16
+  JO        rel32
+
+  JP        rel8
+  JP        rel16
+  JP        rel32
+
+  JPO       rel8
+  JPO       rel16
+  JPO       rel32
+
+  JS        rel8
+  JS        rel16
+  JS        rel32
+
+  JZ        rel8
+  JZ        rel16
+  JZ        rel32
+
+  LAHF
+
+  LAR       reg16, r/m16
+
+  LDS       reg16, mem32
+  LDS       reg32, mem48
+
+  LEA       reg16, mem16
+  LEA       reg32, mem32
+
+  LEAVE
+
+  LES       reg16, mem32
+  LES       reg32, mem48
+
+  LFS       reg16, mem32
+  LFS       reg32, mem48
+
+  LGDT      mem16
+  LGDT      mem32
+
+  LGS       reg16, mem32
+  LGS       reg32, mem48
+
+  LIDT      mem16
+  LIDT      mem32
+
+  LLDT      mem16
+
+  LMSW      r/m16
+
+  LOCK
+
+  LODSB
+
+  LODSD
+
+  LODSW
+
+  LOOP      rel8
+
+  LOOPD     rel8
+
+  LOOPDE    rel8
+
+  LOOPDNE   rel8
+
+  LOOPDNZ   rel8
+
+  LOOPDZ    rel8
+
+  LOOPE     rel8
+
+  LOOPNE    rel8
+
+  LOOPNZ    rel8
+
+  LOOPZ     rel8
+
+  LSL       reg16, r/m16
+
+  LSS       reg16, mem32
+  LSS       reg32, mem48
+
+  LTR       r/m16
+
+  MOV       reg8, imm8
+  MOV       reg8, r/m8
+  MOV       reg16, imm16
+  MOV       reg16, r/m16
+  MOV       reg32, imm32
+  MOV       reg32, r/m32
+  MOV       r/m8, imm8
+  MOV       r/m8, reg8
+  MOV       r/m16, imm16
+  MOV       r/m16, reg16
+  MOV       r/m16, sreg
+  MOV       r/m32, imm32
+  MOV       r/m32, reg32
+  MOV       AL, mem8
+  MOV       AX, mem16
+  MOV       EAX, mem32
+  MOV       sreg, r/m16
+  MOV       mem8, AL
+  MOV       mem16, AX
+  MOV       mem32, EAX
+  MOV       reg32, CR0-CR7
+  MOV       CR0-CR7,reg32
+  MOV       reg32, DR0-DR7
+  MOV       DR0-DR7,reg32
+  MOV       reg32, TR0-TR7
+  MOV       TR0-TR7,reg32
+
+  MOVD	    mm,r/m32
+  MOVD	    r/m32,mm
+
+  MOVQ      mm,mm/m64
+  MOVQ      mm/m64,mm
+
+  MOVSB
+
+  MOVSD
+
+  MOVSW
+
+  MOVSX     reg16, r/m8
+  MOVSX     reg32, r/m8
+  MOVSX     reg32, r/m16
+
+  MOVZX     reg16, r/m8
+  MOVZX     reg32, r/m8
+  MOVZX     reg32, r/m16
+
+  MUL       r/m8
+  MUL       r/m16
+  MUL       r/m32
+
+  NEG       r/m8
+  NEG       r/m16
+  NEG       r/m32
+
+  NOP
+
+  NOT       r/m8
+  NOT       r/m16
+  NOT       r/m32
+
+  OR        reg8, r/m8
+  OR        reg16, r/m16
+  OR        reg32, r/m32
+  OR        r/m8, imm8
+  OR        r/m8, reg8
+  OR        r/m16, imm8
+  OR        r/m16, imm16
+  OR        r/m16, reg16
+  OR        r/m32, imm8
+  OR        r/m32, imm32
+  OR        r/m32, reg32
+  OR        AL, imm8
+  OR        AX, imm16 
+  OR        EAX, imm32
+
+  OUT       imm8, AL
+  OUT       imm8, AX
+  OUT       imm8, EAX
+  OUT       DX, AL
+  OUT       DX, AX
+  OUT       DX, EAX
+
+  OUTSB
+
+  OUTSD
+
+  OUTSW
+
+  PACKSSDW  mm,mm/m64
+  PACKSSWB  mm,mm/m64
+  PACKUSWB  mm,mm/m64
+
+  PADDB	    mm,mm/m64
+  PADDD	    mm,mm/m64
+  PADDSB    mm,mm/m64
+  PADDSW    mm,mm/m64
+  PADDUSB   mm,mm/m64
+  PADDUSW   mm,mm/m64
+  PADDW     mm,mm/m64
+
+  PAND      mm,mm/m64
+  PANDN     mm,mm/m64
+
+  PCMPEQB   mm,mm/m64
+  PCMPEQW   mm,mm/m64
+  PCMPEQW   mm,mm/m64
+
+  PCMPGTB   mm,mm/m64
+  PCMPGTD   mm,mm/m64
+  PCMPGTW   mm,mm/m64
+
+  PMADDWD   mm,mm/m64
+
+  PMULHW    mm,mm/m64
+  PMULLW    mm,mm/m64
+
+  POR       mm,mm/m64
+
+  PSLLD     mm,mm/m64
+  PSLLQ     mm,Imm8
+  PSLLW     mm,mm/m64
+  PSLLW     mm,Imm8
+
+  PSRAD     mm,mm/m64
+  PSRAD     mm,Imm8
+  PSRAW     mm,mm/m64
+  PSRAW     mm,Imm8
+
+  PSRLD     mm,mm/m64
+  PSRLD     mm,Imm8
+  PSRLQ     mm,mm/m64
+  PSRLQ     mm,Imm8
+  PSRLW     mm,mm/m64
+  PSRLW     mm,Imm8
+
+  PSUBB     mm,mm/m64
+  PSUBD     mm,mm/m64
+  PSUBSB    mm,mm/m64
+  PSUBSW    mm,mm/m64
+  PSUBUSB   mm,mm/m64
+  PSUBUSW   mm,mm/m64
+  PSUBW     mm,mm/m64
+
+  PUNPCKHBW mm,mm/m64
+  PUNPCKHDQ mm,mm/m64
+  PUNPCKHWD mm,mm/m64
+  PUNPCKLBW mm,mm/m32
+  PUNPCKLDQ mm,mm/m32
+  PUNPCKLWD mm,mm/m32
+
+  PXOR      mm,mm/m64
+
+  POP       reg16
+  POP       reg32
+  POP       mem16
+  POP       mem32
+  POP       DS
+  POP       ES
+  POP       SS
+  POP       FS
+  POP       GS
+
+  POPA
+
+  POPAD
+
+  POPF
+
+  POPFD
+
+  PUSH      imm16
+  PUSHD     imm32
+  PUSH      mem16
+  PUSH      mem32
+  PUSH      reg16
+  PUSH      reg32
+  PUSH      CS
+  PUSH      DS
+  PUSH      ES
+  PUSH      SS
+  PUSH      FS
+  PUSH      GS
+
+  PUSHA
+
+  PUSHAD
+
+  PUSHF
+
+  PUSHFD
+
+  RCL       r/m8, imm8
+  RCL       r/m8, CL
+  RCL       r/m16, imm8
+  RCL       r/m16, CL
+  RCL       r/m32, imm8
+  RCL       r/m32, CL
+
+  RCR       r/m8, imm8
+  RCR       r/m8, CL
+  RCR       r/m16, imm8
+  RCR       r/m16, CL
+  RCR       r/m32, imm8
+  RCR       r/m32, CL
+
+  REP
+  REPNE
+
+  RET
+  RET imm16
+
+  RETF
+  RETF imm16
+
+  ROL       r/m8, imm8
+  ROL       r/m8, CL
+  ROL       r/m16, imm8
+  ROL       r/m16, CL
+  ROL       r/m32, imm8
+  ROL       r/m32, CL
+
+  ROR       r/m8, imm8
+  ROR       r/m8, CL
+  ROR       r/m16, imm8
+  ROR       r/m16, CL
+  ROR       r/m32, imm8
+  ROR       r/m32, CL
+
+  SAHF
+
+  SAL       r/m8, imm8
+  SAL       r/m8, CL
+  SAL       r/m16, imm8
+  SAL       r/m16, CL
+  SAL       r/m32, imm8
+  SAL       r/m32, CL
+
+  SAR       r/m8, imm8
+  SAR       r/m8, CL
+  SAR       r/m16, imm8
+  SAR       r/m16, CL
+  SAR       r/m32, imm8
+  SAR       r/m32, CL
+
+  SBB       reg8, r/m8
+  SBB       reg16, r/m16
+  SBB       reg32, r/m32 
+  SBB       r/m8, imm8 
+  SBB       r/m8, reg8
+  SBB       r/m16, imm8
+  SBB       r/m16, imm16
+  SBB       r/m16, reg16 
+  SBB       r/m32, imm8 
+  SBB       r/m32, imm32
+  SBB       r/m32, reg32 
+  SBB       AL, imm8 
+  SBB       AX, imm16 
+  SBB       EAX, imm32
+
+  SCASB     
+
+  SCASD     
+
+  SCASW     
+
+  SETA      r/m8
+
+  SETAE     r/m8
+
+  SETB      r/m8
+
+  SETBE     r/m8
+
+  SETC      r/m8
+
+  SETE      r/m8
+
+  SETG      r/m8
+
+  SETGE     r/m8
+
+  SETL      r/m8
+
+  SETLE     r/m8
+
+  SETNA     r/m8
+
+  SETNAE    r/m8
+
+  SETNB     r/m8
+
+  SETNBE    r/m8
+
+  SETNC     r/m8
+
+  SETNE     r/m8
+
+  SETNG     r/m8
+
+  SETNGE    r/m8
+
+  SETNL     r/m8
+
+  SETNLE    r/m8
+
+  SETNO     r/m8
+
+  SETNP     r/m8
+
+  SETNS     r/m8
+
+  SETNZ     r/m8
+
+  SETO      r/m8
+
+  SETP      r/m8
+
+  SETPE     r/m8
+
+  SETPO     r/m8
+
+  SETS      r/m8
+
+  SETZ      r/m8
+
+  SGDT      mem16
+  SGDT      mem32
+
+  SHL       r/m8, imm8
+  SHL       r/m8, CL
+  SHL       r/m16, imm8
+  SHL       r/m16, CL
+  SHL       r/m32, imm8
+  SHL       r/m32, CL
+
+  SHLD      r/m16, reg16, imm8
+  SHLD      r/m16, reg16, CL
+  SHLD      r/m32, reg32, imm8
+  SHLD      r/m32, reg32, CL
+
+  SHR       r/m8, imm8
+  SHR       r/m8, CL
+  SHR       r/m16, imm8
+  SHR       r/m16, CL
+  SHR       r/m32, imm8
+  SHR       r/m32, CL
+
+  SHRD      r/m16, reg16, imm8
+  SHRD      r/m16, reg16, CL
+  SHRD      r/m32, reg32, imm8
+  SHRD      r/m32, reg32, CL
+
+  SIDT      mem16
+  SIDT      mem32
+
+  SMSW      r/m16
+
+  STC
+
+  STD
+
+  STI
+
+  STOSB
+
+  STOSD
+
+  STOSW
+
+  STR       r/m16
+
+  SUB       reg8, r/m8
+  SUB       reg16, r/m16
+  SUB       reg32, r/m32
+  SUB       r/m8, imm8
+  SUB       r/m8, reg8
+  SUB       r/m16, imm8
+  SUB       r/m16, imm16
+  SUB       r/m16, reg16 
+  SUB       r/m32, imm8 
+  SUB       r/m32, imm32 
+  SUB       r/m32, reg32
+  SUB       AL, imm8 
+  SUB       AX, imm16
+  SUB       EAX, imm32 
+
+  TEST      r/m8, imm8 
+  TEST      r/m8, reg8
+  TEST      r/m16, imm16 
+  TEST      r/m16, reg16 
+  TEST      r/m32, imm32 
+  TEST      r/m32, reg32 
+  TEST      AL, imm8 
+  TEST      AX, imm16
+  TEST      EAX, imm32 
+
+  VERR      r/m16
+
+  VERW      r/m16
+
+  WAIT
+
+  WBINVD    
+
+  XADD      r/m8, reg8
+  XADD      r/m16, reg16 
+  XADD      r/m32, reg32 
+
+  XCHG      reg8, r/m8 
+  XCHG      reg16, r/m16 
+  XCHG      reg32, r/m32
+  XCHG      r/m8, reg8 
+  XCHG      r/m16, reg16 
+  XCHG      r/m32, reg32
+  XCHG      AX, reg16 
+  XCHG      EAX, reg32 
+
+  XLATB
+
+  XOR       reg8, r/m8
+  XOR       reg16, r/m16
+  XOR       reg32, r/m32
+  XOR       r/m8, imm8
+  XOR       r/m8, reg8
+  XOR       r/m16, imm8
+  XOR       r/m16, imm16
+  XOR       r/m16, reg16
+  XOR       r/m32, imm8
+  XOR       r/m32, imm32
+  XOR       r/m32, reg32
+  XOR       AL, imm8
+  XOR       AX, imm16
+  XOR       EAX, imm32
+
+
+ Pass32 V2.3.1 (c) 1996,1998 by Dieter Pawelczak
+
+ email: dieterp@bigfoot.de
+ www  : Pass32 Home:
+        http://www.geocities.com/SiliconValley/Bay/3437/index.html
+
+        Personal Home:
+        http://www.geocities.com/SiliconValley/Bay/9159/
+        http://www.eikon.e-technik.tu-muenchen.de/~et_514/

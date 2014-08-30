@@ -1,0 +1,338 @@
+****************************************************************************
+*                                                                          *
+*   PASS32 32 Bit Assembler               written by Dieter Pawelczak      *
+*                                                                          *
+*                      Pass32 supported File Formats                       *
+*                                                                          *
+*   (c) 1996,1997 by Dieter Pawelczak, Fasanenweg 41, 85540 Haar, Germany  *
+*                                                                          *
+****************************************************************************
+
+This file contains a description of the file formats supported by the Pass32
+assembler:
+
+1. DOS TINY BINARY FORMAT (.COM)
+2. PRO32 DOSX 32 BIT BINARY FORMAT (.EXE)
+3. 32 BIT FLAT 3OS BINARY FORMAT (.3OS) (V2.4 only)
+4. FLAT MEMORY OVL BINARY FORMAT (.OVL)
+5. FLAT MEMORY DLL BINARY FORMAT (.DLL)
+6. FLAT MEMORY PRO32 PLUG-IN BINARY FORMAT (.DLL)  (Pro32 Gold only)
+7. FLAT MEMORY BINARY (.BIN)
+8. WIN32 PE Format
+9. WIN32 PE DLL Format
+
+1. DOS TINY BINARY FORMAT (.COM) ============================================
+
+The DOS .COM Format is a binary format with max. 65280 Bytes size. The
+binary file actually presents the program code which is load at the offset
+0100h:
+
+     File Contents:                       Load to Memory by DOS:
+
+  ษออออออออออออออออออออออออออออออออป    ษออออออออออออออออออออออออออออออออป
+  บ Program Binary                 บ    บ PSP 0000h - 00ffh              บ
+  บ                                บ    บ                                บ
+  บ Main Program 0100h             บ    ฬออออออออออออออออออออออออออออออออน
+  บ                                บ    บ Main Program    0100h          บ
+  บ .CODE                          บ    บ .CODE                          บ
+  บ                                บ    บ                                บ
+  ฬออออออออออออออออออออออออออออออออน    ฬออออออออออออออออออออออออออออออออน
+  บ Main Program predefined Data   บ    บ Main Program predefined Data   บ
+  บ .DATA                          บ    บ .DATA                          บ
+  ศออออออออออออออออออออออออออออออออผ    ฬออออออออออออออออออออออออออออออออน
+                                        บ Main Program undefined Data    บ
+                                        บ .DATA?                         บ
+                                        บ                                บ
+                                        ฬออออออออออออออออออออออออออออออออน
+                                        บ HEAP and Stack         -0ffffh บ
+                                        ศออออออออออออออออออออออออออออออออผ
+
+2. PRO32 DOSX 32 BIT BINARY FORMAT (.EXE) ===================================
+
+The Pro32 binary format is actually equal with the DOS .COM format, but
+there's a) no limit in size (4GByte) and b) the segment attribute must be
+32 bit.
+
+The Pro32 stub file (PRO32.EXE) is linked at the beginning of the file.
+This "specialized" Pro32 Version will contain additional data specified for
+the individual program. These additional data fields are called the
+Extender Variables (see proset.doc, pass32.doc, pass32.txt).
+
+So next to the flat binary file two data blocks are actually part of the
+Pro32 binary format: The Pro32-Header block and the Pro32-Plug-In block.
+The Pro32-Plug-In block is used only in the Pro32 GOLD series.
+
+    Pro32-Header Block:                   Pro32-Plug-In Block:
+
+  ษออออออออออออออออออออออออออออออออป    ษออออออออออออออออออออออออออออออออป
+  บ 00-03:  "MEM:" - Identificator บ    บ 00-03: "DLL:" - Identificator  บ
+  ฬออออออออออออออออออออออออออออออออน    ฬออออออออออออออออออออออออออออออออน
+  บ 04-07: DD MinMemory            บ    บ 04-0b: 1. DLL NAME             บ
+  ฬออออออออออออออออออออออออออออออออน    ฬออออออออออออออออออออออออออออออออน
+  บ 08-09: DW Header Size          บ    บ 0c-13: 2. DLL NAME             บ
+  ฬออออออออออออออออออออออออออออออออน    ฬออออออออออออออออออออออออออออออออน
+  บ 0a   : DB Flag NoBreak         บ    บ 14-1b: 3. DLL NAME             บ
+  ฬออออออออออออออออออออออออออออออออน    ฬออออออออออออออออออออออออออออออออน
+  บ 0b   : DB Flag NoMesg          บ    บ 1c-23: 4. DLL NAME             บ
+  ฬออออออออออออออออออออออออออออออออน    ฬออออออออออออออออออออออออออออออออน
+  บ 0c   : DB Flag WriteCore       บ    บ 1c-23: 5. DLL NAME             บ
+  ฬออออออออออออออออออออออออออออออออน    ศออออออออออออออออออออออออออออออออผ
+  บ 0d-10: DD Core Size            บ
+  ฬออออออออออออออออออออออออออออออออน
+  บ 11-14: DD Load Offset          บ
+  ฬออออออออออออออออออออออออออออออออน
+  บ 15-18: DD Entry Point          บ
+  ฬออออออออออออออออออออออออออออออออน
+  บ 19-1a: DW Version              บ
+  ฬออออออออออออออออออออออออออออออออน
+  บ 1b   : DB Wait Flag            บ
+  ฬออออออออออออออออออออออออออออออออน
+  บ 1c-1f: DD MaxMemory            บ
+  ฬออออออออออออออออออออออออออออออออน
+  บ 20-23: DD Stack Size           บ
+  ศออออออออออออออออออออออออออออออออผ
+
+For the Plug-In names only 8 bytes are reserved. The name can consist
+of 7 characters and a NUL-character as last character. Basically the list
+of plug-ins has no specific size. The first plug-in name that consists
+only of a NUL-character defines the end of the list. Nevertheless, Pro32 GOLD
+reserves only 5 plug-ins.
+
+
+
+3. 32 BIT FLAT 3OS BINARY FORMAT (.3OS) ===(V2.4 only)=======================
+
+The 3OS format is an open binary format which is compatible with the Pro32
+binary format. It is used to load 32 bit binaries which are not bound to a
+dos extender.
+As an open format, it can consist of several different headers. Each header
+has a 4 byte header identifier. A loader program is responsible to analyze
+the headers and load the binary into memory.
+
+The 3OS format supported by Pass32 consists of the Pro32-Header and the
+Pro32-Plug-In block. For compatibility with the DLL model, the MinMemory
+item is at offset 0ah. Pass32 supports only 5 plug-ins in the Plug-In
+Block.
+
+Note: any loader which can handle Pass32 programs (Proset, ProDB32, etc.)
+can handle the 3OS format as well.
+
+The Pass32 3OS output format:
+
+  ษออออออออออออออออออออออออออออออออป
+  บ 00-05: reserved == 00h         บ
+  ฬออออออออออออออออออออออออออออออออน
+  บ 06-09: "MEM:" - Identifier     บ
+  ฬออออออออออออออออออออออออออออออออน
+  บ 0a-0d: DD MinMemory            บ
+  ฬออออออออออออออออออออออออออออออออน
+  บ 0e-29: ... Rest of Pro32-Headerบ
+  ฬออออออออออออออออออออออออออออออออน
+  บ 2a-4f: reserved == 00h         บ
+  ฬออออออออออออออออออออออออออออออออน
+  บ 40-63: Plug-In-Header          บ
+  ฬออออออออออออออออออออออออออออออออน
+  บ 64-cf: reserved == 00h         บ
+  ฬออออออออออออออออออออออออออออออออน
+  บ d0-ff: Copyright Comment       บ
+  ศออออออออออออออออออออออออออออออออผ
+
+  Header Size, Load Offset, EntryPoint = 00000100h
+
+If you compare the Pass32 3OS Format with the Pro32 PLUG-IN format, you'll
+notice, that the essential data is equal in both formats. Therefore, you
+can design Pro32 Plug-Ins as DLL or as 3OS binaries. Note, this relation
+is valid only for the Pass32 3OS output! Basically the 3OS format is an
+open format and not compatible with the Pro32 Plug-In format!!!
+
+
+
+4. FLAT MEMORY OVL BINARY FORMAT (.OVL) =====================================
+
+The OVL format is a very simple format. It consists of an interface part
+and the binary source. The interface part is a multiple of 256 bytes in
+size and contains the offset addresses of the public OVL procedures.
+
+Pass32 supports only a 256 byte long interface part. Here is the complete
+definition of the OVL format:
+
+  ษออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+  บ 00-03: Load Offset - start address of the OVL        บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 04-1F: reserved for future applications              บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 20-23: offset of the first procedure                 บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 24-25: selector of the first procedure               บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 26-FE: pointers of the second to 37th procedure.     บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ FF   : interface chain marker 00=END                 บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 00000100h - : code/data segment of the overlay       บ
+  ศออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+The initial selector value is 0000h. The offset address is absolute.
+
+If the interface chain marker is unequal zero, another interface part
+follows. As the first 20h bytes needn't be reserved in the following
+interface parts, the following interface parts contain only the offset
+addresses of the public procedures:
+
+  ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+  บ 00-03: offset of the next (38th) procedure             บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 04-05: selector for future applications                บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 06-FC: offsets and selectors of the next 41 procedures บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ FD-FE: reserved = 0                                    บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ FF   : interface chain marker 00=END                   บ
+  ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+The binary is already compiled to the fixed start address given in offset
+00-03 of the interface part.
+The OVL loader code is part of OVLSYS.INC and will be automatically linked
+with the source code if an overlay module is included.
+
+
+
+4. FLAT MEMORY DLL BINARY FORMAT (.DLL) =====================================
+
+The Pass32 DLL Model is not compatible with other dynamic link libraries
+formats. The only thing in common is the idea of loading additional functions
+dynamically during the program execution.
+A good example of the DLL usage is the graphic driver interface: a graphic
+library with a common interface to a series of different graphic DLLs.
+Like the OVL format, the idea was to create a very simple DLL format, so
+that very easy DLL loaders can load and install the program code and the
+interface.
+
+The Pass32 DLL format is similar to the OVL format. Again, Pass32 supports
+only a 256 byte DLL header.
+
+  ษออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+  บ 00-09: reserved - unused                             บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 0a-0d: amount of memory needed for the DLL           บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 0c-1f: reserved - unused                             บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 20-23: offset of the first procedure                 บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 24-25: selector of the first procedure               บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 26-FE: pointers of the second to 37th procedure.     บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ FF   : interface chain marker 00=END                 บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 00000100h - : code/data segment of the DLL           บ
+  ศออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+The initial selector value is 0000h. The offset address is absolute.
+Additional DLL headers are equal with additional OVL headers:
+
+
+  ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+  บ 00-03: offset of the next (38th) procedure             บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 04-05: selector for future applications                บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 06-FC: offsets and selectors of the next 41 procedures บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ FD-FE: reserved = 0                                    บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ FF   : interface chain marker 00=END                   บ
+  ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+The Pass32 DLL loader DLLSYS.INC sets the initial PSP values for the
+DLL. When the DLL is load, the DLL can access these data fields via the
+CS descriptor:
+
+  ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+  บ 00-01:  Value of the DLL Data Descriptor (DS)          บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 02-03:  Video Selector                                 บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 04-05:  Zero Selector                                  บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 06-07:  Real Mode File Buffer Selector                 บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 08-09:  Real Mode File Buffer Segment Value            บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 0a-0d:  DLL Memory Size                                บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 0e-11:  DLL Memory Handle  (DPMI: SI:DI)               บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 12-13:  Value of the DLL Code Descriptor (CS)          บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 14-17:  DLL Linear Memory Address                      บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 18-19:  Value of the Main Program Data Descriptor      บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 1A-1F:  reserved                                       บ
+  ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+
+
+6. FLAT MEMORY PRO32 PLUG-IN BINARY FORMAT (.DLL)
+
+A Pro32 plug-in is compatible with the DLL and the 3OS format.
+The only important parameter is the memory usage at offset 0ah.
+Pro32 starts a plug-in always at offset 00000100h.
+
+  ษออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+  บ 00-09: reserved - unused                             บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 0a-0d: amount of memory needed for the DLL           บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 0c-1f: reserved - unused                             บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 20-23: offset of the first procedure (ignored)       บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 24-25: selector of the first procedure (ignored)     บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 26-FF: unused                                        บ
+  ฬออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+  บ 00000100h - : code/data segment of the DLL           บ
+  ศออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+7. FLAT MEMORY BINARY FORMAT (.BIN)
+
+The code is stored as is: First the .code segment and then the .data segment.
+The initial program offset depends on the .ORG statement. Per default, the
+offset starts at 00000100h. The .BIN format is therefore compatible with
+the .COM format.
+
+8. WIN32 PE-FORMAT
+
+The portable Win32 executable format is created according to the documentation
+of Micheal J. O'Leary. It consists of max. 6 sections:
+.code .data .data? .idata .edata and .rsrc.
+The code offset generally starts at 00040000h.
+
+8. WIN32 DLL PE-FORMAT
+
+The DLL format is equal with the Win32 PE-Format. The export data .edata
+section holds the information of the exported module functions. The file
+name created by Pass32 has the extension .DLL.
+
+
+
+
+
+PASS32 (c) 1996,1997 by Dieter Pawelczak,
+PASS32 V3.0 (c) 1999 by Dieter Pawelczak,
+PASS32 DLL Format (c) 1996-1998 by Dieter Pawelczak,
+PASS32 OVL Format (c) 1996-1998 by Dieter Pawelczak,
+3OS Format (c) 1998 by Dieter Pawelczak,
+
+Pass32 Version 2.4 (c) 1998 by D. Pawelczak
+
+email: dieterp@bigfoot.de
+www  : Pass32 Home:
+       http://www.geocities.com/SiliconValley/Bay/3437/index.html
+       Personal Home:
+       http://www.geocities.com/SiliconValley/Bay/9159/
+       http://www.eikon.e-technik.tu-muenchen.de/~et_514/

@@ -1,0 +1,487 @@
+****************************************************************************
+*                                                                          *
+*   Pass32 - 32 Bit Assembler             written by Dieter Pawelczak      *
+*                                                                          *
+*                         R E A D    M E                                   *
+*                                                                          *
+*   (c) 1996,1997 by Dieter Pawelczak, Fasanenweg 41, 85540 Haar, Germany  *
+*                                                                          *
+****************************************************************************
+
+
+     This is a public domain tool designed for easy protected mode
+     programming.
+
+
+   This is beta release Pass32 Version 2.5 beta 2 / October 99. The complete
+   tested release will be available end of '99
+
+   The package should contain the following files:
+
+
+
+ READ.ME            : short information of the program package
+
+ \BIN               : Binary Directory
+ \BIN\PASS32.EXE    : Pass32 Assembler  V2.5 beta 2
+ \BIN\PRO32.EXE     : 32 bit Dos Extender and STUB File Pro32 Version 1.7
+ \BIN\PROSET.EXE    : Configuration and Setup for Pro32 programs
+ \BIN\DISS32.EXE    : Diss32 Disassembler Version 2.2
+ \BIN\BIN2ASM.EXE   : converter for binary sources to .asm sources
+ \BIN\WINSTUB.EX_   : Win32 stub file with MZ and PE Header (V3 alpha)
+
+ \DEMO              : Example Files
+ \DEMO\CIRCLE.ASM   : short demo for FPU instructions
+ \DEMO\CIRCLE2.ASM  : demo uses GRAPHDLL.DLL
+ \DEMO\DISPLAY.ASM  : short demo for the parameter line and IO.INC
+ \DEMO\DLLTEST.ASM  : short demo to test the DLL model
+ \DEMO\DYNAMICS.ASM : short demo for dynamic heap management with SYSTEM.INC
+ \DEMO\EVENT2.ASM   : demo on how to build a mouse event handler
+ \DEMO\EXEC.ASM     : short demo for executing dos programs with DOSX.INC
+ \DEMO\GRAPH.INC    : VGA graphics module
+ \DEMO\GRAPH.PAL    : VGA palette file
+ \DEMO\GRAPH2.ASM   : VGA graphics module which uses graphdll.dll
+ \DEMO\GRAPHDLL.ASM : VGA graphics DLL
+ \DEMO\HELLO1.ASM   : TINY - Hello World demo
+ \DEMO\HELLO2.ASM   : FLAT - Hello World demo
+ \DEMO\HELLO3.ASM   : FLAT/TINY - Hello World demo with extended DOS
+ \DEMO\JOYSTICK.ASM : Example for the GAME.INC library - adaptive joystick proc
+ \DEMO\MACRO.ASM    : Macro Example
+ \DEMO\MACRO2.ASM   : Macro Example 2 uses macro library
+ \DEMO\MEM.ASM      : Example for the Memory usage
+ \DEMO\MSDEMO.ASM   : Protected Mode Mouse Demo
+ \DEMO\MSDEMO2.ASM  : Mouse Demo with graphdll.dll
+ \DEMO\MSDEMO.INC   : Protected Mode Mouse Driver (Serial Mouse only)
+ \DEMO\PCOPY.ASM    : File copy example to demonstrate IO.INC
+ \DEMO\OVLTEST.ASM  : short demo to test the OVL model
+ \DEMO\TESTDLL.ASM  : short test-DLL
+ \DEMO\TESTOVL.ASM  : short test-OVL
+ \DEMO\TESTPAL.ASM  : short demo to test the graphics module
+ \DEMO\TESTPARA.ASM : short demo for the parameter line
+ \DEMO\TYPES.ASM    : example for the Pass32 V2.1 directive .TYPE
+ \DEMO\MAKEDEMO.BAT : short batch file to create .EXE files
+
+ \DISS32
+ \DISS32\DISS32.ASM : Diss32 Disassembler Source Code - Main Module
+ \DISS32\DISS32.INC : Disassembler - Module
+ \DISS32\DIS32.ASM  : OpCode Table
+
+ \DOC               : Manuals
+ \DOC\PRO32.DOC     : Pro32 manual
+ \DOC\PROSET.DOC    : manual for Setup Utility
+ \DOC\PASS32.TXT    : Pass32 guide
+ \DOC\PASS32.DOC    : Pass32 manual
+ \DOC\DOSX.DOC      : Manual for the extended DOS functions (DOSX.INC)
+ \DOC\GRAPHIC.DOC   : short manual for the graphic driver module GRAPHIC.INC
+
+ \GRAPH             : A DLL-based graphic library
+ \GRAPH\DEMO.ASM    : Short demonstration of the graphic module GRAPHIC.INC
+ \GRAPH\GRAPHIC.INC : Graphic Interface for several graphic drivers
+ \GRAPH\MAKE.BAT    : Batch file to create the DLLs and the DEMO
+ \GRAPH\VESA.INC    : DLL - Source for VESA V1.2 640x400x256 Graphic Mode
+ \GRAPH\VESA1.INC   : DLL - Source for VESA V1.2 640x480x256 Graphic Mode
+ \GRAPH\VESA2.INC   : DLL - Source for VESA V1.2 800x600x256 Graphic Mode
+ \GRAPH\VESA3.INC   : DLL - Source for VESA V1.2 1024x768x256 Graphic Mode
+ \GRAPH\VBE.INC     : DLL - Source for VESA 640x400x256 linear frame buffer
+ \GRAPH\VBE1.INC    : DLL - Source for VESA 640x480x256 linear frame buffer
+ \GRAPH\VBE2.INC    : DLL - Source for VESA 800x600x256 linear frame buffere
+ \GRAPH\VBE3.INC    : DLL - Source for VESA 1024x768x256 linear frame buffere
+ \GRAPH\VGA256.INC  : DLL - Source for VGA 320x200x256 Graphic Mode
+ \GRAPH\XVGA256.INC : DLL - Source for eXtended VGA 320x240x256 Tweak Mode
+
+ \INC               : System Files
+ \INC\DEBUG.INC     : internal debugger (TINY/FLAT MODEL)
+ \INC\DLLSYS.INC    : DLL Loader (FLAT MODEL)
+ \INC\DOSX.INC      : Module for Extended Dos Functions
+ \INC\DLOADS.INC    : Tool to display source code during debugging (FLAT)
+ \INC\OVLSYS.INC    : OVL Loader (FLAT MODEL)
+
+ \INC               : RTL for real mode and protected mode applications
+ \INC\DPMI.INC      : DPMI definitions (FLAT MODEL)
+ \INC\SYSTEM.INC    : Some useful assembler routines (Write/Read/Parameters)
+ \INC\SYSTEM.MAC    : Macro version of the System Library
+ \INC\STRING.INC    : Some useful string routines for zero terminated strings
+ \INC\IO.INC        : Some useful I/O assembler routines
+ \INC\GAME.INC      : Joystick routines
+
+ \PRO               : Demo Files For the Pro32 Dos Extender
+ \PRO\READ.ME       : short information of the Pro32 program package
+ \PRO\CHECK32.ASM   : demo program to test the DPMI (Pass32 Source file)
+ \PRO\CHECKWIN.ASM  : demo program to test if windows is present (Pass32 Source file)
+ \PRO\DOSHELLO.ASM  : Hello World demo with extended DOS (Pass32 Source file)
+ \PRO\HELLO.ASM     : Hello World demo (Pass32 Source file)
+ \PRO\DEMOEXC.ASM   : example of an user-defined exception handler (Pass32 Source file)
+ \PRO\TASMDEMO.ASM  : demo program for TASM programmers (TASM Source file)
+ \PRO\TESTENV.ASM   : demo program to display the DOS environment (Pass32 Source file)
+
+ \WIN32\PASS32.EXE   : Pass32 V3.0 alpha - release 8
+ \WIN32\HELLO.ASM    : example for a Win32 console application (V3 alpha)
+ \WIN32\HELLOWIN.ASM : short Win32 example (V3 alpha)
+ \WIN32\TESTDLL.ASM  : simple DLL example (V3 alpha)
+ \WIN32\DLLTEST.ASM  : DLL-Test - imports the TESTDLL (V3 alpha)
+ \WIN32\CONSOLE.INC  : library for Win32 console applications (V3 alpha)
+ \WIN32\WINSYS.INC   : library for general useful Win32 functions (V3 alpha)
+ \WIN32\WIN32.DOC    : short docu about Win32 programming with Pass32 (V3 alpha)
+
+ +====================================================================+
+ | - Add the \BIN\ directory to your path and                         |
+ | - Run the batch file MAKEDEMO.BAT to assemble all your demo files. |
+ | Read the manuals before you start writing protected mode programs! |
+ +====================================================================+
+
+
+
+ You can get PASS32NC.ZIP at the official Pass32 Homepage or at my homepage.
+ This is a version for old 80386 processors without numeric co-processor.
+
+ If you miss any of the files, especially the .DOC files send an email
+ to: dieterp@bigfoot.de
+
+ Pass32, Pro32 and ProSet have been created with Turbo Assembler and/or
+ Turbo Pascal, by Borland,Inc.
+ The Borland/Inprise runtimer error 200 bug has been removed from Proset.
+
+ Diss32 is a simple disassembler to view 32 bit code (Current version
+ doesn't support Win32 executables).
+ The usage is:
+
+ DISS32 FILENAME
+
+ A filename may have one of the folllowing extensions:
+ .EXE (FLAT only!), .DLL (DLL), .OVL (OVL), .COR (FLAT).
+ The output is displayed with the dos standard output:
+
+ DISS32 FILENAME|MORE
+ DISS32 FILENAME>NEWFILE
+
+ Diss32 has been created with Pass32 Version 2.4  and Pro32 V1.7
+ The complete source code of the disassembler is stored in the DISS32
+ directory.
+
+ +====================================================================+
+ |                   Pass32 Version 2.5  beta 2                       |
+ +====================================================================+
+
+ Some Bugs have been removed: The co-processor interface and the MMX
+ support have been corrected. Additionally, the Win32 support is enhanced.
+ Pass32 can now create win32 DLLs.  
+
+ +====================================================================+
+ |                   Pass32 Version 2.5  beta                         |
+ +====================================================================+
+
+ This is the first beta release of Pass32 Version 2.5. Included into the
+ package is the Pass32 V3.0 alpha Version - relase 7. Both version are
+ code compatible, except that the alpha version supports Win32 in an alpha
+ stage.
+
+ What's new?
+
+ Instruction set completed:
+   - Finally MMX instructions supported - see Pass32.TXT
+   - The processor's special registers like CRn, DRn, TRn supported
+ Known bugs of Version 2.4 removed:
+   - usage of DB/DW/DQ/DF/DP/DT inside code segment had been ignored
+     sometimes - corrected!
+   - call eax was not supported, although call [eax] was - added!
+ The RTL is now mode independent as like the internal debugger:
+   - SYSTEM.INC can be compiled in RM as well
+   - IO.INC can be compiled in RM
+   - DEBUG32.INC is replaced by DEBUG.INC
+ New directive:
+   - .USE16 and .USE32 allows to switch the code segment attribute.
+     You should use .MODEL instead, because the .MODEL directive already
+     defines the code segment attribute!
+     You may need this directive to write a RM program, that is able to
+     switch into 32 bit PMode, e.g. a dos extender.
+   - .IFMODEL TINY|FLAT|WIN32|WIN32 CONSOSLE|WIN32 DLL|DLL|OVL
+     assembles, if the specific model has been selected.
+     It replaces the obsolete directive .IFPM, which distinguished just
+     between real and protected mode target.
+
+   At the end of the 1999, the Pass32 Version 2.5 professional Version
+   will be published (just after the beta testing). This will come with a
+   printed documentation 'Protected Mode Programming with Pass32', which will
+   explain all features of Version 2.5 and as well basic and advanced
+   protected mode programming...
+   Look for details on the Pass32 Home page, soon!
+
+ +====================================================================+
+ |             Pass32 Version 3.0 alpha - release 7                   |
+ +====================================================================+
+
+ Pass32 V3.0 can create Win32 applications. Version 3.0 is basically
+ identically with Version 2.5, but the Win32 funtionallity is added:
+
+   .MODEL WIN32
+   .MODEL WIN32 CONSOLE
+   :MODEL WIN32 DLL
+   .win32
+   .invoke
+
+ As it is an alpha version, there hasn't been much testing and it's
+ still a long way to go... Examples and short docu is found in the
+ WIN32 directory. You must compile these examples with the alpha version,
+ found in the WIN32 directory.
+
+ +====================================================================+
+ |               What's new with Version 2.4 ?                        |
+ +====================================================================+
+
+ Pass32 supports Pro32 Gold with the following directive / options:
+          .PLUGIN name     /      -plug:name
+ Pro32 Gold allows user defined dos extender driver, so called plug-ins.
+ These plug-ins will be load before the main program is load into memory
+ and therefore allow a dynamical re-organization of the dos extender.
+ Example for plug-ins are: extended dos support, extended debug mode,
+ loading of
+
+ Bugs removed:
+ - The instruction imul reg,imm8 produced an imul reg,[reg],imm8  instruction.
+
+ The graphic driver library comes with Vesa 2.0 compatible driver for the
+ linear frame buffer mode.
+
+ Dos Extender:
+ Pro32 V1.7 replaces V1.6 which had an horrible bug in the VCPI-Init.
+
+ +====================================================================+
+ |               What's new with Version 2.3.1 ?                      |
+ +====================================================================+
+
+ Bugs removed:
+ - The instruction xchg reg,eax/ax/al produced an NOP instruction.
+ - The XVGA driver DLL had an bug in the putsprite function
+
+ +====================================================================+
+ |               New DOS Extender Version 1.6                         |
+ +====================================================================+
+
+ The Pro32 Dos Extender V1.6 is compatible with V1.5. The RM interrupt
+ handler is improved and slightly faster (3/1 cycles per interrupt on an
+ i486/Pentium).
+
+
+ +====================================================================+
+ |               What's new with Version 2.3 ?                        |
+ +====================================================================+
+
+ New Dos Extender:
+ - Pro32 V1.5 allows dynamical memory allocation
+ - Pro32 allows a user defined stack size
+ New Directives:
+ - The directive .MAX sets the amount of maximal memory. Pro32 allocates
+   between .MEM and .MAX the amount of memory. If less than memory than
+   with .MEM specified is available, Pro32 aborts loading. On the other
+   hand, Pro32 doesn't allocate more memory than with .MAX specified.
+   .MAX is an optional directive. For compatibility with older Pro32/Pass32
+   versions, .MEM alone sets the amount of minimal and maximal memory.
+   Only, if you specify a new maximal memory size with .MAX, this value
+   is used. Therefore .MEM 1024 still allocates only 1MB, whereas .MEM 1024,
+   .MAX 4096 allocates min. 1MB and max. 4MB.
+ - The directive .STACK sets the stacksize in KBytes, e.g.
+   .STACK 32 means 32K Stack.
+ - For the usage with macros, a number of new .IF directives are available:
+   - .IFE expr1, expr2       : tests, if expr1 is equal expr2
+   - .IFE NOT expr1, expr2   : opposite condition
+   - .IFS expr               : tests, if expr is a string
+   - .IFS NOT expr           : opposite condition
+   - .IFR expr               : tests, if expr is a register (AL,AX,EAX,..SS)
+   - .IFR NOT expr           : opposite condition
+   - .IFR R8 expr            : tests, if expr is an 8 bit register (AL,BL,..)
+   - .IFR R16 expr           : tests, if expr is a 16 bit register (AX,BX,..)
+   - .IFR R32 expr           : tests, if expr is a 32 bit register (EAX..)
+   - .IFR NOT R8|R16|R32     : opposite condition
+ - The macro library SYSTEM.MAC makes use of these directives. So the macro
+   WriteLn can now be used:
+     WriteLn(EAX);             prints string in EAX
+     WriteLn(mesg);            prints string in variable mesg
+     WriteLn('Hello, World!'); prints string 'Hello, World!'
+ - Some macro bugs removed: Usage of ',' inside strings, usage of macro
+   parameters in brackets: mov edi,[Param1]
+ - Error Handling of macros: earlier versions printed an unidentifiable
+   error location. Version 2.3 now tries to prints the correct location.
+ - Bug in the instructions CBW, CDQ, CWD, CWDE removed...
+ - .LOADBIN/.INCBIN can now be used inside any segment except .DATA?
+ New Graphics Library
+   A new graphic library is part of the Pass32 package. This library is
+   DLL oriented. For each graphic mode a specific DLL is used. Each
+   graphic DLL supports direct writing to screen or a buffered output to
+   screen. The buffer can be flushed to the whole screen or to a screen
+   window. See GRAPHIC.DOC for more details.
+ - RTL extended
+   SYSTEM.INC is extended by function which handle with the program
+   environment. The DLL/OVL loading procedures are extended to search the
+   path for the DLL/OVL.
+
+
+
+ +====================================================================+
+ |               What's new with Version 2.1 ?                        |
+ +====================================================================+
+
+ All known bugs of Version 2.0beta removed:
+   - use of Parentheses () inside macro string parameters
+   - use of ':' produced error 'segment register expected'
+   - use of ; inside of strings produced errors
+   - use of 'FSTCW' and 'FSTSW' needed 'word ptr '
+   - using constant data before definition produced 'undef. memory reference'
+   - optimizer ignored procedures with the 'START' attribute!
+   - error handling of the preprocessor
+ New Directives:
+   - Directive .TYPE allows a multiple .EQU declaration for integer
+     replacements. Can be used to define enumeration types.
+   - Directive .DOSX allows to set another dos extender as stub file for
+     the flat memory model. Attention other dos extenders use other code
+     segment conventions, initialize other selectors, etc. Another dos
+     extender therefore needs several changes in your program code and
+     in the Pass32 RTL!
+     See APPENDIX E in Pass32.doc!
+   - The directive .EXTERN can make identifiers/labels of other modules
+     public. Where .PUBLIC is used directly in the module, .EXTERN is
+     used in the module, which wants to access the identifier/label.
+
+ RTL extended:
+   - STRING.INC provides string routines for zero terminated strings.
+   - SYSTEM.INC extended with PC-Speaker routines
+   - stupid IO.INC bugs removed...
+
+ Limited Assembler for system with no numeric co-processor: 'PASS32NC.EXE'
+   - Limit: Can not create FPU data (with RS, RD, RE, RT).
+
+
+ +====================================================================+
+ |               What's new with Version 2.0 ?                        |
+ +====================================================================+
+
+ Version 2.0 is a totally rewritten version of the Pass32 assembler.
+ It is not absolutely compatible with earlier versions of the assembler.
+ But the new Version supports a more structural programming style:
+
+ There's one major difference in label handling: earlier versions
+ treated all labels as public, so it was no problem to jump into a
+ label inside another procedure. This won't work with Version 2.0.
+ Every label is locally defined inside a procedure. You can use
+ the directive .PUBLIC to define a label globally.
+ If you define the start address of your program with a label, you
+ should declare this label as public.
+ Another major difference is the variable identifier handling:
+ Pass32 V2.0 declares variable identifier local in the current
+ module. To export a variable from a modul, you'll need again the
+ .PUBLIC directive.
+
+ Version 2.0 supports macros. You can define macros with the .MACRO
+ directive. Inside macros you can use again macros. Macros can define
+ code or/and data.
+
+ The .COMMENT directive can be used to create long comments.
+
+ The -I option can add another directory path for include files. This
+ directory path will be search directly after the current directory.
+ The directive .INCLUDEDIR can be used inside an assembler source to
+ define the directory path.
+
+ The -IM:filename option can include a module at the beginning of the
+ source code. It is equivalent in the function with the .INCLUDE directive.
+
+ The -OUT:filename can define another output file name.
+
+ The optimizer can be enabled with four different optimization options:
+
+ The -OJ option allows optimization of relative jump instructions
+ (Directive .SMART3).
+ The -OR option is register optimization. (Directive .SMART2).
+ The -OS option is the former -O1 option: optimization of subroutines
+ (Directive .SMART1).
+ The -O option is a combination of all other optimization options
+ (Directive .SMART).
+
+ .ALIGN has different functions in the code and the data segment.
+
+ The SIZE directive doesn't return like the older versions the complete
+ data size, but the data type size (DB = 1, DW = 2, etc.).
+
+ The maximal symbol length is 127 characters for labels and 128
+ characters for procedures and variable identifiers.
+
+ The RTL is extended: Apart from a macro library SYSTEM.MAC, there's
+ SYSTEM.INC, IO.INC, GAME.INC.
+
+ Note, all example files have been adapted. These files therefore won't
+ run under the earlier Pass32 Versions. If you want to work with both
+ Versions, you should create different subdirectories for both packages!
+
+ +====================================================================+
+ |               What's new with Version 1.9 ... 1.0 ?                |
+ +====================================================================+
+
+ Don't want to bother you with earlier bugs, improvements - it's history!
+
+ +++
+
+ This is Version 2.4. These bugs still remain:
+
+   - the .COMMENT directive is currently ignored by the preprocessor.
+     Therefore do not put preprocessor instructions inside such a comment
+     (.EQU, .INCLUDE, .MACRO, .DEBUGFILE, .INCLUDEDIR etc.).
+   - inside .COMMENT ';' is treated like a comment - so make sure that
+     the endidentifier of the comment is not after ';', for example
+     .COMMENT ** Test; **     ; FATAL!
+   - Do not use Pass32 directives inside .COMMENT!
+   - the first use of DB, DW, DD, DQ, DT, etc. directly in the code 
+     segment is ignored. WORK AROUND:
+     use .CONST or use a label name : example
+     instead:           write:                  or:
+        mov ah,1        mov ah,1                mov ah,1
+        db 0e4h         .const db 0e4h .code    dummy db 0e4h 
+
+ +++
+
+ This software is public domain. No part of these files may be sold!
+ You are free to give the whole package to anyone you like.
+
+ Any commercial software product created with the Assembler should
+ have a note in the program information, like for example:
+ 'Create with Pass32 - Assembler by Dieter Pawelczak'
+
+ If you want to sell a software product which uses the Pro32 Dos Extender,
+ you must add a note in your program's information. You are _not_ allowed to
+ make profit out of _selling_ Pro32!
+
+ You must use the commercial configuration of Pro32, which displays the
+ copyright message for at least 1 second.
+ See the ProSet manual for more information.
+
+ +====================================================================+
+ |             You are using this code at your own risk.              |
+ |   All programs and examples are distributed WITHOUT ANY WARRANTY.  |
+ +====================================================================+
+
+ You are not allowed to disassemble or alter the code or manuals.
+
+ Programs, Manuals and Example Files (c) 1996-1998 by Dieter Pawelczak
+
+ Pass32 Version 2.5      (c) 1996,1999 by Dieter Pawelczak
+ Diss32 Version 2.4      (c) 1998 by Dieter Pawelczak
+ Pro32  Version 1.7      (c) 1996,1999 by Dieter Pawelczak
+ ProSet Version 1.75     (c) 1996,1999 by Dieter Pawelczak
+
+
+ PRO32 Dos Extender and Pass32 Assembler had been designed and coded by
+
+ Dieter Pawelczak,
+ Fasanenweg 41
+
+ 85540 Haar,
+ Germany
+
+
+ email: dieterp@bigfoot.de
+ www  : Pass32 Home:
+        http://www.geocities.com/SiliconValley/Bay/3437/index.html
+
+        Personal Home:
+        http://www.geocities.com/SiliconValley/Bay/9159/
+
+
+ Dieter Pawelczak, October 1999

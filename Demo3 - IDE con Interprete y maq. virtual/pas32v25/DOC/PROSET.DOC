@@ -1,0 +1,465 @@
+****************************************************************************
+*                                                                          *
+*   Pro32 DOS Extender                    written by Dieter Pawelczak      *
+*                                                                          *
+*               PROSET Configuration and Setup Utility                     *
+*                                                                          *
+*   (c) 1996,1997 by Dieter Pawelczak, Fasanenweg 41, 85540 Haar, Germany  *
+*                                                                          *
+****************************************************************************
+
+1.  Introduction
+2.  Dos Extender Variables
+2.1 The Main Memory Variable
+2.2 The Stack Size Variable
+2.3 Load Offset Variable and Entry Point
+2.4 Core Size and Core Flag
+2.5 Break Flag
+2.6 Message Flag
+2 7 Commercial Usage
+2.8 Setup Program
+3.  The Link and Relink Utility
+4.  The EXE file converter (Utility for TASM/TLINK)
+
+
+1. Introduction
+
+The Pro32 Dos Extender offers a variety of system variables. You can change
+the entry point of the program, the load address offset of your code, etc.
+These system variables can directly change the program code. So if your
+program needs more Memory - you just alter the Main Memory variable - you
+don't have to reassemble the whole program!
+
+The ProSet Utility can link and relink binary and dos extender. The link
+function can be compared with the copy /b function from DOS. The relink
+function can be used to update the extender. You overwrite the old Pro32
+extender with the new Pro32 and run ProSet with the relink option. The
+old extender will be replaced by the new one.
+
+To create 32 bit programs with assemblers which do not support a binary
+output, for eaxmple TASM and TLINK by Borland, you can convert flat or
+tiny model exe files to executable Pro32 Dos extender files. You don't
+even need the latest version of TASM: You simply create an (dummy) exe
+file with TASM and TLINK, then run ProSet with the -exe option, and convert
+the file to a real 32 bit program. See chapter 4 for more information.
+
+2. Dos Extender Variables
+
+
+There are two ways to change system variables. The system variables are
+directly set by the assembler (PASS32) or you can set the variables with
+ProSet.
+
+To alter a system variable for a specific program - you call proset with
+the program name and the new value for the variable, for example:
+
+    PROSET FILENAME[.EXE] [OPTIONS]
+
+    PROSET DEMO -mem:2048
+
+The new value of the Main Memory Variable is 2048 KBytes. You can change
+all variables within one call. The Utility displays the current set up
+of the specified program and shows which variables had been changed.
+
+
+2.1 The Main Memory Variable
+
+The Main Memory Variable consists of two values:
+  - MinMem - minimum memory required and
+  - MaxMem - maximum memory needed.
+Pro32 trys to allocate the amount of MinMem. If less memory is available,
+Pro32 aborts the execution. Otherwise Pro32 trys to allocate as much memory
+as possible. The upper limit is given by MaxMem. Pro32 won't allocate more
+memory than this value. (Note on systems with virtual memory, Pro32 trys to
+allocate maximal the amount of actually installed memory).
+To set MinMem, use the option -mem:XXXX or -min:XXXX.
+To set MaxMem, use the option -max:XXXX.
+XXXX represents the amount of required memory in _Kbytes_.
+The option -mem is used for downward compatibility with older Pro32 Versions.
+Note, if only -mem is used, MinMem and MaxMem are set to the same value.
+
+2.2 The Stack Size Variable
+
+The Stack Size Variable defines the size of the Pro32 stack. Note, the Pro32
+stack is resident below 1MB. You can allocate between one and 512 KB.
+If the real mode memory for the stack is not available, Pro32 aborts.
+To set the stack size, use the option -stack:XXXX.
+XXXX represents the amount of memory used for the stack in _Kbytes_.
+
+2.3 Load Offset Variable and Entry Point
+
+These are both system variables which should not be changed. Its initial
+value is 00000100h for both. The Load Offset Variable represent the
+offset in the high memory Segment, to where the binary is load.
+The Entry Point is the offset in the High memory segment, where the
+program is executed. The execution is done by a FAR JMP from the
+Dos Extender into the XMS Memory at the offset presented by the
+Entry point Variable. The following scheme shows the program in the
+XMS memory:
+
+Offset: 0                         ษออออออออออออออออออออออออออออออออออออออออป
+                                  บ    PSP                                 บ
+        0ffh                      บ                                        บ
+                                  ฬออออออออออออออออออออออออออออออออออออออออน
+        Load Offset, Entry Point  บ    32 bit binary - main program        บ
+                                  บ                                        บ
+                                  บ                                        บ
+                                  บ                                        บ
+                                  บ                                        บ
+                                  ศออออออออออออออออออออออออออออออออออออออออผ
+
+If Load Offset and Entry Point are set to 00000200h the scheme would look
+like this:
+
+Offset: 0                         ษออออออออออออออออออออออออออออออออออออออออป
+                                  บ    PSP                                 บ
+        0ffh                      บ                                        บ
+                                  ฬออออออออออออออออออออออออออออออออออออออออน
+        0100h                     บ    unused                              บ
+        01ffh                     บ                                        บ
+                                  ฬออออออออออออออออออออออออออออออออออออออออน
+  0200h Load Offset, Entry Point  บ    32 bit binary - main program        บ
+                                  บ                                        บ
+                                  บ                                        บ
+                                  บ                                        บ
+                                  บ                                        บ
+                                  ศออออออออออออออออออออออออออออออออออออออออผ
+
+If Load Offset points to 000000100h and Entry Point to 00000200h, the program
+is load to 00000100h, but the program will be executed at 000000200h.
+
+Offset: 0                         ษออออออออออออออออออออออออออออออออออออออออป
+                                  บ    PSP                                 บ
+        0ffh                      บ                                        บ
+                                  ฬออออออออออออออออออออออออออออออออออออออออน
+        0100h Load Offset         บ    32 bit binary - main program        บ
+        01ffh                     บ                                        บ
+        0200h Entry Point         บ    Entry Point                         บ
+                                  บ                                        บ
+                                  บ                                        บ
+                                  บ                                        บ
+                                  บ                                        บ
+                                  ศออออออออออออออออออออออออออออออออออออออออผ
+
+If the Load Offset is set to zero, the PSP is copied to the XMS, but will
+be overwritten by the binary. Some assemblers create binaries with offset 0,
+so this could be a usefull combination: Load Offset and Entry Point: 00000000h
+
+Offset 0 Load Offset, Entry Point ษออออออออออออออออออออออออออออออออออออออออป
+                                  บ    32 bit binary - main program        บ
+                                  บ                                        บ
+                                  บ                                        บ
+                                  บ                                        บ
+                                  บ                                        บ
+                                  ศออออออออออออออออออออออออออออออออออออออออผ
+
+In all cases the assembler must create code that fits into this alignment.
+The Pass32 Assembler uses the first model, which is the default model.
+The first 256 bytes are reserved for the PSP, at 00000100h the program is
+load and executed.
+
+You must use these varibales with care! To alter the Load Offset Variable,
+you run ProSet with the -offs:HHHHHHHH option. HHHHHHHH represents a hexa-
+decimal value. The size of the program plus the load offset must be below
+the Main Memory value, unless you want to get a lot of exceptions...
+To change the program's entry point, you run ProSet with the -entry:HHHHHHHH
+option. HHHHHHHH represents a hexa decimal value.
+
+The entry point value must be below the Main Memory Variable, and must point
+to correct 32 bit code (The segment attribute must be 32 bit!!!), unless
+you want to say goodbye to your session...
+
+These variables are a great feature of the Pro32 extender and provide
+compability to other extenders and different assembler tools.
+But handle with care!!!
+
+
+2.4 Core Size and Core Flag
+
+The dos extender provides a core dump function.  When an exception occurs,
+the program code and data can be stored in a binary file. This file can be
+analysed by a disassembler, or a debug program.
+The core file is called CORE.COR and is placed into the current directory.
+You can alter the Core Size with the -core:XXXX option. XXXX represents the
+size of the core saved to disk in KBytes.
+The core flag enables the core dump function. The flag is set automatically
+with the -core:XXXX function. To set or unset the core flag you use
+
+     PROSET FILENAME[.EXE] -c         ; enable core dump function
+     PROSET FILENAME[.EXE] -nc        ; disable core dump function
+
+The following figure explains the Core Size:
+
+Offset: 0                         ษออออออออออออออออออออออออออออออออออออออออป
+                                  บ    PSP                                 บ
+        0ffh                      บ                                        บ
+                                  ฬออออออออออออออออออออออออออออออออออออออออน
+        0100h Load Offset       * บ    32 bit binary - main program        บ
+                                * บ                                        บ
+                                * บ                                        บ
+                                * บ                                        บ
+                                * บ                                        บ
+                                * ฬออออออออออออออออออออออออออออออออออออออออน
+                                * บ    Program Heap                        บ
+                                * บ                                        บ
+        Load Offset + Core Size * ศออออออออออออออออออออออออออออออออออออออออผ
+
+        * Data Saved to Disk.
+
+
+
+
+2.5 Break Flag
+
+The internal DPMI of the pro32 Dos extender hooks the 01bh
+(BIOS [CRTL]+[BREAK]) interrupt. When the break flag is set, [CRTL]+[BREAK]
+leads to an immediate termination of the program. If such a program behaviour
+is not want, you can disable this function.
+
+
+     PROSET FILENAME[.EXE] -b         ; enable break function
+     PROSET FILENAME[.EXE] -nb        ; disable break function
+
+This function is not available under Win3.x.
+
+
+
+2.6 Message Flag
+
+The Dos Extender can display more information next to the copyright message.
+This is the DPMI emulation message, displayed, when the DPMI is emulated,
+and the basis address of the XMS segment. These messages are just for
+control and can be disabled by the -nm option.
+The message "DPMI version 0.9" should be displayed when the computer is
+run without a DPMI host. The message  "Load to address:... " is displayed
+when the program is load into the XMS Memory. This address might tell
+something about the system (virtual memory, etc).
+
+     PROSET FILENAME[.EXE] -m         ; enable message function
+     PROSET FILENAME[.EXE] -mm        ; disable message function
+
+
+2.7 Commercial Use
+
+For commercial use, Pro32 programs must be linked with the -co option.
+This option enables a short wait loop after the copyright message. As
+the dos extender is part of the program, a customer must see the difference
+between the extender and the product. As you are not allowed to sell the
+dos extender, the presents of the extender must be apparent for the
+user. For uncommercial use, you can disable the wait loop by the -uc
+option. You are allowed to use the -uc option for commercial programs,
+if the whole Pro32 package is delivered with the software product. Here
+again, it must be obviously, that the Pro32 extender is no part of the
+software product, but a public domain programming tool.
+
+
+2.8 Setup Program
+
+The system variables are directly stored in the Pro32 stub file.
+You can also create your own setup program to change the Pro32 variables.
+Simple search in the program stub the byte string 'MEM:'. Directly after
+this string the variables are stored as defined in the following Pascal
+record:
+
+    type pro32header=record
+         mem:longint;                       ; mem size in bytes -1
+         header:word;                       ; header size
+         nobreak,nomesg,writecore:boolean;  ; flags
+         coreseg:longint;                   ; core size-1
+         loadoffs:longint;                  ; 0100h
+         startoffs:longint;                 ; 0100h
+         version:word;                      ; hex version number = $150
+         waitflag:byte;                     ; enables waiting loop
+         maxmem:longint;                    ; max mem size in bytes -1
+         stacksize:longint;                 ; stack size in bytes (aligned 16)
+       end;
+
+
+3. The Link and Relink Utility
+
+The link option can be used to link a 32 bit binary file with the Pro32
+Dos Extender to a standalone running program. The binary, for example the
+output of an assembler is appended to the dos extender and saved under a
+new name to disk. The link option has the following syntax:
+
+
+     PROSET FILENAME[.EXE] -link:BINARY[.BIN] [OPTIONS]
+
+The Filename is the name of the output - the later program name.
+The binary name is given directly behind the -link command. All options to
+alter flags or variable values are allowed.
+You can create for example small (max 64K Binaries) with TASM and TLINK,
+by simply generating a .COM file (32 bit segment attribute!) and linking
+this file with the PROSET Utility. A program header could for example
+look like this:
+
+.386
+
+CSEG		SEGMENT	PARA	PUBLIC	'CODE'         USE32
+	ASSUME	CS:CSEG, DS:CSEG, ES:CSEG, SS:CSEG
+ORG 00000100h
+
+; PROGRAM ENTRY:
+START:
+  mov eax,...
+
+CSEG ENDS
+END START
+END
+
+
+The relink function is used to update the dos extender. You must replace the
+pro32.exe file by the newer version and run ProSet with the -relink option:
+
+
+     PROSET FILENAME[.EXE] -relink [OPTIONS]
+
+The old Pro32 extender is replaced by the new version, independend of the
+extender size. You can get the dos extender version from the Pro32 output.
+If you have placed some data between dos extender and code (header size!),
+this data is treated just like a part of the old extender and won't be
+copied to the new version.
+
+
+The -bin function gets the binary part out of a program. The dos extender
+is ignored and only the binary is saved to disk.
+
+
+     PROSET FILENAME[.EXE] -bin
+
+The resulting binary file is saved as FILENAME.BIN. The relink function
+could be done a well with the -bin and the -link function.
+
+
+4.  The EXE file converter (Utility for TASM/TLINK)
+
+You can create 32 bit programs with the Turbo Assembler or other assemblers
+as well, as long as they provide real 32 bit code. You must again code with
+the flat memory model. A program header could look like this:
+
+.386
+
+CSEG		SEGMENT	PARA	PUBLIC	'CODE'    USE32
+	ASSUME	CS:CSEG, DS:CSEG, ES:CSEG, SS:CSEG
+
+ORG 00000100h
+
+; PROGRAM ENTRY:
+START:
+  mov eax,...
+
+CSEG ENDS
+END START
+END
+
+
+The program entry point must be again 0100h. You can create a non-executable
+32 bit .EXE file by simply using TLINK with the /3 option. The .EXE file
+can now be converted with ProSet and the -exe option to a runable Pro32
+.EXE file. The following example shows the program developping with TASM:
+
+     edit TASMDEMO.ASM
+     tasm TASMDEMO
+     tlink TASMDEMO /3
+     proset TASMDEMO -exe
+     tasmdemo
+
+The parameters for the converting are given: Use of only one 32 bit segment,
+program entry point is 0100h,  no other data is allowed before the entry
+point. Take a look at the TASMDEMO.ASM file, this is the same demo as
+HELLO.ASM generated with the Pass32 assembler.
+There are two different commands for the conversion:
+
+     PROSET FILENAME[.EXE] -exe  ;converts the FILENAME directly and links it
+                                 ;with the Pro32 Stub file
+                                 ;The output file name is FILENAME.EXE
+
+     PROSET FILENAME[.EXE] -exe:EXEFILE[.EXE]
+                                 ;converts the EXEFILE and links it with the
+                                 ;Pro32 Stub file. The output file name is
+                                 ;FILENAME.EXE
+                                 ;You should delete or rename the old EXEFILE
+                                 ;after the conversion!
+
+
+     PROSET FILENAME[.EXE] -exe[:EXEFILE[.EXE]] [OPTIONS]
+                                 ;you can add options additionally!
+
+!!! Don't run the .EXE file before the conversion !!!
+
+
+Appendix A - Options
+
+
+Extender Options:
+
+         -min:xxxx            Minimum Memory required in KBytes
+         -max:xxxx            Maximum Memory used in KBytes
+         -mem:xxxx            Memory in KBytes
+         -stack:xxxxx         Stacksize in Kbytes
+         -nm                  Disable Message Flag
+         -m                   Enable Message Flag
+         -nb                  Disable Break Flag
+         -b                   Enable Break Flag
+         -nc                  Disable Core Dump
+         -c                   Enable Core Dump
+         -core:xxxxx          Size of Core Dump in Kbytes
+         -offs:hhhhhhhh       32 bit load offset (default 00000100h)
+         -entry:hhhhhhhh      32 bit program entry offset (default 00000100h)
+         -uc / -co            uncommercial / commercial mode
+
+Linker Options:
+         -link:linkfile[.bin] link Binary Source with Stub
+         -exe[:exefile[.exe]] link flat model exe file with Stub
+         -bin                 saves binary part as Filename.bin
+         -newlink             to link a newer Version of Pro32 to an existing
+                              protected mode program
+
+Example: PROSET test -Mem:2048 -Link:test
+         creates test.exe with test.bin and the pro32 extender,
+         the use of extended memory is 2048 KBytes
+
+         PROSET test -Mem:1024 -nb -nm -core:1024
+
+         alters flags break, and message to false, core flag to true,
+         alters memory size and core size to 1MB, for the program test.exe
+
+
+Appendix B - Copyright
+
+ProSet is part of the Pro32 Dos Extender written in 1996 and 1997 by Dieter
+Pawelczak.
+
+This software is public domain. You can use the code without admission. For
+commercial use you must add a note in the program's information and it would
+be great if you add the whole Pro32 package! For commercial use, you must
+run the dos extender in the commercial mode; the program must be linked
+with the -co option.
+
+You are not allowed to alter any part of the dos extender's code or manual.
+You are using this code at your own risk. I tested all code of the Pro32
+Dos Extender on several different systems and computers. No errors should
+occur using the ProSet Utility.
+
+You should run ProSet only on your own code; if the program had altered the
+header size, you can easily destroy the program by changing some parameters!!!
+
+This program is distributed WITHOUT ANY WARRANTY.
+
+ProSet was totally written by myself. For the program development I used
+Turbo Pascal (Version 7.0) by Borland Inc. As on faster processors the
+run time error 200 occurred and Borland/Inprise hasn't offered a proper
+solution for the TP/BP bug, PROSET had been re-written.
+
+
+Windows 3.x and Windows 9x by Microsoft.
+TASM and TLINK by Borland/Inprise Inc.
+
+
+
+Dieter Pawelczak, January, 1999
+
+WWW:        http://www.geocities.com/SiliconValley/Bay/9159/
+
+email:      dieterp@bigfoot.de
+post code:  Fasanenweg 41, 85540 Haar, Germany

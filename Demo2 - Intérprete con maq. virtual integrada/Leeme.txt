@@ -1,0 +1,4 @@
+Esta implementación usa una arquitectura de máquina virtual integrada.
+La máquina virtual, definida en "interprete_vm.pas", define solo 2 registros 
+de trabajo.
+Solo se han implementado operaciones sencillas.

@@ -1,0 +1,1760 @@
+****************************************************************************
+*                                                                          *
+*   Pro32 DOS Extender      Version 1.7      written by Dieter Pawelczak   *
+*                                                                          *
+*                         Instruction Manual                               *
+*                                                                          *
+*   (c) 1996,1999 by Dieter Pawelczak, Fasanenweg 41, 85540 Haar, Germany  *
+*                                                                          *
+****************************************************************************
+
+
+    1.  Introduction
+    1.1 TASM / MASM support
+    1.2 NASM support
+    1.3 PASS32 support
+    2.  Description of the DOS extender service
+    2.1 Program Loading
+    2.2 Program Execution
+    2.3 DPMI Emulation
+    2.4 XMS Emulation
+    3.  Provided DPMI Functions
+    4.  Example Files
+    4.1 Check32  - Get DPMI Information
+    4.2 CheckWin - Example for the Windows flag
+    4.3 DemoExc  - Create an Exception Handler with DPMI function 0203h
+    4.4 Hello    - Hello World example
+    4.5 TestEnv  - Demo to display the environment
+    4.6 Event    - Mouse Event Handler
+    4.7 TasmDemo - Demo of how to code with TASM
+    5.  Flag and variables of the extender
+    6.  Problems with Pro32
+    7.  The new Version 1.6
+
+    Appendix A - Error Messages
+    Appendix B - Copyright
+
+
+
+
+
+
+== 1. Introduction ===========================================================
+
+      The Pro32 DOS extender is an easy tool for protected mode programming.
+      The DOS extender loads protected mode programs into XMS Memory,
+      switches the processor into protected mode and executes the program
+      in the XMS Memory.
+      The Extender supports only full 32 bit code, this means the default
+      segment attribute for the program is 32 bits.
+
+      The DOS extender checks for an existing DPMI. If no DPMI is present,
+      the DPMI functions are emulated.
+
+      Pro32 offers a good, sensible exception handler which makes programming
+      much easier. All register contents, the limits and basis addresses of
+      the selectors CS,DS,ES,FS,GS,SS are displayed.
+
+      The DOS extender itself does not support extended DOS functions as some
+      other extenders do. An extended DOS function means that you can
+      use the protected mode selectors ds,es and a 32 bit offset to
+      address string parameters for DOS calls. The string parameter will
+      be copied to real mode before the real mode int 21 is called.
+      There are two reasons for not supporting extended DOS calles...
+      The first reason is the incompatibility of DOS and protected mode.
+      If you want to program with a lot of DOS functions you should
+      better code in real mode, because this is the mode for DOS! A
+      protected mode program should use as less as possible real mode
+      calls. Extended DOS functions give the expression that you are
+      coding in protected mode, but the processor is actually running
+      in real mode most of the time.
+      The second reason is, that the implemention of extended DOS
+      functions would slow down the interrupt calls and grow the size
+      of the extender.
+
+    | For compability with other DOS Extenders, you can use the DOSX.INC |
+    | file to emulate extended DOS functions. See the DOSX.DOC file for  |
+    | further information                                                |
+
+      If the XMS service is not present Pro32 emulates the XMS interface.
+
+      This is the Version 1.6 of the Pro32 DOS extender.
+
+      Pro32 does not support all DPMI functions, but I think even more than
+      you really need to code in protected mode. As I wrote a lot of pro-
+      tected mode programs - Pro32 reflects all DPMI functions I ever used
+      in my programs.
+
+      The DPMI service from Pro32 is acting according to DPMI Spec V1.0
+      (Error Codes, clearing freed/reloading altered selectors, etc.), but
+      offers only functions from DPMI Spec V0.90.
+      As most systems do not support DPMI V1.0, and I don't think it is
+      useful to write protected mode programs which check the DPMI Version
+      and act according to the version number different, Pro32 still returns
+      DPMI V0.90 as DPMI Version number.
+
+      So don't get confused, code your program for DPMI V0.90 and you're
+      always right!
+
+
+== 1.1 TASM / MASM  support ==================================================
+
+      TASM / MASM don't support a dos extender directly.
+      You can create 32 bit Pro32 executables simply by either writing
+      .COM files in the tiny model (with a USE32 segment) and linking the
+      .COM file with ProSet. This method is restricted to a 64K code segment.
+
+      You can create real huge 32 bit programs by generating a dummy .EXE
+      file with TLINK. This .EXE file can be converted to an executable
+      Pro32 program by using ProSet.
+      The assembler file should have the following header:
+
+      .386
+
+      CSEG              SEGMENT PARA    PUBLIC  'CODE'    USE32
+			ASSUME  CS:CSEG, DS:CSEG, ES:CSEG, SS:CSEG
+
+      ORG 00000100h
+
+      ; PROGRAM ENTRY:
+      START:
+	mov eax,...
+
+      CSEG ENDS
+      END START
+      END
+
+
+      After the file had been linked by TLINK, you run ProSet with the
+      -exe option. ProSet converts the .EXE file and copies the Pro32
+      dos extender at the beginning. If you are using only one huge
+      segment, and the correct entry point at 0100h, the conversion
+      should not fail. (See the Proset documentation for further
+      information)
+
+      The Make32 batch file is a good example for program development
+      with TASM, TLINK and Pro32:
+
+      TASM demo.asm
+      TLINK demo.asm /3
+      PROSET demo -exe:demo
+
+
+== 1.2 TASM / MASM  support ==================================================
+
+      NASM doesn't support a dos extender directly (at least not the version
+      I did the testing with).
+      You have to create a 32 bit binary and link this binary with Proset.
+      An 32 bit NASM source should look like this:
+
+      BITS 32
+      ORG 0x100
+
+      SECTION .text
+          ; ...
+          mov eax,4c00h
+          int 21h
+      SECTION .data
+          ; ...
+      SECTION .bss
+
+      The assembler and linker will be performed like:
+
+      NASM -f bin -o demo.bin demo.asm
+      PROSET demo -link:demo
+
+== 1.3 PASS32 support ========================================================
+
+      The assembler Pass32 directly supports the Pro32 dos extender.
+      Indeed, the Pro32 dos extender is the default dos extender for Pass32.
+      A Pass32 program may look like this:
+
+      .MODEL FLAT
+      .MEM 1024    ; allocate 1024 MByte main memory
+
+      .DATA
+        ; ...
+      .CODE
+        ; ..
+          mov eax,4c00h
+          int 21h
+       END
+
+       The assembler and linker process is handled by Pass32:
+
+       PASS32 demo
+
+
+
+== 2. Description of the DOS extender service ================================
+
+      The DOS extender has three main functions:
+
+	- load the program into the XMS Memory
+	- execute the program in the XMS.
+	- provide DPMI functions
+
+      For more understanding of the DOS extender and as basis for the
+      programming in protected mode I want to describe these functions
+      in the next chapters.
+
+
+
+= 2.1 Program Loading ========================================================
+
+      The DOS extender program (PRO32.EXE) is copied to the beginning of
+      the protected mode binary - usually done by the assembler and
+      linker PASS32.EXE or by the linker tool PROSET.EXE.
+      The DOS extender is therefore a part of the protected mode program.
+      When called from DOS only the DOS extender is load into DOS Memory
+      and will be executed.
+
+      The extender now checks the XMS Memory. If HIMEM.SYS is not
+      installed the extender starts an XMS emulation (see 2.4 for
+      details).
+
+      Now Pro32 tries to allocate XMS Memory:
+      Pro32 first checks how much memory is available in the system. If the
+      amount of memory is below the MinMemory variable, Pro32 terminates with
+      the error message: too less memory available.
+      If the amount of memory is above the MaxMemory variable, Pro32 allocates
+      memory according to the MaxMemory value. Otherwise, Pro32 allocates all
+      available Memory. So Pro32 allocates at least an amount of memory
+      according to the MinMemory value and maximal according to MaxMemory.
+
+      Note, on systems, which provides virtual memory (like Windows), Pro32
+      doesn't allocate all virtual memory. For example, a Pro32 program
+      defines MinMemory 8MB and MaxMemory 64MB. Now, you have 16MB installed
+      and Windows provides additional 32MB virtual memory. Pro32 could
+      allocate 48 MB, but this would mean to use all Windows resources.
+      In this situation Pro32 allocates max. 16MB (the actual installed
+      amount of memory). The advantage is, that Windows and other applications
+      can still run together with the Pro32 program. If your program needs
+      more than the amount of installed memory, here for example 20MB,
+      the program will then use virtual memory under Windows. So you can run
+      it, even if only 16MB are installed.
+
+
+
+      The extender tries to open the program file. The progam name is
+      usually the parameter 0.
+
+      At last the DOS extender checks the video configuration. If the
+      current video mode is not 80x25 textmode, the DOS extender changes
+      the video mode to 80x25 textmode.
+
+      Now the initialisation is done and the extender tests if a 32 bit
+      DPMI host is present. If so, the processor is switched into protected
+      mode and the extender starts loading.
+
+      If not, the DPMI is emulated.
+      The processor is switched to protected mode with privileged
+      instructions. This may fail if a 16 bit DPMI is present, but ignored.
+      For example the Turbo C++ 16 bit DPMI host causes problems with Pro32
+      (See Chapter 3 Problems with Pro32 for more details).
+
+      If the processor is already in V86 mode, the privileged mode switching
+      fails and the extender tries to switch to protected mode via the
+      VCPI Interface.
+
+      If the message flag is enabled, the DOS extender displays the DPMI
+      emulation with the message "DPMI Version 0.9".
+
+      Now the DOS Extender allocates real mode memory for the PM-stack.
+      It uses real mode memory, as this memory is according to the DPMI
+      and Windows-Specification always locked. Note, if the memory used
+      by the stack is not locked, it will produces a stack exception
+      under Windows. So a real mode stack provides a more stable system.
+      Pro32 needs at least 100h bytes of stack and can use max. 512 Kbytes.
+      As default, Pro32 allocates 32KByte stack.
+
+      The load procedure is independend whether DPMI is present or emulated.
+      This code is using only DPMI instructions.
+
+      The extender establishes several descriptors:
+
+	 - High Code Descriptor
+	 - High Data Descriptor
+	 - Video Descriptor
+	 - Zero Descriptor (Basis:00000000h)
+	 - Real Mode File Buffer Descriptor
+	 - Real Mode PSP Descriptor
+
+
+      If the message flag is enabled, the extender displays the basis of
+      the High Code and High Data Descriptor: "load to address:xxxxxxxx"
+
+      The current PSP is copied with the High Data Descriptor into XMS at
+      offset 00000000.
+
+      The DOS extender loads the program to CS:00000100 (The load address
+      can be changed by changing the Load Offset Value, See Chapter 5).
+
+      Note, the Pro32 dos extender doesn't use virtual memory as about all
+      other Dos extenders do. Virtual memory slows down the processor, as
+      every access to memory must be redirected.
+
+
+
+
+
+= 2.2 Program Execution ======================================================
+
+      When the whole program is copied into the XMS, all protected
+      descriptors are copied into the PSP. They can be reached by CS:
+
+  PSP OFFSET:  Length:
+
+       0         2         DSEG - Selector
+       2         2         Video - Selector
+       4         2         Zero - Selector
+       6         2         RealMode File Buffer - Selector (32 KByte)
+       8         2         RealMode File Buffer - Realmode Segment
+       A         4         Value of MainMemory  (in Bytes)
+       E         1         Flag if Windows is activ (0 = NO, 1 = YES)
+       F         1         Flag if Pro32 DPMI or other (0 = Pro32, 1 = other)
+       2C        2         Selector to DOS environment
+
+      To get the size of allocated memory for example, you can use
+
+	    mov eax,CS:[0Ah]              ;eax size of allocated memory
+
+      The segment register are loaded with the following descriptors:
+
+      REGISTER TYPE   Description
+
+	 CS:    32 bit High Code Selector
+	 DS:    32 bit High Data Selector (same Basis as CS)
+	 ES:    16 bit Video Selector (points to b800:0000 / b000:0000 )
+	 FS:    32 bit Zero Selector (LIMIT: FFFFFFFF);
+	 GS:    32 bit Zero Selector (LIMIT: FFFFFFFF);
+	 SS:    32 bit Stack Selector (LIMIT according to .STACK)
+
+      The DOS extender executes the program at CS:00000100 (The entry point
+      can be changed by changing the Entry Offset Value, See Chapter 5).
+      The first 256 Bytes are reserved for the program PSP. You can reach
+      the parameter line for example by cs:[80h].
+
+      The value of EAX,EBX,ECX,EDX,ESI,EDI and EBP is zero.
+
+
+
+= 2.3 DPMI Emulation =========================================================
+
+      The main part of the DOS extender is using DPMI calls. If the system
+      already provides a 32 bit DPMI host, its DPMI functions are used.
+      For this reason, Pro32 programs are able to run under Windows 3.x,
+      Windows 95 and under Windows NT.
+      Pro32 does not support all DPMI functions. For this reason you
+      should use only those that are listed.
+      There are some differences between the DPMI specifications and the
+      Pro32 DPMI emulation. The main reason for these differences is the
+      speed of DPMI.
+      DPMI is mainly slowed down, because all real mode interrupts must be
+      provided by the DPMI host. For this reason DPMI hosts typically uses
+      an exception handler which is checking the interrupt type (external,
+      software,exception...) and reacting according to the type.
+      Pro32 does not support all 256 real mode interrupts because there is
+      no use for some real mode interrupts, for example: int 67h (EMM Driver)!
+      The following _real_ mode interrupts are supported by Pro32:
+
+      interrupt      type     description         remark
+	 08h          HW      IRQ0 TIMER      To hook the HW interrupt 8,
+					      use the Set Protected Mode
+					      Interrupt Function 0205h
+	 08h         SW/EX    Exception       you should alter this exception
+					      with the Set Exception Handler
+					      Function 0203h
+	 09h          HW      IRQ1 KEYBOARD
+	 09h         SW/EX    Exception          same as int 8
+	 0Ah          HW      IRQ2 EGA V.Retrace
+	 0Ah         SW/EX    Exception          same as int 8
+	 0Bh          HW      IRQ3 COM2
+	 0Bh         SW/EX    Exception          same as int 8
+	 0Ch          HW      IRQ3 COM1
+	 0Ch         SW/EX    Exception          same as int 8
+	 0Dh          HW      LPT2
+	 0Dh         SW/EX    Exception          same as int 8
+	 0Eh          HW      DISC
+	 0Eh         SW/EX    Exception          same as int 8
+	 0Fh          HW      LPT1
+	 10h          SW      Video BIOS
+	 11h          SW      Equipment Determination
+	 12h          SW      Memory Size
+	 13h          SW      DISC
+	 14h          SW      SERIAL I/O
+	 15h          SW      AT-Functions
+	 16h          SW      Keyboard
+	 17h          SW      Printer
+	 21h          SW      DOS Functions
+	 2Ah          SW      Microsoft Networks
+	 28h          SW      Reserved For DOS
+	 29h          SW      Reserved For DOS
+	 33h          SW      Mouse Pointer
+	 70h          HW      IRQ8 Real TIME Clock
+	 71h          HW      IRQ9 LAN Adapter
+	 72h          HW      Reserved
+	 73h          HW      Reserved
+	 74h          HW      Mouse Int
+	 75h          HW      Reserved
+	 76h          HW      Fixed Disk
+	 77h          HW      Reserved
+
+      All other interrupts between 18h-7Fh are free for protected mode use.
+      The first 16 interrupts cause an exception, if they are explicitly
+      called by an int instruction.
+      The interrupts 80h-0FFh cause an exception:
+      All interrupts which are not on the list above cause an illegal
+      interrupt exception, unless they are hooked by your program.
+      Under Windows DPMI, all 256 interrupts are transfered to (virtual) real
+      mode which makes your program slow.
+      The specification of all 256 interrupts would have created a
+      far bigger Pro32 Dos Extender. But I can see no use for it.
+
+      This is a list of the exceptions, provided by the DPMI:
+
+	 00h          EX      Division by Zero
+	 01h          EX      Debug Interrupt (not transmitted to real mode!)
+	 02h          EX      NMI - causes an exeption
+	 03h          EX      BreakPoint
+	 04h          EX      Overflow
+	 05h          EX      Bound error
+	 06h          EX      Invalid OpCode
+	 07h          EX      FPU Error
+	 08h          EX      Double Fault (should not appear!)
+	 0Ah          EX      invalid Task Status Segment
+	 0Bh          EX      Segment not present
+	 0Ch          EX      Stack Error
+	 0Dh          EX      General Protection Fault
+	 0Eh          EX      Page Fault
+
+      The exceptions 00 - 0ah, 0ch and 0dh from any other DPMI host are
+      (if the DPMI host offers this function) controlled by the Pro32
+      Dos Extender.
+
+      So when your program is running under Windows, and an exception
+      occurs, Pro32 will handle the exception. The exception handler
+      usually prints the error address, the error code, the exception
+      type, the contents of all registers, the basis addresses and the
+      limits of the selectors CS, DS, ES, FS, GS, SS.
+
+      The Pass32 Assembler offers for example a find error option, so
+      you can easily trace the error by searching for the error address.
+
+      For a more detailed analyses of the program, Pro32 can generate a
+      core dump. The program code and data are stored in a file called
+      CORE.COR when an exception occurs.
+      You can easily detect errors, such as overwriting parts of the code,
+      etc.
+
+      The file CORE.COR reflects the whole 32 bit program at the moment
+      of the exception.
+
+      The size of the core dump can be given by the core size variable.
+      You can analyse the core dump by using a disassemble (for example
+      DISS32, which is part of the PASS32 Assembler).
+
+      This is an example of how a typical exception could look like:
+
+  ษออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+  บ  Division by Zero              at: 0060:0001046A                       บ
+  บ                                                                        บ
+  บ  Unhandled exception - error code: 0000                                บ
+  บ                                                                        บ
+  บ  EAX :000FFA1E     EBX :00100000    ECX :000001FF    EDX :00000000     บ
+  บ  EDI :002A00C0     ESI :002A0000    EBP :00007FFC    ESP :00007FFA     บ
+  บ                                                                        บ
+  บ   CS :0060         Basis:006F8000   Limit:002FFFFF                     บ
+  บ   DS :0058         Basis:006F8000   Limit:002FFFFF                     บ
+  บ   ES :0040         Basis:000B8000   Limit:0000FFFF                     บ
+  บ   FS :0038         Basis:00000000   Limit:FFFFFFFF                     บ
+  บ   GS :0038         Basis:00000000   Limit:FFFFFFFF                     บ
+  บ   SS :0010         Basis:000432D0   Limit:0000FFFF                     บ
+  ศออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออผ
+
+
+
+
+      These interrupts are transmitted into protected mode:
+
+         1Bh          SW      Crtl+Break (*)
+	 1Ch          SW      Timer Clock (points to IRET at initialisation)
+	 23h          SW      Crtl-C      (*)
+	 24h          SW      Fatal Error Handler (points to an
+						   error exit procedure)
+
+      I must admit that the int 1ch is not directly called from
+      real mode. The protected mode int 1ch is only called when the
+      protected mode interrupt 8 is called by the clock timer.
+      If you are in real mode the real mode int 1ch is called.
+
+      This is of course again a speed factor: If int 8 is activated through
+      the hardware, the processor switched to real mode, the real mode int 8
+      called, the real mode int 1ch (called by real mode int 8)
+      switches back to protected mode executes the protected mode 1ch
+      (usually IRET) switches back to real mode, terminates the real mode 8
+      interrupt and switches back to protected mode....
+
+      You could imagine that this method would only cause a switching
+      processor! But again - we want to code in protected mode and not
+      between the codes!
+
+      The int 23h only occurs, when CRTL-C was pressed during a real mode
+      DOS call.
+
+(*)   Additional to the DPMI Spec. int 1bh is transmitted from real mode
+      to protected mode.
+      Depending on the break flag, int 1bh (Crtl+BREAK) and int 23h (Crtl+C)
+      either point to IRET or to a short interrupt handler, which terminates
+      the program.
+      If the breakflag is set, you can use [Crtl]+[Break] and/or [Crtl]+[C]
+      to terminate the program.
+
+      All real mode interrupts which had been changed via DPMI have no
+      effect after program termination!
+
+      You can pass all parameters via (E)AX,(E)BX,(E)CX,(E)DX,(E)DI,(E)SI
+      directly to the real mode interrupt.
+      If you need one of the segment registers as parameter you must use
+      the DPMI function 0300h to transfer these parameters!
+
+      To test the performance of my DPMI emulator I used the following code:
+
+	    mov ecx,100000H
+	 waitloop:
+	    push ecx
+	    mov ah,2ch            ;get DOS time
+	    int 21h
+	    mov Hour,CH
+	    mov Min,CL
+	    mov Sec,Dh
+	    Mov Sec100,Dl
+	    pop ecx
+	    loop waitloop
+
+      The same program ran 3.3 times longer under Windows DPMI as under the
+      DPMI emulation. The loop with emulated DPMI ran only 1.17 times longer
+      than the real mode code equivalent. The following figure shows the
+      relative performance time for this loop, tested on a DX-4-100:
+
+	DOS Mode   Emulated DPMI   Windows 3.11 DPMI   Win 95 DOS  Windows 95
+Slow  :   1.0          1.17            3.91
+Down  :                1.0             3.3
+Factor:   1.0          1.17             -                  -          4.7
+							  1.0         4.0
+
+      DOS Mode: pure MS-DOS Version 6.22 (REAL MODE PROGRAM)
+      Emulated DPMI:pure MS-DOS Version 6.22 (PRO32 Program)
+      Windows 3.11 DPMI: Pro32 Program with exclusive execution (No Window!)
+      Win 95 DOS: pure DOS without Win 95 in background
+      Windows 95: Pro32 Program with exclusive execution (No Window!)
+
+      So I think this is a good compromise between the limited DPMI
+      specification and speed!
+
+
+
+
+= 2.4 XMS Emulation ==========================================================
+
+      If XMS is not available, for example, if the extended memory manager
+      HIMEM.SYS is not installed, Pro32 emulates HIMEM.SYS.
+      Other DOS extender usually allocate all XMS Memory, when no extended
+      memory manager is installed. The effect is, that a PM program then
+      cannot execute another PM program, because the other program wouldn't
+      get any free XMS memory.
+      For this reason Pro32 emulates the XMS manager. As long as a Pro32
+      program is resident in memory, Pro32 offers via int 2fh an XMS manager.
+      So, even without HIMEM.SYS installed, other programs now can access
+      XMS. The interface provides only some functions according to the XMS
+      Spec 2.0. The main idea, of course is, that a Pro32 program can execute
+      another Pro32 program. But furthermore, I tested the Pro32 XMS emulation
+      with the following programs and they worked fine: MSD, MEM, DOS32
+      DOS4GW, PMODEW, TPX and TC.
+      The reason, why other programs may fail, is because it supports only
+      the functions 08h, 09h, 0Ah, 0Ch, 00h and, because it provides only
+      41 handles...
+
+
+
+
+== 3. Provided DPMI functions ================================================
+
+      General Note: Every DPMI function might fail, if it is not implemented.
+      This possibility is left out through out the description of the
+      functions. All these following functions are available under the DPMI
+      emulation and as far as I know (and tested) under Windows and Win 95
+      as well.
+
+  3.1 Function 0000h - Allocate Descriptors
+
+      Allocates one or more descriptors in the descriptor table. These
+      desciptors have a base and limit of 00000000h, they will be set to
+      expand-up writeable data, with the present bit set. If more than one
+      desciptor was allocated, the returnd selector is a base selector.
+      You must add the value of INT 31h function 0003h to get the next
+      selector. You should request only one selector by one, to avoid gaps
+      in the descriptor table.
+
+      Function call: INT 31h
+	AX     = 0000h
+	CX     = number of descriptors to allocate (usually CX=0001)
+
+      Results:
+      if successful:
+	carry flag clear
+	AX     = base selector
+
+      if failed:
+	 carry flag set
+	 AX     = error code
+
+      Example:
+
+	 mov CX,1
+	 mov AX,0000h
+	 int 31h
+	 jc DPMIERROR                  ; probably no more system resources...
+	 mov NewSelector,AX
+	   ....
+	 DPMIERROR:
+	 call printerror
+
+
+  3.2 Function 0001h - Free Descriptor
+
+      Frees a descriptor allocated by the function 0000h. You should not free
+      descriptors allocated by the DPMI host (for example the initial CS,SS,
+      DS,ES,FS,GS) and descriptors allocated by function 00002h.
+
+      Function call: INT 31h
+	AX     = 0001h
+	BX     = selector for the descriptor to free
+
+      Results:
+      if successful:
+	carry flag clear
+
+      if failed:
+	carry flag set
+	AX     = error code
+
+      Example:
+	mov BX,NewSelector            ; no need for NewSelector anymore...
+	mov ax,0001h
+	int 31h
+
+      Notes:
+      any use of a free selector will cause a general exception.
+
+
+
+  3.3 Function 0002h - Get Real Mode Segment Descriptor
+
+      Converts a real mode segment into a protected mode descriptor. The
+      default size attribute is 16 bit, the descriptor type expand-up
+      writeable data, with a base to the Real Mode segment and a limit of
+      0FFFFh.
+
+
+      Function call: INT 31h
+	AX     = 0002h
+	BX     = real mode segment
+
+      Results:
+      if successful:
+	carry flag clear
+	AX     = selector
+
+      if failed:
+	carry flag set
+	AX     = error code
+
+      Examples:
+	mov BX,0A000h                                 ;Video Graphic Memory
+	mov AX,0002h
+	int 31h
+	jc DPMIERROR                  ; probably no more system resources...
+	mov GraphicSel,ax
+
+      Notes:
+	according to the DPMI specification you should not alter base or
+	limit of these descriptors.
+
+
+  3.4 Function 0003h - Get Selector Increment Value
+
+      You can allocate more than one descriptors with INT 31h function
+      (0000h). To get the next descriptor you must add the increment value
+      to the base selector.
+
+      Function call: INT 31h
+	AX     = 0003h
+
+      Results:
+	AX     = selector increment value
+
+
+  3.5 Function 0006h - Get Segment Base Address
+
+      Returns the 32bit linear base address of the selector.
+
+      Function call: INT 31h
+	AX     = 0006h
+	BX     = selector
+
+      Results:
+      if successful:
+	carry flag clear
+	CX:DX  = 32bit linear base address of the selector
+
+      if failed:
+	carry flag set
+	AX     = error code
+
+
+  3.6 Function 0007h - Set Segment Base Address
+
+      Sets the 32bit linear base address field in the descriptor for the
+      specified segment.
+
+      Function call: INT 31h
+	AX     = 0007h
+	BX     = selector
+	CX:DX  = 32bit linear base address of segment
+
+      Results:
+      if successful:
+	carry flag clear
+
+      if failed:
+	carry flag set
+	AX     = error code
+
+      Example:
+	mov BX,NewSelector
+	mov CX,0Ah
+	mov DX,0                              ; CX:DX points to 0A0000h
+	mov AX,7                              ; so we create another Graphic Screen
+	int 31h                               ; Selector!
+
+
+
+  3.7 Function 0008h - Set Segment Limit
+
+      Sets the limit field in the descriptor for the specified segment.
+
+      Function call: INT 31h
+	AX     = 0008h
+	BX     = selector
+	CX:DX  = 32bit segment limit
+
+      Results:
+      if successful:
+	carry flag clear
+
+      if failed:
+	carry flag set
+	AX     = error code
+
+      Example:
+	mov BX,NewSelector
+	mov CX,0
+	mov DX,0FFFFh                         ; set 64K Limit to NewSelector
+	mov AX,8                              ; Limit = Size -1
+	int 31h
+
+      Notes:
+      The granularity may change depending on the value of CX:DX
+
+  3.8 Function 0009h - Set Descriptor Access Rights
+
+      Modifies the access rights field in the descriptor for the specified
+      segment.
+      The access rights stored in CX have the following format:
+
+      Bit: 15  14  13  12  11  10  9   8   7   6   5   4   3   2   1   0
+
+	 ษอออหอออหอออหอออหอออออออออออออออหอออหอออออออหอออหอออหอออหอออหอออป
+	 บ G บB/Dบ 0 บAVLบ       ?       บ 1 บ  DPL  บ 1 บC/DบE/CบW/Rบ A บ
+	 ศอออสอออสอออสอออสอออออออออออออออสอออสอออออออสอออสอออสอออสอออสอออผ
+
+      G   : Limit Granularity
+	 0: byte granular (Limit=Limit field)
+	 1: page granular (Limit=4096*Limit field)
+      B/D : Segment Attribute Size
+	 0: 16 bit = use16
+	 1: 32 bit = use32
+      AVL : Available Flag (unused)
+      DPL : Privileg Level - use the LAR instruction to examine the DPL
+      C/D : Segment Type Code - Data
+	 0: data
+	 1: code
+      E/C : Segment Type Expand - Conforming
+	 0: data=expand-up               code=non-conforming (default)
+	 1: data=expand-down (Stack!)    code=conforming
+      W/R : Segment Type Read / Write
+	 0: data=read,code=non-readable
+	 1: data=read/write,code=readable
+      A   : Segment Type Access
+	 0: not accessed,
+	 1: accessed
+      0   : must be 0
+      1   : must be 1
+      ?   : will be ignored
+
+
+      Function call: INT 31h
+	AX     = 0009h
+	BX     = selector
+	CX     = access rights/type word
+
+      Results:
+      if successful:
+	carry flag clear
+
+      if failed:
+	carry flag set
+	AX     = error code
+
+
+
+  3.9 Function 000Ah - Create Alias Descriptor
+
+      Creates a so called alias descriptor that has the same base and limit
+      as the specified descriptor. The alias descriptor is always an
+      expand-up data type. You can create alias descriptors as well from
+      data and code descriptors.
+
+      Function call: INT 31h
+	AX     = 000ah
+	BX     = selector
+
+      Results:
+      if successful:
+	carry flag clear
+	AX     = alias selector (data)
+
+      if failed:
+	carry flag set
+	AX     = error code
+
+
+ 3.10 Function 000Bh - Get Descriptor
+
+      Copies the descriptor table entry of the specified selector into an
+      8 byte buffer. The descriptor has the following format:
+
+	  Bit: 15  14  13  12  11  10  9   8   7   6   5   4   3   2   1   0
+  Offset:    ษอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออป
+    0        บ                   Segment Limit 15..0                         บ
+	     ฬอออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออออน
+    2        บ                   Segment Base  15..0                         บ
+	     ฬอออหอออหอออหอออหอออหอออหอออหอออหอออออออออออออออออออออออออออออออน
+    4        บ P บ  DPL  บ 1 บC/DบE/CบR/Wบ A บ      Segment Base 23..16      บ
+	     ฬอออสอออสอออสอออสอออสอออสอออสอออฮอออหอออหอออหอออหอออออออออออออออน
+    6        บ      Segment Base 31..24      บ G บB/Dบ 0 บAVLบ               บ
+	     ศอออออออออออออออออออออออออออออออสอออสอออสอออสอออสอออออออออออออออผ
+      The abreviations are the same as specified at the access rights
+      function.
+
+      Function call: INT 31h
+	AX     = 000bh
+	BX     = selector
+	ES:EDI = selector:offset of 8 the byte buffer
+
+      Results:
+      if successful:
+	carry flag clear
+	buffer pointed to by ES:EDI contains descriptor data
+
+      if failed:
+	carry flag set
+	AX     = error code
+
+ 3.11 Function 000Ch - Set Descriptor
+
+      To write a complete descriptor into the descriptor table. The contents
+      of an 8 bytes buffer is copied into the descriptor table for the
+      specified selector.
+      The desciptor format is demonstrated at function 000Bh - Get Descriptor.
+
+      Function call: INT 31h
+	AX     = 000ch
+	BX     = selector
+	ES:EDI = selector:offset of the 8 byte buffer with vaild
+		 descriptor format.
+
+      Results:
+      if successful:
+	carry flag clear
+
+      if failed:
+	carry flag set
+	AX     = error code
+
+      Note:
+      The function does not check if the descriptor entries are valid.
+      Invalid descriptor values will cause an exception if the descriptor
+      is load into a segment register.
+
+ 3.12 Function 0100h - Allocate DOS Memory
+
+      Allocates DOS memory through DOS function 48h and creates a descriptor
+      for the memory. If more than 64 K is allocated, the descriptor will
+      have the limit set above 64K. According to the DPMI Specification this
+      function allocates an array of descriptors with regard to the 16bit
+      DPMI Version. The 16 bit DPMI function allocates as many 64K
+      descriptors as are necessary to select the whole memory. The 32 bit
+      DPMI function allocates as well an array of descriptors with the limit
+      of 64K, but with the exception, that the first descriptor has a limit
+      of the total amount of allocated memory.
+
+  !!  The DPMI emulation does not allocate an array of 64K descriptors (these
+      are limited system resources!), but a single descriptor with a limit
+      of the allocated memory. I think this is the only useful way to handle
+      this function!
+
+
+      Function call: INT 31h
+	AX     = 0100h
+	BX     = paragraphs (in 16 bytes) of DOS memory to allocate
+
+      Results:
+      if successful:
+	carry flag clear
+	AX         = real mode segment address
+	DX         = protected mode selector for memory block
+
+      if failed:
+	carry flag set
+	AX         = DOS error code
+	BX         = size of largest available block
+
+ 3.13 Function 0101h - Free DOS Memory Block
+
+      Frees a low memory block previously allocated by function 0100h.
+
+      Function call: INT 31h
+      AX     = 0101h
+      DX     = protected mode selector for memory block
+
+      Results:
+      if successful:
+	carry flag clear
+
+      if failed:
+	carry flag set
+	AX         = DOS error code
+
+
+ 3.14 Function 0200h - Get Real Mode Interrupt Vector
+
+      Returns the real mode interrupt vector for a specified interrupt.
+
+      Function call: INT 31h
+	AX     = 0200h
+	BL     = interrupt number
+
+      Results:
+	CX:DX  = segment:offset of real mode interrupt handler
+
+
+ 3.15 Function 0201h - Set Real Mode Interrupt Vector
+
+      To set a real mode interrupt vector.
+
+      Function call: INT 31h
+	AX     = 0201h
+	BL     = interrupt number
+	CX:DX  = segment:offset of real mode interrupt handler
+
+
+      Notes:
+      The altered interrupts are only valid as long as the program is
+      running - after the DOS exit function 4Ch all interrupt vectors are
+      restored!
+      The interrupt procedure must be located in real memory with a segment
+      attribute of 16 bit!
+
+ 3.16 Function 0202h - Get Exception Handler
+
+      Returns the 16:32 vector of the current protected mode exception
+      handler for the specified exception
+
+      Function call: INT 31h
+	AX     = 0202h
+	BL     = exception number
+
+      Results:
+	CX:EDX = selector:offset of protected mode exception handler
+
+      Note:
+      Pro32 supports only values between 00h and 0bh as exceptions.
+      See Chapter 2.3 for more information
+
+
+
+
+
+ 3.17 Function 0203h - Set Exception Handler
+
+      Sets the 16:32 address of the protected mode exception handler for
+      the specified exception.
+
+      Function call: INT 31h
+	AX     = 0203h
+	BL     = exception number
+	CX:EDX = selector:offset of protected mode exception handler
+
+
+      Note:
+      Pro32 supports only values between 00h and 0bh as exceptions.
+      See Chapter 2.3 for more information
+      CX and EDX should contain the protected mode address of an exception
+      handler. The exception handler is called by a far call from the
+      DPMI host. The stack contains the following values:
+
+	 31                    15                     0
+	 ษอออออออออออออออออออออหออออออออออออออออออออออป
+	 บ                     บ Error Value of SS    บ
+	 ฬอออออออออออออออออออออสออออออออออออออออออออออน
+	 บ             Error Value of ESP             บ
+	 ฬออออออออออออออออออออออออออออออออออออออออออออน
+	 บ           Error Value of E-Flags           บ
+	 ฬอออออออออออออออออออออหออออออออออออออออออออออน
+	 บ                     บ Error Value of CS    บ
+	 ฬอออออออออออออออออออออสออออออออออออออออออออออน
+	 บ             Error Value of EIP             บ
+	 ฬออออออออออออออออออออออออออออออออออออออออออออน
+	 บ                 Error Code                 บ
+	 ฬอออออออออออออออออออออหออออออออออออออออออออออน
+	 บ                     บ      Caller CS       บ
+	 ฬอออออออออออออออออออออสออออออออออออออออออออออน
+	 บ                 Caller EIP                 บ
+	 ศออออออออออออออออออออออออออออออออออออออออออออผ  <- SS:ESP
+
+      Look at the DEMOEXC.ASM example file how to create an exception
+      handler.
+
+
+ 3.18 Function 0204h - Get Protected Mode Interrupt Vector
+
+      Returns the 16:32 vector of the current protected mode interrupt
+      handler for the specified interrupt.
+
+      Function call: INT 31h
+	AX     = 0204h
+	BL     = interrupt number
+
+      Results:
+	CX:EDX = selector:offset of protected mode interrupt handler
+
+
+
+ 3.19 Function 0205h - Set Protected Mode Interrupt Vector
+
+      Sets the 16:32 address of the protected mode interrupt handler for
+      the specified interrupt.
+
+      Function call: INT 31h
+	AX     = 0205h
+	BL     = interrupt number
+	CX:EDX = selector offset of protected mode interrupt handler
+
+
+      Note:
+      You should use this function to set any protected mode interrupt
+      vector.
+      If you want to create an exception handler, use function 0203h.
+
+ 3.20 Function 0300h - Call Real Mode Interrupt
+
+      This function should be used to call real mode interupts which are not
+      transfered directly (see interupt list above) or if you want to pass
+      segment register as parameters to real mode.
+
+      Function call: INT 31h
+	AX     = 0300h
+	BX     = interrupt number (BH must be 0)
+	CX     = number of words to copy from the protected mode stack
+		 to the real mode stack
+	ES:EDI = selector:offset of real mode register transfer data
+		 structure (see below)
+      Results:
+	ES:EDI = selector offset of modified real mode register transfer
+		 data structure
+
+
+	    Offset  Length   Description
+	  ษออออออออหอออออออหอออออออออออออออออออออออออออออออป
+	  บ   00h  บ   4   บ    EDI                        บ
+	  บ   04h  บ   4   บ    ESI                        บ
+	  บ   08h  บ   4   บ    EBP                        บ
+	  บ   0ch  บ   4   บ    reserved, should be 0      บ
+	  บ   10h  บ   4   บ    EBX                        บ
+	  บ   14h  บ   4   บ    EDX                        บ
+	  บ   18h  บ   4   บ    ECX                        บ
+	  บ   1ch  บ   4   บ    EAX                        บ
+	  บ   20h  บ   2   บ    Real Mode CPU flags        บ
+	  บ   22h  บ   2   บ    ES                         บ
+	  บ   24h  บ   2   บ    DS                         บ
+	  บ   26h  บ   2   บ    FS                         บ
+	  บ   28h  บ   2   บ    GS                         บ
+	  บ   2ah  บ   2   บ    IP Function 0301,0302 only บ
+	  บ   2ch  บ   2   บ    CS Function 0301,0302 only บ
+	  บ   2eh  บ   2   บ    SP (*)                     บ
+	  บ   30h  บ   2   บ    SS (*)                     บ
+	  บ   32h  บ   2   บ    Dummy (**)                 บ
+	  ศออออออออสอออออออสอออออออออออออออออออออออออออออออผ
+
+      Notes:
+      (*)  The SS:SP fields in the real mode data register transfer structure
+	   should be zero. The DPMI emulation ignores both fields. According
+	   to the DPMI Specification the values of SS and SP are used, if
+	   they are unequal to zero.
+      (**) This field is not used in the DPMI Specification. As the DPMI
+	   emulation copies the data with the use of 32 bit registers, you
+	   should add this dummy variable to regain dword alignment.
+
+      Example:
+	;we assume our structure variables are called intedi, inteax etc
+	mov inteax,0900h      ;   ( DOS Function call AH=09h )
+	mov intedx,0          ;   ( Offset of our Real Mode Message )
+	mov ax,RealSegment    ;   ( A real mode segment value, segment of
+			      ;     message)
+	mov intds,ax
+	push ds
+	pop es                ;
+	mov edi,offset intedi ; ES : EDI points to structure
+	mov cx,0              ; No parameters
+	mov bx,21h            ; DOS Interrupt Number
+	mov ax,0300h          ; Call Real Mode Interrupt Function
+	int 31h
+
+
+ 3.21 Function 0301h - Call Real Mode Procedure With Far Return
+
+      Calls a real mode procedure which ends with a RETF instruction
+
+      Function call: INT 31h
+	AX     = 0301h
+	BH     = must be 0
+	CX     = number of words to copy from protected mode stack to real
+		 mode stack
+	ES:EDI = selector:offset of real mode register data transfer
+		 structure (see above)
+      Results:
+	ES:EDI = selector offset of modified real mode register transfer
+		 data structure (see above)
+
+
+ 3.22 Function 0302h - Call Real Mode Procedure With IRET Return
+
+      This Function calls a real mode procedure which ends with one of the
+      following instructions: IRET or RETF 2.
+
+      Function call: INT 31h
+	AX     = 0302h
+	BH     = must be 0
+	CX     = number of words to copy from the protected mode stack to
+		 the real mode stack
+	ES:EDI = selector:offset of real mode register data transfer
+		 structure (see above)
+
+ 3.23 Function 0303h -Install Real Mode Call Back Functions
+
+      This Function returns a real mode procedure, which will call a
+      specific protected mode handler.
+
+      Function call: INT 31h
+	AX     = 0303h
+        DS:ESI = selector:offset to protected mode handler
+	ES:EDI = selector:offset of real mode register data transfer
+		 structure (see above)
+
+      Results:
+        CX:DX  = segment:offset to real mode call back function.
+
+      PM Handler (procedure in DS:ESI) is called by the real mode
+      call back function with the following parameters:
+
+        DS:ESI = point to real mode stack
+        ES:EDI = points to real mode register data transfer structure.
+
+      Notes:
+      The PM Handler returns with an IRET instruction. The PM Handler
+      must store the real mode return address in the data transfer structure.
+      (Usually done by reading the offset and segment address from the
+      real mode stack provided by DS:ESI and writing the results into the
+      real mode register transfer structure). And the PM Handler is
+      responsible for popping the return address from the real mode
+      stack. See the EVENT.ASM example file.
+
+
+
+ 3.24 Function 0304h - Free Real Mode Call Back Functions
+
+      This Function frees a real mode call back function allocated by
+      function 0303.
+
+      Function call: INT 31h
+	AX     = 0304h
+        CX:DX  = segment:offset to real mode call back function.
+
+      Results:
+        Carry flag clear
+
+
+      Notes:
+      You must make sure, that the real mode call back function won't be
+      called again, before freeing the call back!
+      Pro32 only offers 3 call backs per client!
+
+
+
+
+
+
+ 3.25 Function 0400h - Get Version
+
+      Returns the version of the DPMI host.
+
+      Function call: INT 31h
+	AX     = 0400h
+
+      Results:
+	AH     = DPMI major version number
+	AL     = DPMI minor version number
+	BX     = Bits    Description
+		   0  :     1 = host is 32bit
+		   1  :     0 = CPU running V86 mode for reflected interrupts
+			    1 = CPU running real mode for reflected interrupts
+				(faster!)
+		   2  :     0 = virtual memory not supported
+			    1 = virtual memory supported
+	CL     = processor type:
+		   03h = 80386
+		   04h = 80486
+		   05h = 80586
+		   06h = P6 / 80686 etc
+	DH     = value of master PIC base interrupt
+	DL     = value of slave PIC base interrupt
+
+
+  3.26 Function 0500h - Get Free Memory Information
+
+       Returns Information about the amount of free memory.
+
+       Function call: INT 31h
+	 AX     = 0500h
+	 ES:EDI = selector:offset of 48 byte buffer with the following format
+
+	    Offset  Length   Description
+	  ษออออออออหอออออออหออออออออออออออออออออออออออออออออออป
+	  บ   00h  บ   4   บ Size of larges available free    บ
+	  บ        บ       บ Memory Block in Bytes            บ
+	  บ   04h  บ   4   บ Size available with locking   (*)บ
+	  บ   08h  บ   4   บ Size available without locking   บ
+	  บ   0ch  บ   4   บ Size of total Memory in pages    บ
+	  บ   10h  บ   4   บ number of locked pages           บ
+	  บ   14h  บ   4   บ number of unlocked pages         บ
+	  บ   18h  บ   4   บ number of free pages             บ
+	  บ   1ch  บ   4   บ number of all available pages    บ
+	  บ   20h  บ   4   บ free linear memory in pages      บ
+	  บ   24h  บ   4   บ size of swap file                บ
+	  ศออออออออสอออออออสออออออออออออออออออออออออออออออออออผ
+
+       Notes:
+       (*)  Differs only when virtual memory is supported
+       Results:
+       modified entries of the 48 byte buffer at ES:EDI
+   !!  Function should never fail! At least first entry must be valid!
+
+
+
+ 3.27 Function 0501h - Allocate Memory Block
+
+      Allocates a block of extended memory.
+
+      Function call: INT 31h
+	AX     = 0501h
+	BX:CX  = memory size to allocate in bytes
+
+      Results:
+      if successful:
+	carry flag clear
+	BX:CX  = linear address of allocated memory block (*)
+	SI:DI  = memory handle
+
+      if failed:
+	carry flag set
+	AX = error code
+
+      Notes:
+  (*) You can easily allocate an descriptor for the linear address, see example
+
+      Example:
+	mov ax,0      ;Funktion 0
+	mov cx,1      ;Allocate 1 Descriptor
+	int 31h
+	mov MemDesk,AX
+	mov ax,0501h  ;Allocate Memory
+	mov cx,0
+	mov bx,1      ;010000h Bytes of Memory
+	int 31h       ;DPMI CALL
+	jc TooLessMemory
+	mov AX,0007h  ;Function 7:Set Basis Address
+	mov BX,MemDesk
+	mov dx,cx     ;Low Part of Linear Address
+	mov cx,bx     ;upper Part of Linear Address
+	int 31h       ;DPMI CALL
+	mov BX,MemDesk
+	mov ax,0008h  ;Function 8:Set Limit of descriptor
+	mov cx,0ffffh
+	mov dx,0
+	int 31h       ;set Limit
+	mov BX,MemDesk
+	mov fs,BX     ; FS selector to 64K XMS Memory Location!
+
+ 3.28 Function 0502h - Free Memory Block
+
+      Frees a previously allocated extended memory block
+
+      Function call: INT 31h
+	AX     = 0502h
+	SI:DI  = memory handle
+
+      Results:
+      if successful:
+	carry flag clear
+
+      if failed:
+	carry flag set
+	AX = error code
+
+ 3.29 Function 0600h - Lock Linear Region
+
+      The function locks a specified linear address range.
+
+      Function call: INT 31h
+	AX     = 0600h
+        BX:CX  = start of linear address in memory
+	SI:DI  = size of region in bytes
+
+      Results:
+      if successful:
+	carry flag clear
+
+      if failed:
+	carry flag set
+	AX = error code
+
+      Notes:
+      Pro32 DPMI sets up a locked linear address space between 0 and the
+      maximum available bytes in the DPMI emulation, therefore this function
+      is alway successful under the DPMI emulation.
+      I noticed, that this function doesn't work correctly under Wimdows
+      and Windows 95.
+
+ 3.30 Function 0601h - Unlock Linear Region
+
+      The function unlocks a specified linear address range previously
+      locked with function 0600h.
+
+      Function call: INT 31h
+	AX     = 0601h
+        BX:CX  = start of linear address in memory
+	SI:DI  = size of region in bytes
+
+      Results:
+      if successful:
+	carry flag clear
+
+      if failed:
+	carry flag set
+	AX = error code
+
+      Notes:
+      Pro32 DPMI sets up a locked linear address space between 0 and the
+      maximum available bytes in the DPMI emulation, therefore this function
+      is alway successful under the DPMI emulation.
+
+ 3.31 Function 0602h - Mark real mode region as pagable
+
+      This function allows to make real mode memory pagable.
+
+      Function call: INT 31h
+	AX     = 0602h
+        BX:CX  = start of linear address in memory
+	SI:DI  = size of region in bytes
+
+      Results:
+      if successful:
+	carry flag clear
+
+      if failed:
+	carry flag set
+	AX = error code
+
+      Notes:
+      You should relock all memory before terminating your program.
+      You should not mark regions pageable, if they are not part of
+      your application.
+
+
+ 3.32 Function 0603h - Relock real mode region
+
+      This function locks a previously unlocked real mode memory region.
+
+      Function call: INT 31h
+	AX     = 0603h
+        BX:CX  = start of linear address in memory
+	SI:DI  = size of region in bytes
+
+      Results:
+      if successful:
+	carry flag clear
+
+      if failed:
+	carry flag set
+	AX = error code
+
+ 3.33 Function 0800h - Map physical address
+
+      This function returns the linear address region to address a
+      physica memory region.
+
+      Function call: INT 31h
+	AX     = 0800h
+        BX:CX  = physical address in memory
+	SI:DI  = size of region in bytes
+
+      Results:
+      if successful:
+	carry flag clear
+        BX:CX  = linear address
+
+      if failed:
+	carry flag set
+	AX = error code
+
+      Notes:
+      Pro32 provides a linear memory region equal to the physical address
+      region between 0 and the maximum of available bytes.
+      Therefore under the Pro32 DPMI emulation, this funvtion will always
+      succed with BX:CX unchanged.
+
+
+ 3.34 Function 0900h - Get and Disable Virtual Interrupt State
+
+      Replacement for the CLI instruction which is a priviledged(!)
+      instruction.
+      Especially when running under V86 mode the CLI instruction will be
+      very slow.
+
+
+      Function call: INT 31h
+	AX     = 0900h
+
+      Results:
+	AL     = 0 if virtual interrupts were previously disabled
+	AL     = 1 if virtual interrupts were previously enabled
+
+
+ 3.35 Function 0901h - Get and Enable Virtual Interrupt State
+
+      Replacement for the STI instruction which is a priviledged(!)
+      instruction.
+      Especially when running under V86 mode the STI instruction will be
+      very slow.
+
+      Function call: INT 31h
+	AX     = 0901h
+
+      Results:
+	AL     = 0 if virtual interrupts were previously disabled
+	AL     = 1 if virtual interrupts were previously enabled
+
+ 3.36 Function 0902h - Get Virtual Interrupt State
+
+      Returns the current state of the virtual interrupt flag.
+
+      Function call: INT 31h
+	AX     = 0902h
+
+      Results:
+	AL     = 0 if virtual interrupts were previously disabled
+	AL     = 1 if virtual interrupts were previously enabled
+
+      All other DPMI Functions are not implemented yet. Some certainly won't
+      be implemented, as I can see no real use for them. For example the raw
+      mode switching is not useful if you want to code in protected mode and
+      in the XMS memory area...
+
+
+ 3.37 DPMI Error Codes in AX:
+
+      AX =  0007h  (DOS ERROR Function 01xx): memory control blocks damaged
+	    0008h  (DOS ERROR Function 01xx): insufficient memory available
+	    0009h  (DOS ERROR Function 01xx): incorrect memory segment
+	    8001h  invalid DPMI function (The requested function is not
+					  available).
+	    8003h  function would lead to a protection fault
+	    8010h  no more system ressources
+	    8011h  illegal descriptor
+	    8012h  insufficient linear memory
+	    8013h  insufficient physical memory
+	    8016h  invalid handle
+	    8022h  illegal selector
+
+
+
+
+== 4. Examples ===============================================================
+
+      Here are some very easy examples as demonstration of the Pro32
+      extender. The examples are mostly written for the PASS32 Assembler.
+      The Pass32 Assembler directly supports the Pro32 dos extender. The
+      assembler will automatically link the dos extender to the program
+      and set the flags and variables of the extender.
+
+  4.1 Check32
+
+      Check32 is a DPMI host test program which uses mainly the get version
+      function (0400h of int 31h).
+      The analyse of the function results are printed on screen (eg. virtual
+      memory support, free memory,...)
+
+  4.2 CheckWin
+
+      CheckWin uses the new flag provided by Version 1.47, which tells the
+      user application, if windows is present or not.
+
+  4.3 DemoExc
+
+      This example file demonstrates how to create an new exception handler.
+      The Exception 0 (Division by Zero) is handled in a user defined
+      exception handler.
+
+  4.4 Hello
+
+      Hello is a typical demo program. The message 'Hello World' is
+      displayed by directly writing into the video memory.
+
+  4.5 TestEnv
+
+      Demonstrates the environment selector in the Program PSP.
+
+  4.6 Event
+
+      Demonstrates the use of Real Mode Call Backs by creating a
+      simple mouse event handler.
+
+  4.7 TasmDemo - Demo of how to code with TASM
+
+      The TasmDemo does the same as the Hello demo, but it was created with
+      TASM and TLINK by Borland.
+
+
+
+== 5. Flags and variables of the extender ====================================
+
+      Some flags which are part of the DOS extender can be changed by the
+      PROSET program. Here is a list of the flags:
+
+      Message Flag: Additional information while uploading the program:
+		    - DPMI Emulation Message, eg "DPMI version 0.9"
+		    - Linear Program address, eg "Load to address: 00310000"
+      Break Flag:   enables [CRTL]-Break Key Control by DPMI Host
+		    [CRTL]-Break leads to an immediate return to DOS
+		    unless interrupts are still enabled.
+                    Useful during program development! But only valid under
+                    the DPMI emulation (and under Win 95 also available during
+                    DOS Operations)
+      Core Flag:    an execption automatically leads to an core dump, ie the
+		    memory of the whole program will be copied to disk. The
+		    core file can be analysed by a disassembler.
+		    Useful to determine strange program behavior!
+
+      Some dos extender variables which can be changed by the PROSET utility:
+
+      MinMemory:    Amount of minimal XMS Memory used for the program.#
+      MaxMemory:    Amount of maximal XMS Memory used for the program.#
+      Core Size:    Size of the core image saved to disk. The core begins at
+		    the program offset (address to which the program was load)
+		    and ends at the offset plus the core size. Usually The
+		    Core Size should be the size of Data and Code.
+      Load Offset:  This is the offset to which the program will be loaded.
+		    The default value is 00000100h. The standard scheme for
+		    a protected mode program is 0100h Bytes for the PSP and
+		    at 00000100h the program begins.
+		    The PSP will be loaded independend of this value! If the
+		    load offset is 00000000h, the PSP will be overwritten!
+		    You might alter this value, if Pro32 replaces another
+		    dos extender with other specifications.
+      Entry Offset: This is the entry point for the protected mode program.
+		    The program starts with a far jump to this offset.
+		    The default value is 00000100h. You might alter this
+		    value, if Pro32 replaces another dos extender.
+
+      Look at the PROSET.DOC file for more information.
+
+
+
+
+== 6. Problems with Pro32 ====================================================
+
+	I already mention problems with the Turbo C++ DPMI host. If the
+      Turbo  C++ (VERSION 3.0) DPMI host is active (DPMIRES or TC loaded) the
+      system will hang if you call any pro32 program. Actually Borland didn't
+      know of cached shadow registers when implementing the TC DPMI...
+
+
+      Running the DOS version of Turbo Pascal V7.0 (tpx) or Turbo C++ (V3.0)
+      under Windows and executing from the tpx DOS shell (in the same window)
+      leads to an error caused by the Windows DPMI Host. The Windows DPMI Host
+      is obviously not able to run 16 and 32 bit programs in the same DOS
+      Window.
+
+      Pro32 has been tested under DOS5.0, 6.0, 6.22, Windows 3.11, Windows 95,
+      Windows 98, Windows NT and with different processor types like 80386,
+      80486, Pentium MMX, Pentium II MMX.
+
+      I managed to run Pro32 programs without any problems under Linux DOS EMU
+      and its 32 bit DPMI host...
+
+
+
+== 7. The new Version 1.7 ====================================================
+
+      Version 1.7 absolutely compatible with Version 1.6.
+      The reason for the update was a horrible bug in the VCPI-Init of V1.6,
+      which occured sporadically and typically resulted in a reboot.
+
+      Pro32 supports a maximum segment size of 64MB. This means, you should
+      not allocate more than 64 MB in one block. Iterative allocation of 64MB
+      blocks should work without problems, as long as the computer offers that
+      much memory.
+
+      Under obsolete (286) XMS Versions you can allocate a maximum of 64MB as
+      restricted by the XMS handler.
+
+      The VCPI support corrected and should work fine now.
+
+      Older Proset-Versions (as a BP-Pascal program) produced the runtime error
+      200 bug on faster processors as implemented by Borland/Inprise which do
+      not offer a proper solution for this bug. Therefore PROSET had been
+      reprogrammed.
+
+      Use PROSET with the -relink function to update your programs.
+      You can check the extender's version number by running PRO32 or
+      PROSET PRO32.
+
+
+
+		  Appendix A - Error Messages
+
+      Pro32 provides the following error messages:
+
+
+A.1   Error: Invalid DPMI FUNCTION
+
+      The DPMI host in your system doesn't provide a basic dpmi function
+      needed to load and execute the program.
+      Or the resources of the system are exhausted.
+
+A.2   Error: Too less Memory available...
+
+      The amount of free memory is below the size of memory needed for the
+      program. Install more memory in the system, or lower the size of
+      necessary memory (if possible!).
+
+A.3   Error: DOS: Int 24 failure...
+
+      The default Pro32 Int24 handler, occurs in connection with disk errors.
+      You can hook this interrupt to create your own exception handler.
+
+A.4   Error: System failure...
+
+      The CHECKSUM of the Pro32 dos extender is wrong. This error occurs, if
+      the pro32 extender is destroyed.
+
+A.5   Error: Real Mode: Stack Overflow
+
+      A real mode function either uses more than 8 Kbytes stack or the
+      function destroys the real mode stack.
+
+A.6   Error: Invalid Processor Type
+
+      The processor used is identified as 80286 or minor processor type.
+      Pro32 needs at least a 80386 processor.
+
+A.7   Error: Processor already in virtual real mode.
+
+      The system is running in virtual real mode. Pro32 can't access the
+      protected mode. This error occurs, if the system neither provides
+      DPMI, nor VCPI.
+
+A.8   Error: DPMI Host: Error Switchting to protected mode
+
+      The PM initialisation done by another DPMI host, for example WINDOWs
+      fails. You are already running other programs under the same DPMI host,
+      or the host has insufficient memory.
+
+A.9  Error: creating core...
+
+      The generation of the core file fails.
+
+A.10  Error: VCPI Init failed
+
+      The PM initialisation with VCPI fails.
+
+
+
+		  Appendix B - Copyright
+
+
+      The Pro32 Dos Extender was written in 1996, 1997 by Dieter Pawelczak.
+      XMS Emulation (c) 1998 by Dieter Pawelczak.
+
+      This software is public domain. This program may not be sold! You are
+      free to give the whole package to anyone you like.
+
+      You can use the code without admission.
+      For commercial use you must add a note in the program's information
+      and it would be the best to add the whole pro32 package!
+      For commercial use, you must run the extender in the commercial mode
+      (See PROSET.DOC for more information).
+
+      You are not allowed to alter any part of the dos extender's code or
+      manual.
+
+      You are using this code at your own risk.
+
+      This program is distributed WITHOUT ANY WARRANTY.
+
+      The program was totally written by myself, except the detectprocessor
+      routine, which I adapted from PMODE.ASM by Tran (a.k.a. Thomas Pytel).
+
+      For the code generation I used the Turbo Assembler by Borland Inc.
+
+
+      Windows 3.x, Windows NT and Windows 9x by Microsoft.
+      BP, TP, TC, TASM and TLINK by Borland Inc.
+
+
+Dieter Pawelczak, Dec., 1996 Version 1.0
+Dieter Pawelczak, March, 1997 Version 1.1
+Dieter Pawelczak, April, 1997 Version 1.2
+Dieter Pawelczak, June, 1997 Version 1.4
+Dieter Pawelczak, Jan, 1998 Version 1.45beta
+Dieter Pawelczak, Feb., 1998 Version 1.47
+Dieter Pawelczak, April, 1998 Version 1.5beta
+Dieter Pawelczak, June, 1998 Version 1.5
+Dieter Pawelczak, July, 1998 Version 1.6
+Dieter Pawelczak, January, 1999 Version 1.7
+
+WWW:        http://www.geocities.com/SiliconValley/Bay/9159/
+email:      dieterp@bigfoot.de
+post code:  Fasanenweg 41, 85540 Haar, Germany

@@ -1,0 +1,110 @@
+****************************************************************************
+*                                                                          *
+*   Pass32 Assembler        Version 2.4      written by Dieter Pawelczak   *
+*                                                                          *
+*                       Manual for GRAPHIC.INC                             *
+*                                                                          *
+*     (c) 1998 by Dieter Pawelczak, Fasanenweg 41, 85540 Haar, Germany     *
+*                                                                          *
+****************************************************************************
+
+
+ Introduction ================================================================
+
+ The Graphic Module GRAPHIC.INC is an DLL oriented graphic driver.
+ The basic graphic functions are provided by a specific DLL for each graphic
+ mode. The idea is to provide a common and fast interface to different graphic
+ modes.
+
+ Credits =====================================================================
+
+ The VESA driver code is based on the VESA library VIDEO.INC programmed by
+ Chris Hazard. The original code is part of the Pro32 package (PRO32V15.ZIP)
+
+ The VBE driver code is partly based on the PROTON source code by P„r Spjuth.
+
+ Usage =======================================================================
+
+ You enable the graphic mode by calling the procedure INITGRAPH. The only
+ parameter to this procedure is the graphic mode in EAX.
+ After this call all graphic functions are available.
+
+ InitGraph: Parameter:  EAX = DRIVER TO LOAD:
+                          - 0  = VGA    320x200x256
+                          - 1  = XVGA   320x240x256
+                          - 2  = VESA   640x400x256
+                          - 3  = VESA   640x480x256
+                          - 4  = VESA   800x600x256
+                          - 5  = VESA   640x400x256 with linear frame buffer
+                          - 6  = VESA   640x480x256 with linear frame buffer
+                          - 7  = VESA   800x600x256 with linear frame buffer
+                          - 8  = VESA   1024x768x256
+                          - 9  = VESA   1024x768x256 with linear frame buffer
+                          - FF = UserDefined:
+                                 offset to driver name in EDI
+            Returns:    Carry Flag Clear on Success
+
+ With SETTEXTMODE you free the resources used by the DLL and return to
+ co80 textmode.
+
+ Interface ===================================================================
+
+ Here comes a list of the graphic functions provided by GRAPHIC.INC.
+ The parameters are transmitted in the general 32 bit registers.
+ Note the coordinates in ECX and EDX are always preserved. The other
+ registers (except EBP, ESP and the selectors) will be destroyed usually.
+ The graphic functions assume that GS is a zero selector!
+
+ PUTPIXEL    : ECX = X-Axis, EDX = Y-Axis, EBX = color
+ GETPIXEL    : ECX = X-Axis, EDX = Y-Axis, EBX = color
+ LINE        : ECX = X1, EDX = Y1, ESI = X2, EDI = Y2, EBX = color
+ RECTANGLE   : ECX = X1, EDX = Y1, ESI = X2, EDI = Y2, EBX = color
+ FILL        : ECX = X1, EDX = Y1, ESI = X2, EDI = Y2, EBX = color
+ CIRLCE      : ECX = X, EDX =Y, ESI = r1, EDI = r2, EBX = color
+ OUTTEXTXY   : ECX = X-Axis, EDX = Y-Axis, EBX = color, EDI = offset to textstr.
+ PUTSPRITE   : ECX = X, EDX = Y, EBX = Size X, EDI = Size Y, ESI = offset to sprite
+ FLUSHBUFFER : copys activ buffer to screen
+ CLEARSCREEN
+
+ The following procedures assume DWORD alignment for X,Y and the sizes
+
+ FASTFILL    : ECX = X1, EDX = Y1, ESI = X2, EDI = Y2, EBX = color
+ PUTIMAGE    : ECX = X, EDX = Y, EBX = Size X, EDI = Size Y, ESI = offset to sprite
+ GETIMAGE    : ECX = X, EDX = Y, EBX = Size X, EDI = Size Y, ESI = offset to sprite
+ PUT16x16    : ECX = X, EDX = Y, EBX = Size X, EDI = Size Y, ESI = offset to sprite
+ FLUSHWINDOW : ECX = X1, EDX = Y1, ESI = X2, EDI = Y2
+
+ Driver Management procedures
+
+ INITGRAPH   : EAX = video mode
+ SETTEXTMODE : return to co80 mode
+ GETMAXX     : returns max value for X
+ GETMAXY     : returns max value for Y
+ SETPAGE     : EAX = page (0=screen, 1..n = BUFFER)
+ GETACTPAGE  : returns in EAX active page
+ LOADPALETTE : loads palette
+ WAITFORVERTICALRETRACE : EAX and EDX destroyed
+
+ Macros
+
+ DrawText(X,Y,String,Color)
+ DrawLine(X1,Y1,X2,Y2,Color)
+ DrawRectangle(X1,Y1,X2,Y2,Color)
+ DrawFill(X1,Y1,X2,Y2,Color)
+ DrawImage(X1,Y1,X2,Y2,offs)
+ DrawIcon(X1,Y1,offs)
+
+ Improvements ================================================================
+
+ This is the second release of the graphic driver and therefore there's still a
+ lot what can be done to improve the graphic module.
+ If you have written your own graphic DLL, please e-mail me a copy, so I can
+ add it to the Pass32 package. Besides, if you have improvements for the DLLs
+ and the graphic module, for example better algorithms, new algorithms - don't
+ wait to e-mail me!
+
+Dieter Pawelczak, January 1999
+
+WWW:        http://www.geocities.com/SiliconValley/Bay/9159/
+email:      dieterp@bigfoot.de
+post code:  Fasanenweg 41, 85540 Haar, Germany

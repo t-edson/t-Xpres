@@ -1,0 +1,119 @@
+.COMMENT
+ ****************************************************************************
+ SYSTEM.MAC     MACRO Version of SYSTEM.INC
+                (c) 1996,1997 by Dieter Pawelczak - Pass32 Version 1.9
+ ============================================================================
+ INTERFACE
+
+ Function SystemKeyPressed: returns Zero Flag, if no key pressed
+ Function SystemGetKey:     waits for key stroke, returns key in al
+ Macro GetMem(Mem):         allocates mem bytes of memory on the heap
+ Macro FreeMem(Ptr,Mem):    frees mem bytes of pointer ptr
+ Function MathToString:     32 bit (EAX) number to string at Offset EDI
+ Macro Print(X,Y,String):   prints string at screen
+ Macro Write(String):       prints string at cursor
+ Macro WriteLn(String):     prints string EDI at cursor with LineFeed
+ Function SystemNewLine:    creates line feed and scrolling at cursor
+ Function SystemClrSrc:     clears the text screen
+ Macro ReadLn:              reads line from keyboard
+ Macro Color(Text,Back)     sets color variables
+ Macro GotoXY(x,y)          set cursor
+ Macro Exit(ExitCode)       terminate program
+ Variable TextColor:  DB    foreground color
+ Variable Background: DB    background color
+
+ ****************************************************************************
+
+
+.include system.inc
+
+.MACRO Create_String(name,string)
+   .DATA
+     name db string,0
+   .CODE
+ENDMACRO
+
+.MACRO GetMem(Mem)
+   mov eax,Mem
+   call SystemGetMem
+ENDMACRO
+
+.MACRO FreeMem(Ptr,Mem)
+   mov edx,Ptr
+   mov eax,Mem
+   call SystemGetMem
+ENDMACRO
+
+.MACRO Print(X,Y,String)
+   .IFS String
+       .DATA
+          .LOCAL mesg DB String,0
+       .CODE
+        mov edi,OFFSET .LOCAL mesg
+   .ELSE
+       .IFR String
+           mov edi,String
+       .ELSE
+           mov edi,offset String
+       .ENDIF
+   .ENDIF
+   mov cx,x
+   mov dx,y
+   call SystemPrint
+ENDMACRO
+
+.MACRO Write(String)
+   .IFS String
+       .DATA
+          .LOCAL mesg DB String,0
+       .CODE
+        mov edi,OFFSET .LOCAL mesg
+   .ELSE
+       .IFR String
+           mov edi,String
+       .ELSE
+           mov edi,offset String
+       .ENDIF
+   .ENDIF
+      call SystemWrite
+ENDMACRO
+
+.MACRO WriteLn(String)
+   Write(String)
+   call SystemNewline
+ENDMACRO
+
+
+
+
+.MACRO ReadLn:              reads line from keyboard
+   Create_String(.LOCAL mesg,db 256 dup(?))
+   mov edi,OFFSET .LOCAL mesg
+   call SystemReadLn
+ENDMACRO
+
+.MACRO Color(Text,Back)     sets color variables
+   mov Textcolor,Text
+   mov Background,Back
+ENDMACRO
+
+.MACRO Exit(Exitcode)
+       mov al,ExitCode
+       mov ah,4ch
+       int 21h
+ENDMACRO
+
+.MACRO GotoXY(X,Y)
+       mov dh,y
+       mov dl,x
+       xor bx,bx
+       mov ah,02
+       int 10h
+ENDMACRO
+
+.IFPM
+.ELSE
+.OUT Target not for real mode
+.ERR
+.ENDIF
+
