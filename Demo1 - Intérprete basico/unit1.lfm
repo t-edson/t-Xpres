@@ -6,6 +6,7 @@ object Form1: TForm1
   Caption = 'Form1'
   ClientHeight = 277
   ClientWidth = 346
+  OnCreate = FormCreate
   LCLVersion = '1.2.0.3'
   inline edXpr: TSynEdit
     Left = 0

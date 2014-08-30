@@ -13,15 +13,15 @@
  cons[]  -> almacena a las constantes declaradas
 
 }
+{$DEFINE mode_inter}  //mode_inter->Modo intérprete  mode_comp->Modo compilador
 unit XpresParser;
-
 {$mode objfpc}{$H+}
 
 interface
 uses
-  Classes, SysUtils, fgl, SynHighlighterFacil, Forms, LCLType,
-  SynEditHighlighter, Dialogs,
-  XpresBas, lclProc, FormOut;
+  Classes, SysUtils, fgl, Forms, LCLType, Dialogs, lclProc,
+  SynEditHighlighter, SynFacilHighlighter, SynFacilCompletion,
+  XpresBas, FormOut;
 
 type
   //categorías básicas de tipo de datos
@@ -166,11 +166,8 @@ var //variables públicas del compilador
   mem: TStringList;  //texto de salida del compilador
   p1, p2: TOperand;  //operandos de la operación actual
   res: TOperand;     //resultado de la evaluación de la última expresión.
-  xLex : TSynFacilSyn;  //resaltador - lexer
+  xLex : TSynFacilComplet;  //resaltador - lexer
 
-function LeePosContAct: TPosCont;
-procedure FijPosContAct(pc: TPosCont);
-property PosAct: TPosCont read LeePosContAct write FijPosContAct;
 procedure Compilar(NombArc: string; LinArc: Tstrings);
 
 implementation
@@ -199,11 +196,15 @@ var  //variables privadas del compilador
   tkStruct  : TSynHighlighterAttributes;
   tkOthers  : TSynHighlighterAttributes;
 
-  ConsE: TListaCont;   //Lista de contextos de entrada
-  //Variables del Contexto actual
-  cEnt : TContexto;    //referencia al contexto de entrada actual
+  cIn       : TContexts;   //entrada de datos
+
   nullOper: TOperator; //Operador nulo. Usado como valor cero.
   ExprLevel: Integer;  //Nivel de anidamiento de la rutina de evaluación de expresiones
+
+function PosAct: TPosCont; inline;  //Se crea por compatibilidad
+begin
+  Result := cIn.PosAct;
+end;
 
 { TOperator }
 
@@ -505,108 +506,20 @@ begin
   funcs[ifun].pars[n] := typ;  //agrega referencia
 end;
 {$I interprete_bas.pas}
-function TokAct: string; inline;
-//Devuelve el token actual, ignorando la caja.
-begin
-  Result:=lowercase(cEnt.tok);
-end;
 function CapturaDelim: boolean;
 //Verifica si sigue un delimitador de expresión. Si encuentra devuelve false.
 begin
-  cEnt.CapBlancos;
-  if cEnt.tokType=tkExpDelim then begin //encontró
-    cEnt.Next;   //pasa al siguiente
+  cIn.SkipWhites;
+  if cIn.tokType=tkExpDelim then begin //encontró
+    cIn.Next;   //pasa al siguiente
     exit(true);
-  end else if tokAct = 'end' then begin   //es un error
+  end else if cIn.tokActL = 'end' then begin   //es un error
     //detect apero no lo toma
     exit(true);  //sale con error
   end else begin   //es un error
     Perr.GenError('Se esperaba ";"', PosAct);
     exit(false);  //sale con error
   end;
-end;
-function LeePosContAct: TPosCont;
-//Devuelve Contexto actual y su posición
-begin
-    Result.fCon := cEnt;
-    if cEnt = nil then begin
-      //resún no hay Contexto definido
-      Result.fil  := 1;
-      Result.col  := 1;
-      Result.arc  := '';
-      Result.nlin := 0;
-    end else begin
-      Result.fil  := cEnt.fil;
-      Result.col  := cEnt.col;
-      Result.arc  := cEnt.arc;
-      Result.nlin := cEnt.nlin;
-    end;
-end;
-procedure FijPosContAct(pc: TPosCont);
-//Fija Contexto actual y su posición
-begin
-  cEnt := pc.fCon;
-  if cEnt = nil then begin
-    //no tiene un Contexto actual
-//    filAct := 1;
-//    colAct := 1;
-//    cEnt.arc := '';
-//    nlin := 0;
-  end else begin
-    cEnt.SetPosXY(pc.fil, pc.col );  //posiciona al contexto
-    cEnt.arc := pc.arc;
-    cEnt.nlin := pc.nlin;
-  end;
-end;
-
-procedure NuevoContexEntTxt(txt: string; arc0: String);
-//Crea un Contexto a partir de una cadena.
-//Fija el Contexto Actual "cEnt" como el Contexto creado.
-begin
-  cEnt := TContexto.Create; //crea Contexto
-  cEnt.DefSyn(xLex);     //asigna lexer
-  ConsE.Add(cEnt);      //Registra Contexto
-  cEnt.FijCad(txt);     //inicia con texto
-  cEnt.arc := arc0;     {Se guarda el nombre del archivo actual, solo para poder procesar
-                           las funciones $NOM_ACTUAL y $DIR_ACTUAL}
-  cEnt.CurPosIni;       //posiciona al inicio
-end;
-procedure NuevoContexEntArc(arc0: String);
-//Crea un Contexto a partir de un archivo.
-//Fija el Contexto Actual "cEnt" como el Contexto creado.
-begin
-  If not FileExists(arc0)  Then  begin  //ve si existe
-    PErr.GenError( 1, 'No se encuentra archivo: ' + arc0);
-    Exit;
-  end;
-  cEnt := TContexto.Create; //crea Contexto
-  cEnt.DefSyn(xLex);     //asigna lexer
-  ConsE.Add(cEnt);   //Registra Contexto
-  cEnt.FijArc(arc0);     //inicia con archivo
-  cEnt.CurPosIni;       //posiciona al inicio
-end;
-procedure NuevoContexEntArc(arc0: String; lins: Tstrings);
-//Crea un Contexto a partir de un Tstring, como si fuera un archivo.
-//Fija el Contexto Actual "cEnt" como el Contexto creado.
-begin
-  cEnt := TContexto.Create; //crea Contexto
-  cEnt.DefSyn(xLex);     //asigna lexer
-  ConsE.Add(cEnt);   //Registra Contexto
-  cEnt.FijArc(arc0, lins);   //inicia con archivo contenido en TStrings
-  cEnt.CurPosIni;       //posiciona al inicio
-end;
-procedure QuitaContexEnt;
-//Elimina el contexto de entrada actual. Deja apuntando al anterior en la misma posición.
-begin
-  if ConsE.Count = 0 then begin
-    cEnt := nil;   //por si acaso
-    exit;  //no se puede quitar más
-  end;
-  ConsE.Delete(ConsE.Count-1);
-  if ConsE.Count = 0 then
-    cEnt := nil
-  else  //apunta al último
-    CEnt := ConsE[ConsE.Count-1];
 end;
 procedure TipDefecNumber(var Op: TOperand; toknum: string);
 //Devuelve el tipo de número entero o fltante más sencillo que le corresponde a un token
@@ -714,7 +627,7 @@ begin
   Op.catTyp := t_string;   //es flotante
   Op.size:=length(tokcad);
   //toma el texto
-  Op.cons.valStr := copy(cEnt.tok,2, length(cEnt.tok)-2);   //quita comillas
+  Op.cons.valStr := copy(cIn.tok,2, length(cIn.tok)-2);   //quita comillas
   //////////// Verifica si hay tipos string definidos ////////////
   Op.typ:=nil;
   //Busca primero tipo string (longitud variable)
@@ -766,21 +679,21 @@ var
   i: Integer;
 begin
   PErr.Limpiar;
-  cEnt.CapBlancos;
+  cIn.SkipWhites;
   Result.estOp:=0;  //Este estado significa NO CARGADO en registros.
-  if cEnt.tokType = tkNumber then begin  //constantes numéricas
+  if cIn.tokType = tkNumber then begin  //constantes numéricas
     Result.estOp:=STORED_LIT;
     Result.catOp:=coConst;       //constante es Mono Operando
-    Result.txt:= cEnt.tok;     //toma el texto
-    TipDefecNumber(Result, cEnt.tok); //encuentra tipo de número, tamaño y valor
+    Result.txt:= cIn.tok;     //toma el texto
+    TipDefecNumber(Result, cIn.tok); //encuentra tipo de número, tamaño y valor
     if pErr.HayError then exit;  //verifica
     if Result.typ = nil then begin
         PErr.GenError('No hay tipo definido para albergar a esta constante numérica',PosAct);
         exit;
       end;
-    cEnt.Next;    //Pasa al siguiente
-  end else if cEnt.tokType = tkIdentif then begin  //puede ser variable, constante, función
-    ivar := FindVar(cEnt.tok);
+    cIn.Next;    //Pasa al siguiente
+  end else if cIn.tokType = tkIdentif then begin  //puede ser variable, constante, función
+    ivar := FindVar(cIn.tok);
     if ivar <> -1 then begin
       //es una variable
       Result.ivar:=ivar;   //guarda referencia a la variable
@@ -788,17 +701,17 @@ begin
       Result.catTyp:= vars[ivar].typ.cat;  //categoría
       Result.typ:=vars[ivar].typ;
       Result.estOp:=STORED_VAR;
-      Result.txt:= cEnt.tok;     //toma el texto
-      cEnt.Next;    //Pasa al siguiente
+      Result.txt:= cIn.tok;     //toma el texto
+      cIn.Next;    //Pasa al siguiente
     end else begin  //no es variable
       //busca como función
-      ifun := FindFunc(cEnt.tok);
+      ifun := FindFunc(cIn.tok);
       if ifun <> -1 then begin
         //es una función
         Result.ifun:=ifun;   //guarda referencia a la función
         Result.catOp :=coExpres;    //expresión
-        Result.txt:= cEnt.tok;     //toma el texto
-        cEnt.Next;    //Pasa al siguiente
+        Result.txt:= cIn.tok;     //toma el texto
+        cIn.Next;    //Pasa al siguiente
         //lee parámetros
         for i:=0 to High(funcs[ifun].pars) do begin
           GetExpression(0, true);  //captura parámetro
@@ -808,11 +721,11 @@ begin
             exit;
           end;
           if i <> High(funcs[ifun].pars) then begin
-            if tokAct<> ',' then begin
+            if cIn.tokActL<> ',' then begin
               Perr.GenError('Se esperaba ","', PosAct);
               exit;
             end;
-            cEnt.Next;  //toma el THEN
+            cIn.Next;  //toma el THEN
           end;
         end;
         Result.catTyp:= funcs[ifun].typ.cat;  //categoría
@@ -821,43 +734,43 @@ begin
         funcs[ifun].proc;  //llama al código de la función
         Result.estOp:=res.estOp;
       end else begin
-        PErr.GenError('Identificador desconocido: "' + cEnt.tok + '"',PosAct);
+        PErr.GenError('Identificador desconocido: "' + cIn.tok + '"',PosAct);
         exit;
       end;
     end;
-  end else if cEnt.tokType = tkBoolean then begin  //true o false
+  end else if cIn.tokType = tkBoolean then begin  //true o false
     Result.estOp:=STORED_LIT;
     Result.catOp:=coConst;       //constante es Mono Operando
-    Result.txt:= cEnt.tok;     //toma el texto
-    TipDefecBoolean(Result, cEnt.tok); //encuentra tipo de número, tamaño y valor
+    Result.txt:= cIn.tok;     //toma el texto
+    TipDefecBoolean(Result, cIn.tok); //encuentra tipo de número, tamaño y valor
     if pErr.HayError then exit;  //verifica
     if Result.typ = nil then begin
        PErr.GenError('No hay tipo definido para albergar a esta constante booleana',PosAct);
        exit;
      end;
-    cEnt.Next;    //Pasa al siguiente
-  end else if (cEnt.tokType = tkOthers) and (cEnt.tok = '(') then begin  //"("
-    cEnt.Next;
+    cIn.Next;    //Pasa al siguiente
+  end else if (cIn.tokType = tkOthers) and (cIn.tok = '(') then begin  //"("
+    cIn.Next;
     Result := GetExpression(0);
     if PErr.HayError then exit;
-    If cEnt.tok = ')' Then begin
-       cEnt.Next;  //lo toma
+    If cIn.tok = ')' Then begin
+       cIn.Next;  //lo toma
     end Else begin
        PErr.GenError('Error en expresión. Se esperaba ")"', PosAct);
        Exit;       //error
     end;
-  end else if (cEnt.tokType = tkString) then begin  //constante cadena
+  end else if (cIn.tokType = tkString) then begin  //constante cadena
     Result.estOp:=STORED_LIT;
     Result.catOp:=coConst;     //constante es Mono Operando
-//    Result.txt:= cEnt.tok;     //toma el texto
-    TipDefecString(Result, cEnt.tok); //encuentra tipo de número, tamaño y valor
+//    Result.txt:= cIn.tok;     //toma el texto
+    TipDefecString(Result, cIn.tok); //encuentra tipo de número, tamaño y valor
     if pErr.HayError then exit;  //verifica
     if Result.typ = nil then begin
        PErr.GenError('No hay tipo definido para albergar a esta constante cadena',PosAct);
        exit;
      end;
-    cEnt.Next;    //Pasa al siguiente
-{  end else if (cEnt.tokType = tkOperator then begin
+    cIn.Next;    //Pasa al siguiente
+{  end else if (cIn.tokType = tkOperator then begin
    //los únicos símbolos válidos son +,-, que son parte de un número
     }
   end else begin
@@ -910,34 +823,34 @@ begin
   setlength(varNames,0);  //inicia arreglo
   //procesa variables res,b,c : int;
   repeat
-    cEnt.CapBlancos;
+    cIn.SkipWhites;
     //ahora debe haber un identificador de variable
-    if cEnt.tokType <> tkIdentif then begin
+    if cIn.tokType <> tkIdentif then begin
       Perr.GenError('Se esperaba identificador de variable.', PosAct);
       exit;
     end;
     //hay un identificador
-    varName := cEnt.tok;
-    cEnt.Next;  //lo toma
-    cEnt.CapBlancos;
+    varName := cIn.tok;
+    cIn.Next;  //lo toma
+    cIn.SkipWhites;
     //sgrega nombre de variable
     n := high(varNames)+1;
     setlength(varNames,n+1);  //hace espacio
     varNames[n] := varName;  //agrega nombre
-    if cEnt.tok <> ',' then break; //sale
-    cEnt.Next;  //toma la coma
+    if cIn.tok <> ',' then break; //sale
+    cIn.Next;  //toma la coma
   until false;
   //usualmente debería seguir ":"
-  if cEnt.tok = ':' then begin
+  if cIn.tok = ':' then begin
     //debe venir el tipo de la variable
-    cEnt.Next;  //lo toma
-    cEnt.CapBlancos;
-    if (cEnt.tokType <> tkType) then begin
+    cIn.Next;  //lo toma
+    cIn.SkipWhites;
+    if (cIn.tokType <> tkType) then begin
       Perr.GenError('Se esperaba identificador de tipo.', PosAct);
       exit;
     end;
-    varType := cEnt.tok;   //lee tipo
-    cEnt.Next;
+    varType := cIn.tok;   //lee tipo
+    cIn.Next;
     //reserva espacio para las variables
     for tmp in varNames do begin
       CreateVariable(tmp, lowerCase(varType));
@@ -948,7 +861,7 @@ begin
     exit;
   end;
   if not CapturaDelim then exit;
-  cEnt.CapBlancos;
+  cIn.SkipWhites;
 end;
 procedure ShowOperand(const Op: TOperand);
 //muestra un operando por pantalla
@@ -976,44 +889,44 @@ end;
 procedure CompileCurBlock;
 //Compila el bloque de código actual hasta encontrar un delimitador de bloque.
 begin
-  cEnt.CapBlancos;
-  while (cEnt.tokType <> tkBlkDelim) and (not cEnt.Eof) do begin
+  cIn.SkipWhites;
+  while (cIn.tokType <> tkBlkDelim) and (not cIn.Eof) do begin
     //se espera una expresión o estructura
-    if cEnt.tokType = tkStruct then begin  //es una estructura
-      if tokAct = 'if' then begin  //condicional
-        cEnt.Next;  //toma IF
+    if cIn.tokType = tkStruct then begin  //es una estructura
+      if cIn.tokActL = 'if' then begin  //condicional
+        cIn.Next;  //toma IF
         GetBoolExpression; //evalua expresión
         if PErr.HayError then exit;
-        if tokAct<> 'then' then begin
+        if cIn.tokActL<> 'then' then begin
           Perr.GenError('Se esperaba "then".', PosAct);
           exit;
         end;
-        cEnt.Next;  //toma el THEN
+        cIn.Next;  //toma el THEN
         //cuerpo del if
         CompileCurBlock;  //procesa bloque
 //        Result := res;  //toma resultado
         if PErr.HayError then exit;
-        while tokAct = 'elsif' do begin
-          cEnt.Next;  //toma ELSIF
+        while cIn.tokActL = 'elsif' do begin
+          cIn.Next;  //toma ELSIF
           GetBoolExpression; //evalua expresión
           if PErr.HayError then exit;
-          if tokAct<> 'then' then begin
+          if cIn.tokActL<> 'then' then begin
             Perr.GenError('Se esperaba "then".', PosAct);
             exit;
           end;
-          cEnt.Next;  //toma el THEN
+          cIn.Next;  //toma el THEN
           //cuerpo del if
           CompileCurBlock;  //evalua expresión
 //          Result := res;  //toma resultado
           if PErr.HayError then exit;
         end;
-        if tokAct = 'else' then begin
-          cEnt.Next;  //toma ELSE
+        if cIn.tokActL = 'else' then begin
+          cIn.Next;  //toma ELSE
           CompileCurBlock;  //evalua expresión
 //          Result := res;  //toma resultado
           if PErr.HayError then exit;
         end;
-        if tokAct<> 'end' then begin
+        if cIn.tokActL<> 'end' then begin
           Perr.GenError('Se esperaba "end".', PosAct);
           exit;
         end;
@@ -1026,13 +939,13 @@ begin
       if perr.HayError then exit;   //aborta
     end;
     //se espera delimitador
-    if cEnt.Eof then break;  //sale por fin de archivo
+    if cIn.Eof then break;  //sale por fin de archivo
     //busca delimitador
-    cEnt.CapBlancos;
-    if cEnt.tokType=tkExpDelim then begin //encontró delimitador de expresión
-      cEnt.Next;   //lo toma
-      cEnt.CapBlancos;  //quita espacios
-    end else if cEnt.tokType = tkBlkDelim then begin  //hay delimitador de bloque
+    cIn.SkipWhites;
+    if cIn.tokType=tkExpDelim then begin //encontró delimitador de expresión
+      cIn.Next;   //lo toma
+      cIn.SkipWhites;  //quita espacios
+    end else if cIn.tokType = tkBlkDelim then begin  //hay delimitador de bloque
       exit;  //no lo toma
     end else begin  //hay otra cosa
       exit;  //debe ser un error
@@ -1046,49 +959,49 @@ var
 begin
 //  CompilarAct;
   Perr.Limpiar;
-  if tokAct = 'program' then begin
-    cEnt.Next;  //pasa al nombre
-    cEnt.CapBlancos;
-    if cEnt.Eof then begin
+  if cIn.tokActL = 'program' then begin
+    cIn.Next;  //pasa al nombre
+    cIn.SkipWhites;
+    if cIn.Eof then begin
       Perr.GenError('Se esperaba nombre de programa.', PosAct);
       exit;
     end;
-    cEnt.Next;  //Toma el nombre y pasa al siguiente
+    cIn.Next;  //Toma el nombre y pasa al siguiente
     if not CapturaDelim then exit;
 //  end else begin
 //    Perr.GenError('Se esperaba: "program ... "', PosAct);
 //    exit;
   end;
-  if cEnt.Eof then begin
+  if cIn.Eof then begin
     Perr.GenError('Se esperaba "begin", "var", "type" o "const".', PosAct);
     exit;
   end;
-  cEnt.CapBlancos;
+  cIn.SkipWhites;
   //empiezan las declaraciones
   Cod_StartData;
-  if tokAct = 'var' then begin
-    cEnt.Next;    //lo toma
-    while (tokAct <>'begin') and (tokAct <>'const') and
-          (tokAct <>'type') and (tokAct <>'var') do begin
+  if cIn.tokActL = 'var' then begin
+    cIn.Next;    //lo toma
+    while (cIn.tokActL <>'begin') and (cIn.tokActL <>'const') and
+          (cIn.tokActL <>'type') and (cIn.tokActL <>'var') do begin
       CompileVarDeclar;
       if pErr.HayError then exit;;
     end;
   end;
-  if tokAct = 'begin' then begin
+  if cIn.tokActL = 'begin' then begin
     Cod_StartProgram;
-    cEnt.Next;   //coge "begin"
+    cIn.Next;   //coge "begin"
     //codifica el contenido
     CompileCurBlock;   //compila el cuerpo
     if Perr.HayError then exit;
-    if cEnt.Eof then begin
+    if cIn.Eof then begin
       Perr.GenError('Inesperado fin de archivo. Se esperaba "end".', PosAct);
       exit;       //sale
     end;
-    if tokAct <> 'end' then begin  //verifica si termina el programa
+    if cIn.tokActL <> 'end' then begin  //verifica si termina el programa
       Perr.GenError('Se esperaba "end".', PosAct);
       exit;       //sale
     end;
-    cEnt.Next;   //coge "end"
+    cIn.Next;   //coge "end"
   end else begin
     Perr.GenError('Se esperaba "begin", "var", "type" o "const".', PosAct);
     exit;
@@ -1102,15 +1015,15 @@ begin
   ClearVars;       //limpia las variables
   ClearFuncs;      //limpia las funciones
   mem.Clear;       //limpia salida
-  ConsE.Clear;     //elimina todos los Contextos de entrada
+  cIn.ClearAll;     //elimina todos los Contextos de entrada
   ExprLevel := 0;  //inicia
   //compila el archivo abierto
 
 //  con := PosAct;   //Guarda posición y referencia a contenido actual
-  NuevoContexEntArc(NombArc,LinArc);   //Crea nuevo contenido
+  cIn.NuevoContexEntArc(NombArc,LinArc);   //Crea nuevo contenido
   if PErr.HayError then exit;
   CompilarArc;     //puede dar error
-  QuitaContexEnt;   //es necesario por dejar limpio
+  cIn.QuitaContexEnt;   //es necesario por dejar limpio
   if PErr.HayError then exit;   //sale
 //  PosAct := con;   //recupera el contenido actual
 
@@ -1136,10 +1049,14 @@ begin
    p1 := Op1;    //fija operando 1
    p2 := Op2;    //fija operando 2
    o.proc;      //Llama al evento asociado
-//   Result.typ := res.typ;    //lee tipo
-//   Result.catOp:=res.catOp;  //tipo de operando
-//   Result.estOp:=res.estOp;  //actualiza estado
-   Result := res;  //necesario para un intérprete
+   {$IFDEF mode_inter}
+   //Para un intérprete, se debe copiar casi todos los campos
+   Result := res;
+   {$ELSE}
+   Result.typ := res.typ;    //lee tipo
+   Result.catOp:=res.catOp;  //tipo de operando
+   Result.estOp:=res.estOp;  //actualiza estado
+   {$ENDIF}
    //Completa campos de evaluar
    Result.txt := Op1.txt + opr.txt + Op2.txt;   //texto de la expresión
 //   Evaluar.uop := opr;   //última operación ejecutada
@@ -1164,7 +1081,7 @@ begin
   end else if opr=nullOper then begin  //hay operador pero, ..
     //no está definido el operador siguente para el Op1, (no se puede comaprar las
     //precedencias) asumimos que aquí termina el operando.
-    PosAct := pos;   //antes de coger el operador
+    cIn.PosAct := pos;   //antes de coger el operador
     Result:=Op1;
   end else begin  //si está definido el operador (opr) para Op1, vemos precedencias
     If opr.jer > pre Then begin  //¿Delimitado por precedencia de operador?
@@ -1173,7 +1090,7 @@ begin
       if pErr.HayError then exit;
       Result:=Evaluar(Op1, opr, Op2);
     End else begin  //la precedencia es menor o igual, debe salir
-      PosAct := pos;   //antes de coger el operador
+      cIn.PosAct := pos;   //antes de coger el operador
       Result:=Op1;
     end;
   end;
@@ -1304,19 +1221,16 @@ function TOperand.GetOperator: Toperator;
 //Lee del contexto de entrada y toma un operador. Si no encuentra un operador, devuelve NIL.
 //Si el operador encontrado no se aplica al operando, devuelve nullOper.
 begin
-  cEnt.CapBlancos;
-  if cEnt.tokType <> tkOperator then exit(nil);
+  cIn.SkipWhites;
+  if cIn.tokType <> tkOperator then exit(nil);
   //hay un operador
-  Result := typ.FindOperator(cEnt.tok);
-  cEnt.Next;   //toma el token
+  Result := typ.FindOperator(cIn.tok);
+  cIn.Next;   //toma el token
 end;
 
 initialization
   mem := TStringList.Create;
   PErr.IniError;   //inicia motor de errores
-  //Crea lista de Contextos
-  ConsE := TListaCont.Create(true);  //crea contenedor de Contextos, con control de objetos.
-  cEnt := nil;
   //Inicia lista de tipos
   types := TTypes.Create(true);
   //Inicia variables, funciones y constantes
@@ -1326,14 +1240,14 @@ initialization
   //crea el operador NULL
   nullOper := TOperator.Create;
   //inicia la sintaxis
-  xLex := TSynFacilSyn.Create(nil);   //crea lexer
+  xLex := TSynFacilComplet.Create(nil);   //crea lexer
   StartSyntax; //!!!!!Debería hacerse solo una vez al inicio
+  cIn := TContexts.Create(xLex); //Crea lista de Contextos
 finalization;
+  cIn.Destroy; //Limpia lista de Contextos
   xLex.Free;
   nullOper.Free;
   types.Free;
-  //Limpia lista de Contextos
-  ConsE.Free;
   mem.Free;  //libera
 end.
 

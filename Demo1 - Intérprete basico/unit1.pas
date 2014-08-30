@@ -15,6 +15,7 @@ type
     Button1: TButton;
     edXpr: TSynEdit;
     procedure Button1Click(Sender: TObject);
+    procedure FormCreate(Sender: TObject);
   public
     { public declarations }
   end;
@@ -28,12 +29,16 @@ implementation
 procedure TForm1.Button1Click(Sender: TObject);
 begin
   frmOut.Show;  //muestra consola
-  edXpr.Highlighter := xlex;
   Compilar('', edXpr.Lines);
   if Perr.HayError then begin
     Perr.MosError;
     exit;
   end;
+end;
+
+procedure TForm1.FormCreate(Sender: TObject);
+begin
+  edXpr.Highlighter := xlex;
 end;
 
 end.

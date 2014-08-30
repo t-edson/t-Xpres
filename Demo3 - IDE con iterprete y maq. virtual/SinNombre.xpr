@@ -1,5 +1,0 @@
-program NoName;
-
-begin
-puts "sadsad"+"qwewq", 1+5+2*3
-end;
