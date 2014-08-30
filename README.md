@@ -1,7 +1,9 @@
 t-Xpres
 =======
 
-Sencillo marco de trabajo (framework) para implementar compiladores o intérpretes para un nuevo lenguaje llamado Xpres. Esta desarrollado en Lazarus e incluye una sencilla IDE.
+Sencillo marco de trabajo (framework) para implementar compiladores o intérpretes para un lenguajes imperativos y tipados. Como parte del proyecto, se define un nuevo lenguaje, al que también se le llama Xpres.
+
+Esta desarrollado en Lazarus e incluye una sencilla IDE.
 
 Xpres no es un programa, sino una infraestructura que define normas y procedimientos en la creación de intérpretes o compiladores, usando Lazarus. Sin embargo, como ejemplo, se incluyen implementaciones simples de un intérprete y un compilador.
 

@@ -13,13 +13,13 @@
  cons[]  -> almacena a las constantes declaradas
 
 }
+{$DEFINE mode_inter}  //mode_inter->Modo intérprete  mode_comp->Modo compilador
 unit XpresParser;
-
 {$mode objfpc}{$H+}
 
 interface
 uses
-  Classes, SysUtils, fgl, SynHighlighterFacil, Forms, LCLType,
+  Classes, SysUtils, fgl, SynFacilHighlighter, SynFacilCompletion, Forms, LCLType,
   SynEditHighlighter, Dialogs,
   XpresBas, lclProc, FormOut;
 
@@ -504,7 +504,7 @@ begin
   setlength(funcs[ifun].pars, n+1);
   funcs[ifun].pars[n] := typ;  //agrega referencia
 end;
-{$I interprete1.pas}
+{$I interprete_bas.pas}
 function TokAct: string; inline;
 //Devuelve el token actual, ignorando la caja.
 begin
@@ -553,7 +553,7 @@ begin
 //    cEnt.arc := '';
 //    nlin := 0;
   end else begin
-    cEnt.SetPosXY(pc.fil, pc.col );  //posiciona al contexto
+    cEnt.SetPos(pc.fPos);  //posiciona al contexto
     cEnt.arc := pc.arc;
     cEnt.nlin := pc.nlin;
   end;
@@ -566,7 +566,7 @@ begin
   cEnt := TContexto.Create; //crea Contexto
   cEnt.DefSyn(xLex);     //asigna lexer
   ConsE.Add(cEnt);      //Registra Contexto
-  cEnt.FijCad(txt);     //inicia con texto
+  cEnt.SetText(txt);     //inicia con texto
   cEnt.arc := arc0;     {Se guarda el nombre del archivo actual, solo para poder procesar
                            las funciones $NOM_ACTUAL y $DIR_ACTUAL}
   cEnt.CurPosIni;       //posiciona al inicio
@@ -592,7 +592,8 @@ begin
   cEnt := TContexto.Create; //crea Contexto
   cEnt.DefSyn(xLex);     //asigna lexer
   ConsE.Add(cEnt);   //Registra Contexto
-  cEnt.FijArc(arc0, lins);   //inicia con archivo contenido en TStrings
+  cEnt.SetSource(lins);   //inicia con archivo contenido en TStrings
+  cEnt.arc :=  arc0;      //archivo
   cEnt.CurPosIni;       //posiciona al inicio
 end;
 procedure QuitaContexEnt;
@@ -1136,9 +1137,14 @@ begin
    p1 := Op1;    //fija operando 1
    p2 := Op2;    //fija operando 2
    o.proc;      //Llama al evento asociado
+   {$IFDEF mode_inter}
+   //Para un intérprete, se debe copiar casi todos los campos
+   Result := res;
+   {$ELSE}
    Result.typ := res.typ;    //lee tipo
    Result.catOp:=res.catOp;  //tipo de operando
    Result.estOp:=res.estOp;  //actualiza estado
+   {$ENDIF}
    //Completa campos de evaluar
    Result.txt := Op1.txt + opr.txt + Op2.txt;   //texto de la expresión
 //   Evaluar.uop := opr;   //última operación ejecutada
