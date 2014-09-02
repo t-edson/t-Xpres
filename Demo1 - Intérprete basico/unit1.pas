@@ -31,7 +31,7 @@ begin
   frmOut.Show;  //muestra consola
   Compilar('', edXpr.Lines);
   if Perr.HayError then begin
-    Perr.MosError;
+    Perr.Show;
     exit;
   end;
 end;

@@ -31,7 +31,7 @@ begin
   edXpr.Highlighter := xlex;
   Compilar('', edXpr.Lines);
   if Perr.HayError then begin
-    Perr.MosError;
+    Perr.Show;
     exit;
   end;
 end;

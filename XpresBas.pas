@@ -47,11 +47,11 @@ type
   public
     NombPrograma: string;  //Usado para poner en el encabezado del mensaje
     procedure IniError;
-    procedure Limpiar;
-    procedure GenError(num: Integer; msje : String; archivo: String = '';  nlin: LongInt = -1);
+    procedure Clear;
+    procedure GenError(msje: String; archivo: String; nlin: LongInt);
     procedure Generror(msje: String; posCon: TPosCont);
     function TxtError: string;
-    procedure MosError;
+    procedure Show;
     function ArcError: string;
     function nLinError: longint;
     Function nColError: longint;
@@ -109,26 +109,26 @@ type
   TContexts = class
   private
     lex    : TSynFacilComplet; //resaltador - lexer
-    cEnt : TContext;    //referencia al contexto de entrada actual
-    ctxList : TListaCont;       //Lista de contextos de entrada
+    cEnt : TContext;       //referencia al contexto de entrada actual
+    ctxList : TListaCont;     //Lista de contextos de entrada
     function LeePosContAct: TPosCont;
     procedure FijPosContAct(pc: TPosCont);
   public
     MsjError : string;
     tok      : string;        //token actual
     tokType  : TSynHighlighterAttributes;  //tipo de token actual
+    function tokL: string;    //token actual en minúscula
     property PosAct: TPosCont read LeePosContAct write FijPosContAct;
-    procedure NuevoContexEntArc(arc0: String);
-    procedure NuevoContexEntArc(arc0: String; lins: Tstrings);
-    procedure NuevoContexEntTxt(txt: string; arc0: String);
+    procedure NewContextFromFile(arc0: String);
+    procedure NewContextFromFile(arc0: String; lins: Tstrings);
+    procedure NewContextFromTxt(txt: string; arc0: String);
     procedure QuitaContexEnt;
-    procedure ClearAll;
+    procedure ClearAll;      //elimian todos los contextos
 
     function Eof:Boolean;
     function SkipWhites: Boolean;
     Function SkipWhitesNoEOL:Boolean;
-    procedure Next;   //Pasa al siguiente token
-    function TokActL: string;
+    procedure Next;           //Pasa al siguiente token
   public
     constructor Create(Lex0: TSynFacilComplet);
     destructor Destroy; override;
@@ -349,7 +349,7 @@ begin
   tok := lex.GetToken;    //lee el token
   tokType := lex.GetTokenAttribute;  //lee atributo
 end;
-procedure TContexts.NuevoContexEntTxt(txt: string; arc0: String);
+procedure TContexts.NewContextFromTxt(txt: string; arc0: String);
 //Crea un Contexto a partir de una cadena.
 //Fija el Contexto Actual "cEnt" como el Contexto creado.
 begin
@@ -363,7 +363,7 @@ begin
   tok := lex.GetToken;    //lee el token
   tokType := lex.GetTokenAttribute;  //lee atributo
 end;
-procedure TContexts.NuevoContexEntArc(arc0: String);
+procedure TContexts.NewContextFromFile(arc0: String);
 //Crea un Contexto a partir de un archivo.
 //Fija el Contexto Actual "cEnt" como el Contexto creado.
 begin
@@ -379,7 +379,7 @@ begin
   tok := lex.GetToken;    //lee el token
   tokType := lex.GetTokenAttribute;  //lee atributo
 end;
-procedure TContexts.NuevoContexEntArc(arc0: String; lins: Tstrings);
+procedure TContexts.NewContextFromFile(arc0: String; lins: Tstrings);
 //Crea un Contexto a partir de un Tstring, como si fuera un archivo.
 //Fija el Contexto Actual "cEnt" como el Contexto creado.
 begin
@@ -436,7 +436,7 @@ begin
   tok := lex.GetToken;    //lee el token
   tokType := lex.GetTokenAttribute;  //lee atributo
 end;
-function TContexts.TokActL: string; inline;
+function TContexts.tokL: string; inline;
 //Devuelve el token actual, ignorando la caja.
 begin
   Result:=lowercase(tok);
@@ -461,16 +461,15 @@ begin
   arcER := '';
   fil := 0;
 end;
-procedure TPError.Limpiar;
+procedure TPError.Clear;
 //Limpia rápidamente el error actual
 begin
   numEr := 0;
 end;
-procedure TPError.GenError(num: Integer; msje: String; archivo: String;
-nlin: LongInt);
+procedure TPError.GenError(msje: String; archivo: String; nlin: LongInt);
 //Genera un error
 begin
-  numER := num;
+  numER := 1;
   cadER := msje;
   arcER := archivo;
   fil := nlin;
@@ -499,7 +498,7 @@ begin
   end Else
     Result :=cadER;
 end;
-procedure TPError.MosError;
+procedure TPError.Show;
 //Muestra un mensaje de error
 begin
   Application.MessageBox(PChar(TxtError), PChar(NombPrograma), MB_ICONEXCLAMATION);

@@ -168,7 +168,7 @@ var //variables públicas del compilador
   res   : TOperand;    //resultado de la evaluación de la última expresión.
   xLex  : TSynFacilComplet; //resaltador - lexer
   ejecProg: boolean;   //Indica que se está ejecutando un programa o compilando
-
+  DetEjec: boolean;   //para detener la ejecución (en intérpretes)
 
 procedure Compilar(NombArc: string; LinArc: Tstrings);
 
@@ -176,340 +176,51 @@ implementation
 uses Graphics;
 
 var  //variables privadas del compilador
-  types: TTypes;   //lista de tipos
-//    oper: string;      //indica el operador actual
-  //tipos de tokens
-  vars  : array of Tvar;  //lista de variables
-  funcs : array of Tfunc; //lista de funciones
-  cons  : array of Tvar;  //lista de constantes
-  nIntVar : integer;   //número de variables internas
-  nIntFun : integer;   //número de funciones internas
-  nIntCon : integer;   //número de constantes internas
-
+  //referencias obligatorias
   tkEol     : TSynHighlighterAttributes;
   tkIdentif : TSynHighlighterAttributes;
   tkKeyword : TSynHighlighterAttributes;
   tkNumber  : TSynHighlighterAttributes;
   tkString  : TSynHighlighterAttributes;
   tkOperator: TSynHighlighterAttributes;
-  tkExpDelim:TSynHighlighterAttributes;
+  tkBoolean : TSynHighlighterAttributes;
+  tkSysFunct: TSynHighlighterAttributes;
+  //referencias adicionales
+  tkExpDelim: TSynHighlighterAttributes;
   tkBlkDelim: TSynHighlighterAttributes;
   tkType    : TSynHighlighterAttributes;
-  tkBoolean : TSynHighlighterAttributes;
   tkStruct  : TSynHighlighterAttributes;
   tkOthers  : TSynHighlighterAttributes;
 
-  cIn       : TContexts;   //entrada de datos
 
-  nullOper: TOperator; //Operador nulo. Usado como valor cero.
+  nullOper : TOperator; //Operador nulo. Usado como valor cero.
   ExprLevel: Integer;  //Nivel de anidamiento de la rutina de evaluación de expresiones
 
-function PosAct: TPosCont; inline;  //Se crea por compatibilidad
+{$I XPresParser.inc}
+function EOBlock: boolean; inline;
+//Indica si se ha llegado el final de un bloque
 begin
-  Result := cIn.PosAct;
+  Result := cIn.tokType = tkBlkDelim;
 end;
-
-{ TOperator }
-
-function TOperator.CreateOperation(OperadType: Ttype; proc: TProcExecOperat): TxOperation;
-var
-  r: TxOperation;
+function EOExpres: boolean; inline;
+//Indica si se ha llegado al final de una expresión
 begin
-  //agrega
-  r := TxOperation.Create;
-  r.OperatType:=OperadType;
-//  r.CodForConst:=codCons;
-//  r.CodForVar:=codVar;
-//  r.CodForExpr:=codExp;
-  r.proc:=proc;
-  //agrega
-  operations.Add(r);
-  Result := r;
+  Result := cIn.tokType = tkExpDelim;
 end;
-function TOperator.FindOperation(typ0: Ttype): TxOperation;
-{Busca, si encuentra definida, alguna operación, de este operador con el tipo indicado.
-Si no lo encuentra devuelve NIL}
-var
-  r: TxOperation;
-begin
-  Result := nil;
-  for r in Operations do begin
-    if r.OperatType = typ0 then begin
-      exit(r);
-    end;
-  end;
-end;
-constructor TOperator.Create;
-begin
-  Operations := TOperations.Create(true);
-end;
-destructor TOperator.Destroy;
-begin
-  Operations.Free;
-  inherited Destroy;
-end;
-
-{ TType }
-
-procedure TType.DefineLoadOperand(codLoad0: string);
-begin
-
-end;
-function TType.CreateOperator(txt0: string; jer0: byte; name0: string): TOperator;
-{Permite crear un nuevo ooperador soportado por este tipo de datos. Si hubo error,
-devuelve NIL. En caso normal devuelve una referencia al operador creado}
-var
-  r: TOperator;  //operador
-begin
-  //verifica nombre
-  if FindOperator(txt0)<>nullOper then begin
-    Result := nil;  //indica que hubo error
-    exit;
-  end;
-  //inicia
-  r := TOperator.Create;
-  r.txt:=txt0;
-  r.jer:=jer0;
-  r.nom:=name0;
-  r.idx:=Operators.Count;
-  //agrega
-  Operators.Add(r);
-  Result := r;
-end;
-function TType.FindOperator(const Opr: string): TOperator;
-//Recibe la cadena de un operador y devuelve una referencia a un objeto Toperator, del
-//tipo. Si no está definido el operador para este tipo, devuelve nullOper.
-var
-  i: Integer;
-begin
-  Result := nullOper;   //valor por defecto
-  for i:=0 to Operators.Count-1 do begin
-    if Operators[i].txt = upCase(Opr) then begin
-      exit(Operators[i]); //está definido
-    end;
-  end;
-  //no encontró
-  Result.txt := Opr;    //para que sepa el operador leído
-end;
-constructor TType.Create;
-begin
-  Operators := TOperators.Create(true);  //crea contenedor de Contextos, con control de objetos.
-end;
-destructor TType.Destroy;
-begin
-  Operators.Free;
-  inherited Destroy;
-end;
-
 { Rutinas del compilador }
-function CategName(cat: TtipDato): string;
-begin
-   case cat of
-   t_integer: Result := 'Numérico';
-   t_float: Result := 'Flotante';
-   t_string: Result := 'Cadena';
-   t_boolean: Result := 'Booleano';
-   t_enum: Result := 'Enumerado';
-   else Result := 'Desconocido';
-   end;
-end;
 procedure Code(cod: string);
 begin
   mem.Add(cod);
 end;
-function FindVar(varName:string): integer;
-//Busca el nombre dado para ver si se trata de una variable definida
-var
-  tmp: String;
-  i: Integer;
-begin
-  Result := -1;
-  tmp := upCase(varName);
-  for i:=0 to high(vars) do begin
-    if Upcase(vars[i].nom)=tmp then begin
-      exit(i);
-    end;
-  end;
-end;
-function FindFunc(funName:string): integer;
-//Busca el nombre dado para ver si se trata de una función definida
-var
-  tmp: String;
-  i: Integer;
-begin
-  Result := -1;
-  tmp := upCase(funName);
-  for i:=0 to high(funcs) do begin
-    if Upcase(funcs[i].name)=tmp then begin
-      exit(i);
-    end;
-  end;
-end;
-function FindCons(conName:string): integer;
-//Busca el nombre dado para ver si se trata de una constante definida
-var
-  tmp: String;
-  i: Integer;
-begin
-  Result := -1;
-  tmp := upCase(conName);
-  for i:=0 to high(cons) do begin
-    if Upcase(cons[i].nom)=tmp then begin
-      exit(i);
-    end;
-  end;
-end;
-function FindPredefName(name: string): TIdentifType;
-//Busca un identificador e indica si ya existe el nombre, sea como variable,
-//función o constante.
-var i: integer;
-begin
-  //busca como variable
-  i := FindVar(name);
-  if i<>-1 then begin
-     exit(idtVar);
-  end;
-  //busca como función
-  i := FindFunc(name);
-  if i<>-1 then begin
-     exit(idtFunc);
-  end;
-  //busca como constante
-  i := FindCons(name);
-  if i<>-1 then begin
-     exit(idtCons);
-  end;
-  //no lo encuentra
-  exit(idtNone);
-end;
-//Manejo de tipos
-function CreateType(nom0: string; cat0: TtipDato; siz0: smallint): TType;
-//Crea una nueva definición de tipo en el compilador. Devuelve referencia al tipo recien creado
-var r: TType;
-  i: Integer;
-begin
-  //verifica nombre
-  for i:=0 to types.Count-1 do begin
-    if types[i].name = nom0 then begin
-      PErr.GenError('Identificador de tipo duplicado.',PosAct);
-      exit;
-    end;
-  end;
-  //configura nuevo tipo
-  r := TType.Create;
-  r.name:=nom0;
-  r.cat:=cat0;
-  r.size:=siz0;
-  r.idx:=types.Count;  //toma ubicación
-//  r.amb:=;  //debe leer el bloque actual
-  //agrega
-  types.Add(r);
-  Result:=r;   //devuelve índice al tipo
-end;
-procedure ClearTypes;  //Limpia los tipos
-begin
-  types.Clear;
-end;
-procedure ClearVars;
-//Limpia todas las variables creadas por el usuario.
-begin
-  setlength(vars, nIntVar);  //deja las del sistema
-end;
-procedure ClearAllVars;
-//Elimina todas las variables, incluyendo las predefinidas.
-begin
-  nIntVar := 0;
-  setlength(vars,0);
-end;
-procedure ClearFuncs;
-//Limpia todas las funciones creadas por el usuario.
-begin
-  setlength(funcs,nIntFun);  //deja las del sistema
-end;
-procedure ClearAllFuncs;
-//Elimina todas las funciones, incluyendo las predefinidas.
-begin
-  nIntFun := 0;
-  setlength(funcs,0);
-end;
-procedure ClearAllConst;
-//Elimina todas las funciones, incluyendo las predefinidas.
-begin
-  nIntCon := 0;
-  setlength(cons,0);
-end;
 
-//declaraciones adelantadas
+//Declaraciones adelantadas
 function GetExpression(const prec: Integer; isParam: boolean = false): TOperand; forward;
 function GetBoolExpression: TOperand; forward;
 procedure CompileCurBlock; forward;
 procedure CreateVariable(varName, varType: string); forward;
 
 ////////////////Rutinas de generación de código para el compilador////////////
-function HayError: boolean;
-begin
-  Result := PErr.HayError;
-end;
-function CreateFunction(funName: string; typ: ttype; proc: TProcExecOperat): integer;
-//Crea una nueva función y devuelve un índice a la función.
-var
-  r : Tfunc;
-  n: Integer;
-begin
-  //verifica nombre
-  if FindPredefName(funName) <> idtNone then begin
-    Perr.GenError('Identificador duplicado: "' + funName + '".', PosAct);
-    exit;
-  end;
-  //registra la función en la tabla
-  r.name:= funName;
-  r.typ := typ;
-  r.proc:= proc;
-  setlength(r.pars,0);  //inicia arreglo
-  //agrega
-  n := high(funcs)+1;
-  setlength(funcs, n+1);
-  funcs[n] := r;
-  Result := n;
-end;
-function CreateSysFunction(funName: string; typ: ttype; proc: TProcExecOperat): integer;
-//Crea una función del sistema o interna. Estas funciones estan siempre disponibles.
-//Las funciones internas deben crearse todas al inicio.
-begin
-  Result := CreateFunction(funName, typ, proc);
-  Inc(nIntFun);  //leva la cuenta
-end;
-procedure CreateFunction(funName, varType: string);
-//Define una nueva función en memoria.
-var t: ttype;
-  hay: Boolean;
-begin
-  //Verifica el tipo
-  hay := false;
-  for t in types do begin
-    if t.name=varType then begin
-       hay:=true; break;
-    end;
-  end;
-  if not hay then begin
-    Perr.GenError('Tipo "' + varType + '" no definido.', PosAct);
-    exit;
-  end;
-  CreateFunction(funName, t, nil);
-  //Ya encontró tipo, llama a evento
-//  if t.procDefine<>nil then t.procDefine(funName, '');
-end;
-procedure CreateParam(ifun: integer; name: string; typ: ttype);
-//Crea un parámetro para una función
-var
-  n: Integer;
-begin
-  //agrega
-  n := high(funcs[ifun].pars)+1;
-  setlength(funcs[ifun].pars, n+1);
-  funcs[ifun].pars[n] := typ;  //agrega referencia
-end;
-{$I interprete_vm.pas}
+{$I interprete.pas}
 function CapturaDelim: boolean;
 //Verifica si sigue un delimitador de expresión. Si encuentra devuelve false.
 begin
@@ -517,117 +228,14 @@ begin
   if cIn.tokType=tkExpDelim then begin //encontró
     cIn.Next;   //pasa al siguiente
     exit(true);
-  end else if cIn.tokActL = 'end' then begin   //es un error
+  end else if cIn.tokL = 'end' then begin   //es un error
     //detect apero no lo toma
     exit(true);  //sale con error
   end else begin   //es un error
-    Perr.GenError('Se esperaba ";"', PosAct);
+    GenError('Se esperaba ";"');
     exit(false);  //sale con error
   end;
-end;
-procedure TipDefecNumber(var Op: TOperand; toknum: string);
-//Devuelve el tipo de número entero o fltante más sencillo que le corresponde a un token
-//que representa a una constante numérica.
-//Su forma de trabajo es buscar el tipo numérico más pequeño que permita alojar a la
-//constante numérica indicada.
 
-var
-  n: int64;   //para almacenar a los enteros
-  f: extended;  //para almacenar a reales
-  i: Integer;
-  menor: Integer;
-  imen: integer;
-begin
-  if pos('.',toknum) <> 0 then begin  //es flotante
-    Op.catTyp := t_float;   //es flotante
-    try
-      f := StrToFloat(toknum);  //carga con la mayor precisión posible
-    except
-      Op.typ := nil;
-      PErr.GenError('Número decimal no válido.',PosAct);
-      exit;
-    end;
-    //busca el tipo numérico más pequeño que pueda albergar a este número
-    Op.size := 4;   //se asume que con 4 bytes bastará
-    {Aquí se puede decidir el tamaño de acuerdo a la cantidad de decimales indicados}
-
-    Op.cons.valFloat := f;  //debe devolver un extended
-    menor := 1000;
-    for i:=0 to types.Count-1 do begin
-      { TODO : Se debería tener una lista adicional TFloatTypes, para acelerar la
-      búsqueda}
-      if (types[i].cat = t_float) and (types[i].size>=Op.size) then begin
-        //guarda el menor
-        if types[i].size < menor then  begin
-           imen := i;   //guarda referencia
-           menor := types[i].size;
-        end;
-      end;
-    end;
-    if menor = 1000 then  //no hubo tipo
-      Op.typ := nil
-    else  //encontró
-      Op.typ:=types[imen];
-
-  end else begin     //es entero
-    Op.catTyp := t_integer;   //es entero
-    //verificación de longitud de entero
-    if length(toknum)>=19 then begin  //solo aquí puede haber problemas
-      if toknum[1] = '-' then begin  //es negativo
-        if length(toknum)>20 then begin
-          pErr.GenError('Número muy grande. No se puede procesar. ', posAct);
-          exit
-        end else if (length(toknum) = 20) and  (toknum > '-9223372036854775808') then begin
-          pErr.GenError('Número muy grande. No se puede procesar. ', posAct);
-          exit
-        end;
-      end else begin  //es positivo
-        if length(toknum)>19 then begin
-          pErr.GenError('Número muy grande. No se puede procesar. ', posAct);
-          exit
-        end else if (length(toknum) = 19) and  (toknum > '9223372036854775807') then begin
-          pErr.GenError('Número muy grande. No se puede procesar. ', posAct);
-          exit
-        end;
-      end;
-    end;
-    //conversión. aquí ya no debe haber posibilidad de error
-    n := StrToInt64(toknum);
-    if (n>= -128) and  (n<=127) then
-        Op.size := 1
-    else if (n>= -32768) and (n<=32767) then
-        Op.size := 2
-    else if (n>= -2147483648) and (n<=2147483647) then
-        Op.size := 4
-    else if (n>= -9223372036854775808) and (n<=9223372036854775807) then
-        Op.size := 8;
-    Op.cons.valInt := n;   //copia valor de constante entera
-    //busca si hay tipo numérico que soporte esta constante
-{      Op.typ:=nil;
-    for i:=0 to types.Count-1 do begin
-      { TODO : Se debería tener una lista adicional  TIntegerTypes, para acelerar la
-      búsqueda}
-      if (types[i].cat = t_integer) and (types[i].size=Op.size) then
-        Op.typ:=types[i];  //encontró
-    end;}
-    //busca el tipo numérico más pequeño que pueda albergar a este número
-    menor := 1000;
-    for i:=0 to types.Count-1 do begin
-      { TODO : Se debería tener una lista adicional  TIntegerTypes, para acelerar la
-      búsqueda}
-      if (types[i].cat = t_integer) and (types[i].size>=Op.size) then begin
-        //guarda el menor
-        if types[i].size < menor then  begin
-           imen := i;   //guarda referencia
-           menor := types[i].size;
-        end;
-      end;
-    end;
-    if menor = 1000 then  //no hubo tipo
-      Op.typ := nil
-    else  //encontró
-      Op.typ:=types[imen];
-  end;
 end;
 procedure TipDefecString(var Op: TOperand; tokcad: string);
 //Devuelve el tipo de cadena encontrado en un token
@@ -681,14 +289,42 @@ begin
     end;
   end;
 end;
+procedure CaptureParams;
+//Lee los parámetros de una función en la función interna funcs[0]
+begin
+  cIn.SkipWhites;
+  ClearParamsFunc(0);   //inicia parámetros
+  if EOBlock or EOExpres then begin
+    //no tiene parámetros
+  end else begin
+    //debe haber parámetros
+    repeat
+      GetExpression(0, true);  //captura parámetro
+      if perr.HayError then exit;   //aborta
+      //guarda tipo de parámetro
+      CreateParam(0,'', res.typ);
+      if cIn.tok = ',' then begin
+        cIn.Next;   //toma separador
+        cIn.SkipWhites;
+      end else begin
+        //no sigue separador de parámetros,
+        //debe terminar la lista de parámetros
+        //¿Verificar EOBlock or EOExpres ?
+        break;
+      end;
+    until false;
+  end;
+end;
 function GetOperand: TOperand;
 //Parte de la funcion GAEE que genera codigo para leer un operando.
 var
+  i: Integer;
+  hayFunc: Boolean;
   ivar: Integer;
   ifun: Integer;
-  i: Integer;
+  tmp: String;
 begin
-  PErr.Limpiar;
+  PErr.Clear;
   cIn.SkipWhites;
   Result.estOp:=0;  //Este estado significa NO CARGADO en registros.
   if cIn.tokType = tkNumber then begin  //constantes numéricas
@@ -698,13 +334,12 @@ begin
     TipDefecNumber(Result, cIn.tok); //encuentra tipo de número, tamaño y valor
     if pErr.HayError then exit;  //verifica
     if Result.typ = nil then begin
-        PErr.GenError('No hay tipo definido para albergar a esta constante numérica',PosAct);
+        GenError('No hay tipo definido para albergar a esta constante numérica');
         exit;
       end;
     cIn.Next;    //Pasa al siguiente
   end else if cIn.tokType = tkIdentif then begin  //puede ser variable, constante, función
-    ivar := FindVar(cIn.tok);
-    if ivar <> -1 then begin
+    if FindVar(cIn.tok, ivar) then begin
       //es una variable
       Result.ivar:=ivar;   //guarda referencia a la variable
       Result.catOp:=coVariable;    //variable
@@ -713,38 +348,53 @@ begin
       Result.estOp:=STORED_VAR;
       Result.txt:= cIn.tok;     //toma el texto
       cIn.Next;    //Pasa al siguiente
-    end else begin  //no es variable
+    end else if FindFunc(cIn.tok, ifun) then begin  //no es variable, debe ser función
+      tmp := cIn.tok;  //guarda nombre de función
+      cIn.Next;    //Toma identificador
+      CaptureParams;  //primero lee parámetros
       //busca como función
-      ifun := FindFunc(cIn.tok);
-      if ifun <> -1 then begin
-        //es una función
-        Result.ifun:=ifun;   //guarda referencia a la función
-        Result.catOp :=coExpres;    //expresión
-        Result.txt:= cIn.tok;     //toma el texto
-        cIn.Next;    //Pasa al siguiente
-        //lee parámetros
-        for i:=0 to High(funcs[ifun].pars) do begin
-          GetExpression(0, true);  //captura parámetro
-          if perr.HayError then exit;   //aborta
-          if res.typ<>funcs[ifun].pars[i] then begin
-            Perr.GenError('Parámetro de tipo erroneo.', PosAct);
-            exit;
-          end;
-          if i <> High(funcs[ifun].pars) then begin
-            if cIn.tokActL<> ',' then begin
-              Perr.GenError('Se esperaba ","', PosAct);
-              exit;
-            end;
-            cIn.Next;  //toma el THEN
-          end;
+      case FindFuncWithParams0(tmp, i, ifun) of  //busca desde ifun
+      //TFF_NONE:      //No debería pasar esto
+      TFF_PARTIAL:   //encontró la función, pero no coincidió con los parámetros
+         GenError('Error en tipo de parámetros de '+ tmp +'()');
+      TFF_FULL:     //encontró completamente
+        begin   //encontró
+          Result.ifun:=i;      //guarda referencia a la función
+          Result.catOp :=coExpres; //expresión
+          Result.txt:= cIn.tok;    //toma el texto
+    //      Result.catTyp:= funcs[i].typ.cat;  //no debería ser necesario
+          Result.typ:=funcs[i].typ;
+    //      Result.estOp:=STORED_VAR;  el estado lo decidirá la función
+          funcs[i].proc;  //llama al código de la función
+          Result.estOp:=res.estOp;
+          exit;
         end;
-        Result.catTyp:= funcs[ifun].typ.cat;  //categoría
-        Result.typ:=funcs[ifun].typ;
-//        Result.estOp:=STORED_VAR;  el estado lo decidirá la función
-        funcs[ifun].proc;  //llama al código de la función
+      end;
+    end else begin
+      GenError('Identificador desconocido: "' + cIn.tok + '"');
+      exit;
+    end;
+  end else if cIn.tokType = tkSysFunct then begin  //es función de sistema
+    //Estas funciones debem crearse al iniciar el compilador y están siempre disponibles.
+    tmp := cIn.tok;  //guarda nombre de función
+    cIn.Next;    //Toma identificador
+    CaptureParams;  //primero lee parámetros en func[0]
+    //buscamos una declaración que coincida.
+    case FindFuncWithParams0(tmp, i) of
+    TFF_NONE:      //no encontró ni la función
+       GenError('Función no implementada: "' + tmp + '"');
+    TFF_PARTIAL:   //encontró la función, pero no coincidió con los parámetros
+       GenError('Error en tipo de parámetros de '+ tmp +'()');
+    TFF_FULL:     //encontró completamente
+      begin   //encontró
+        Result.ifun:=i;      //guarda referencia a la función
+        Result.catOp :=coExpres; //expresión
+        Result.txt:= cIn.tok;    //toma el texto
+  //      Result.catTyp:= funcs[i].typ.cat;  //no debería ser necesario
+        Result.typ:=funcs[i].typ;
+  //      Result.estOp:=STORED_VAR;  el estado lo decidirá la función
+        funcs[i].proc;  //llama al código de la función
         Result.estOp:=res.estOp;
-      end else begin
-        PErr.GenError('Identificador desconocido: "' + cIn.tok + '"',PosAct);
         exit;
       end;
     end;
@@ -755,7 +405,7 @@ begin
     TipDefecBoolean(Result, cIn.tok); //encuentra tipo de número, tamaño y valor
     if pErr.HayError then exit;  //verifica
     if Result.typ = nil then begin
-       PErr.GenError('No hay tipo definido para albergar a esta constante booleana',PosAct);
+       GenError('No hay tipo definido para albergar a esta constante booleana');
        exit;
      end;
     cIn.Next;    //Pasa al siguiente
@@ -766,7 +416,7 @@ begin
     If cIn.tok = ')' Then begin
        cIn.Next;  //lo toma
     end Else begin
-       PErr.GenError('Error en expresión. Se esperaba ")"', PosAct);
+       GenError('Error en expresión. Se esperaba ")"');
        Exit;       //error
     end;
   end else if (cIn.tokType = tkString) then begin  //constante cadena
@@ -776,7 +426,7 @@ begin
     TipDefecString(Result, cIn.tok); //encuentra tipo de número, tamaño y valor
     if pErr.HayError then exit;  //verifica
     if Result.typ = nil then begin
-       PErr.GenError('No hay tipo definido para albergar a esta constante cadena',PosAct);
+       GenError('No hay tipo definido para albergar a esta constante cadena');
        exit;
      end;
     cIn.Next;    //Pasa al siguiente
@@ -785,7 +435,7 @@ begin
     }
   end else begin
     //No se reconoce el operador
-    PErr.GenError('Se esperaba operando',PosAct);
+    GenError('Se esperaba operando');
   end;
 end;
 procedure CreateVariable(varName, varType: string);
@@ -804,12 +454,12 @@ begin
     end;
   end;
   if not hay then begin
-    Perr.GenError('Tipo "' + varType + '" no definido.', PosAct);
+    GenError('Tipo "' + varType + '" no definido.');
     exit;
   end;
   //verifica nombre
   if FindPredefName(varName) <> idtNone then begin
-    Perr.GenError('Identificador duplicado: "' + varName + '".', PosAct);
+    GenError('Identificador duplicado: "' + varName + '".');
     exit;
   end;
   //registra variable en la tabla
@@ -836,7 +486,7 @@ begin
     cIn.SkipWhites;
     //ahora debe haber un identificador de variable
     if cIn.tokType <> tkIdentif then begin
-      Perr.GenError('Se esperaba identificador de variable.', PosAct);
+      GenError('Se esperaba identificador de variable.');
       exit;
     end;
     //hay un identificador
@@ -856,7 +506,7 @@ begin
     cIn.Next;  //lo toma
     cIn.SkipWhites;
     if (cIn.tokType <> tkType) then begin
-      Perr.GenError('Se esperaba identificador de tipo.', PosAct);
+      GenError('Se esperaba identificador de tipo.');
       exit;
     end;
     varType := cIn.tok;   //lee tipo
@@ -867,7 +517,7 @@ begin
       if Perr.HayError then exit;
     end;
   end else begin
-    Perr.GenError('Se esperaba ":" o ",".', PosAct);
+    GenError('Se esperaba ":" o ",".');
     exit;
   end;
   if not CapturaDelim then exit;
@@ -900,15 +550,16 @@ procedure CompileCurBlock;
 //Compila el bloque de código actual hasta encontrar un delimitador de bloque.
 begin
   cIn.SkipWhites;
-  while (cIn.tokType <> tkBlkDelim) and (not cIn.Eof) do begin
+
+  while not cIn.Eof and not EOBlock do begin
     //se espera una expresión o estructura
     if cIn.tokType = tkStruct then begin  //es una estructura
-      if cIn.tokActL = 'if' then begin  //condicional
+      if cIn.tokL = 'if' then begin  //condicional
         cIn.Next;  //toma IF
         GetBoolExpression; //evalua expresión
         if PErr.HayError then exit;
-        if cIn.tokActL<> 'then' then begin
-          Perr.GenError('Se esperaba "then".', PosAct);
+        if cIn.tokL<> 'then' then begin
+          GenError('Se esperaba "then".');
           exit;
         end;
         cIn.Next;  //toma el THEN
@@ -916,12 +567,12 @@ begin
         CompileCurBlock;  //procesa bloque
 //        Result := res;  //toma resultado
         if PErr.HayError then exit;
-        while cIn.tokActL = 'elsif' do begin
+        while cIn.tokL = 'elsif' do begin
           cIn.Next;  //toma ELSIF
           GetBoolExpression; //evalua expresión
           if PErr.HayError then exit;
-          if cIn.tokActL<> 'then' then begin
-            Perr.GenError('Se esperaba "then".', PosAct);
+          if cIn.tokL<> 'then' then begin
+            GenError('Se esperaba "then".');
             exit;
           end;
           cIn.Next;  //toma el THEN
@@ -930,18 +581,18 @@ begin
 //          Result := res;  //toma resultado
           if PErr.HayError then exit;
         end;
-        if cIn.tokActL = 'else' then begin
+        if cIn.tokL = 'else' then begin
           cIn.Next;  //toma ELSE
           CompileCurBlock;  //evalua expresión
 //          Result := res;  //toma resultado
           if PErr.HayError then exit;
         end;
-        if cIn.tokActL<> 'end' then begin
-          Perr.GenError('Se esperaba "end".', PosAct);
+        if cIn.tokL<> 'end' then begin
+          GenError('Se esperaba "end".');
           exit;
         end;
       end else begin
-        Perr.GenError('Error de diseño. Estructura no implementada.', PosAct);
+        GenError('Error de diseño. Estructura no implementada.');
         exit;
       end;
     end else begin  //debe ser una expresión
@@ -968,52 +619,52 @@ var
   tmp: TOperand;
 begin
 //  CompilarAct;
-  Perr.Limpiar;
-  if cIn.tokActL = 'program' then begin
+  Perr.Clear;
+  if cIn.tokL = 'program' then begin
     cIn.Next;  //pasa al nombre
     cIn.SkipWhites;
     if cIn.Eof then begin
-      Perr.GenError('Se esperaba nombre de programa.', PosAct);
+      GenError('Se esperaba nombre de programa.');
       exit;
     end;
     cIn.Next;  //Toma el nombre y pasa al siguiente
     if not CapturaDelim then exit;
 //  end else begin
-//    Perr.GenError('Se esperaba: "program ... "', PosAct);
+//    GenError('Se esperaba: "program ... "');
 //    exit;
   end;
   if cIn.Eof then begin
-    Perr.GenError('Se esperaba "begin", "var", "type" o "const".', PosAct);
+    GenError('Se esperaba "begin", "var", "type" o "const".');
     exit;
   end;
   cIn.SkipWhites;
   //empiezan las declaraciones
   Cod_StartData;
-  if cIn.tokActL = 'var' then begin
+  if cIn.tokL = 'var' then begin
     cIn.Next;    //lo toma
-    while (cIn.tokActL <>'begin') and (cIn.tokActL <>'const') and
-          (cIn.tokActL <>'type') and (cIn.tokActL <>'var') do begin
+    while (cIn.tokL <>'begin') and (cIn.tokL <>'const') and
+          (cIn.tokL <>'type') and (cIn.tokL <>'var') do begin
       CompileVarDeclar;
       if pErr.HayError then exit;;
     end;
   end;
-  if cIn.tokActL = 'begin' then begin
+  if cIn.tokL = 'begin' then begin
     Cod_StartProgram;
     cIn.Next;   //coge "begin"
     //codifica el contenido
     CompileCurBlock;   //compila el cuerpo
     if Perr.HayError then exit;
     if cIn.Eof then begin
-      Perr.GenError('Inesperado fin de archivo. Se esperaba "end".', PosAct);
+      GenError('Inesperado fin de archivo. Se esperaba "end".');
       exit;       //sale
     end;
-    if cIn.tokActL <> 'end' then begin  //verifica si termina el programa
-      Perr.GenError('Se esperaba "end".', PosAct);
+    if cIn.tokL <> 'end' then begin  //verifica si termina el programa
+      GenError('Se esperaba "end".');
       exit;       //sale
     end;
     cIn.Next;   //coge "end"
   end else begin
-    Perr.GenError('Se esperaba "begin", "var", "type" o "const".', PosAct);
+    GenError('Se esperaba "begin", "var", "type" o "const".');
     exit;
   end;
   Cod_EndProgram;
@@ -1024,7 +675,7 @@ begin
   //se pone en un "try" para capturar errores y para tener un punto salida de salida
   //único
   if ejecProg then begin
-    PErr.GenError('Ya se está compialndo un programa actualmente.',PosAct);
+    GenError('Ya se está compialndo un programa actualmente.');
     exit;  //sale directamente
   end;
   try
@@ -1039,7 +690,7 @@ begin
     //compila el archivo abierto
 
   //  con := PosAct;   //Guarda posición y referencia a contenido actual
-    cIn.NuevoContexEntArc(NombArc,LinArc);   //Crea nuevo contenido
+    cIn.NewContextFromFile(NombArc,LinArc);   //Crea nuevo contenido
     if PErr.HayError then exit;
     CompilarArc;     //puede dar error
 
@@ -1065,10 +716,10 @@ begin
    //Busca si hay una operación definida para: <tipo de Op1>-opr-<tipo de Op2>
    o := opr.FindOperation(Op2.typ);
    if o = nil then begin
-//      Perr.GenError('No se ha definido la operación: (' +
-//                    Op1.typ.name + ') '+ opr.txt + ' ('+Op2.typ.name+')', PosAct);
-      Perr.GenError('Operación no válida: (' +
-                    Op1.typ.name + ') '+ opr.txt + ' ('+Op2.typ.name+')', PosAct);
+//      GenError('No se ha definido la operación: (' +
+//                    Op1.typ.name + ') '+ opr.txt + ' ('+Op2.typ.name+')');
+      GenError('Operación no válida: (' +
+                    Op1.typ.name + ') '+ opr.txt + ' ('+Op2.typ.name+')');
       Exit;
     end;
    p1 := Op1;    //fija operando 1
@@ -1099,7 +750,8 @@ begin
   Op1 :=  GetOperand;  //toma el operador
   if pErr.HayError then exit;
   //verifica si termina la expresion
-  pos := PosAct;    //Guarda por si lo necesita
+  pos := cIn.PosAct;    //Guarda por si lo necesita
+  cIn.SkipWhites;
   opr := Op1.GetOperator;
   if opr = nil then begin  //no sigue operador
     Result:=Op1;
@@ -1129,11 +781,12 @@ var
 begin
   Op1.catTyp:=t_integer;    //asumir opcion por defecto
   Op2.catTyp:=t_integer;   //asumir opcion por defecto
-  pErr.Limpiar;
+  pErr.Clear;
   //----------------coger primer operando------------------
   Op1 := GetOperand; if pErr.HayError then exit;
   debugln(space(ExprLevel)+' Op1='+Op1.txt);
   //verifica si termina la expresion
+  cIn.SkipWhites;
   opr1 := Op1.GetOperator;
   if opr1 = nil then begin  //no sigue operador
     //Expresión de un solo operando. Lo carga por si se necesita
@@ -1144,7 +797,7 @@ begin
   //------- sigue un operador ---------
   //verifica si el operador aplica al operando
   if opr1 = nullOper then begin
-    PErr.GenError('No está definido el operador: '+ opr1.txt + ' para tipo: '+Op1.typ.name, PosAct);
+    GenError('No está definido el operador: '+ opr1.txt + ' para tipo: '+Op1.typ.name);
     exit;
   end;
   //inicia secuencia de lectura: <Operador> <Operando>
@@ -1161,7 +814,7 @@ begin
       case Op1.catTyp of
         t_integer: Cod_IncremOperanNumerico(Op1);
       else
-        PErr.GenError('Operador ++ no es soportado en este tipo de dato.',PosAct);
+        GenError('Operador ++ no es soportado en este tipo de dato.',PosAct);
         exit;
       end;
       opr1 := cogOperador; if pErr.HayError then exit;
@@ -1172,7 +825,7 @@ begin
       case Op1.catTyp of
         t_integer: Cod_DecremOperanNumerico(Op1);
       else
-        PErr.GenError('Operador -- no es soportado en este tipo de dato.',PosAct);
+        GenError('Operador -- no es soportado en este tipo de dato.',PosAct);
         exit;
       end;
       opr1 := cogOperador; if pErr.HayError then exit;
@@ -1187,6 +840,7 @@ begin
     //prepara siguiente operación
     Op1 := Evaluar(Op1, opr1, Op2);    //evalua resultado
     if PErr.HayError then exit;
+    cIn.SkipWhites;
     opr1 := Op1.GetOperator;   {lo toma ahora con el tipo de la evaluación Op1 (opr1) Op2
                                 porque puede que Op1 (opr1) Op2, haya cambiado de tipo}
   end;  //hasta que ya no siga un operador
@@ -1218,7 +872,7 @@ begin
   Result := GetExpression(0);  //evalua expresión
   if PErr.HayError then exit;
   if Result.Typ.cat <> t_boolean then begin
-    PErr.GenError('Se esperaba expresión booleana',PosAct);
+    GenError('Se esperaba expresión booleana');
   end;
 end;
 {function GetNullExpression(): TOperand;
@@ -1228,30 +882,6 @@ begin
   Result := GetExpression(0);  //evalua expresión
   if PErr.HayError then exit;
 end;}
-
-{ TOperand }
-
-procedure TOperand.Load;
-begin
-  //llama al evento de carga
-  if typ.procLoad <> nil then typ.procLoad(self);
-end;
-function TOperand.FindOperator(const oper: string): TOperator;
-//Recibe la cadena de un operador y devuelve una referencia a un objeto Toperator, del
-//operando. Si no está definido el operador para este operando, devuelve nullOper.
-begin
-  Result := typ.FindOperator(oper);
-end;
-function TOperand.GetOperator: Toperator;
-//Lee del contexto de entrada y toma un operador. Si no encuentra un operador, devuelve NIL.
-//Si el operador encontrado no se aplica al operando, devuelve nullOper.
-begin
-  cIn.SkipWhites;
-  if cIn.tokType <> tkOperator then exit(nil);
-  //hay un operador
-  Result := typ.FindOperator(cIn.tok);
-  cIn.Next;   //toma el token
-end;
 
 initialization
   mem := TStringList.Create;
@@ -1266,8 +896,13 @@ initialization
   nullOper := TOperator.Create;
   //inicia la sintaxis
   xLex := TSynFacilComplet.Create(nil);   //crea lexer
-  StartSyntax; //!!!!!Debería hacerse solo una vez al inicio
+  CreateSysFunction('', nil, nil);  //crea la función 0, para uso interno
+
+  StartSyntax; //Debería hacerse solo una vez al inicio
+  if HayError then PErr.Show;
   cIn := TContexts.Create(xLex); //Crea lista de Contextos
+  ejecProg := false;
+
 finalization;
   cIn.Destroy; //Limpia lista de Contextos
   xLex.Free;

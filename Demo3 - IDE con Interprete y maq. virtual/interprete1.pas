@@ -69,7 +69,7 @@ begin
      ((Op1.estOp = STORED_ACU) or (Op2.estOp = STORED_ACU)) then begin
     Result := true;  //se puede usar
   end else begin
-//    Perr.GenError('No se puede compilar expresión.', PosAct);
+//    GenError('No se puede compilar expresión.');
     Result := false;
   end;
 end;
@@ -81,7 +81,7 @@ begin
      ((Op1.estOp = STORED_ACUB) or (Op2.estOp = STORED_ACUB)) then begin
     Result := true;  //se puede usar
   end else begin
-//    Perr.GenError('No se puede compilar expresión.', PosAct);
+//    GenError('No se puede compilar expresión.', PosAct);
     Result := false;
   end;
 end;
@@ -115,7 +115,7 @@ begin
     b.valInt:=val;
     Code('B<-' + p1.expres + op + p2.expres);
   end else begin
-    Perr.GenError('Expresión muy compleja.', PosAct);
+    GenError('Expresión muy compleja.');
     exit;
   end;
 end;
@@ -131,7 +131,7 @@ begin
     b.valFloat:=val;
     Code('B<-' + p1.expres + op + p2.expres);
   end else begin
-    Perr.GenError('Expresión muy compleja.', PosAct);
+    GenError('Expresión muy compleja.');
     exit;
   end;
 end;
@@ -147,7 +147,7 @@ begin
     b.valBool:=val;
     Code('B<-' + p1.expres + op + p2.expres);
   end else begin
-    Perr.GenError('Expresión muy compleja.', PosAct);
+    GenError('Expresión muy compleja.');
     exit;
   end;
 end;
@@ -163,7 +163,7 @@ begin
     b.valStr:=val;
     Code('B<-' + p1.expres + op + p2.expres);
   end else begin
-    Perr.GenError('Expresión muy compleja.', PosAct);
+    GenError('Expresión muy compleja.');
     exit;
   end;
 end;
@@ -171,7 +171,7 @@ procedure PushResult;
 //Coloca el resultado de una expresión en la pila
 begin
   if sp>=STACK_SIZE then begin
-    Perr.GenError('Desborde de pila.', PosAct);
+    GenError('Desborde de pila.');
     exit;
   end;
   stack[sp].typ := res.typ;
@@ -187,7 +187,7 @@ procedure PopResult;
 //Reduce el puntero de pila, de modo que queda apuntando al último dato agregado
 begin
   if sp<=0 then begin
-    Perr.GenError('Desborde de pila.', PosAct);
+    GenError('Desborde de pila.');
     exit;
   end;
   Dec(sp);
@@ -309,7 +309,7 @@ end;
 procedure int_asig_int;
 begin
   if p1.catOp <> coVariable then begin  //validación
-    Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
+    GenError('Solo se puede asignar a variable.'); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
   vars[p1.ivar].valInt:=p2.GetvalInt;
@@ -319,7 +319,7 @@ end;
 procedure int_asign_float;
 begin
   if p1.catOp <> coVariable then begin  //validación
-    Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
+    GenError('Solo se puede asignar a variable.'); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
   vars[p1.ivar].valInt:=Trunc(p2.GetvalFloat);  //en la VM se puede mover directamente
@@ -409,7 +409,7 @@ end;
 procedure float_asig_int;
 begin
   if p1.catOp <> coVariable then begin  //validación
-    Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
+    GenError('Solo se puede asignar a variable.'); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
   vars[p1.ivar].valFloat:=p2.GetValInt;
@@ -419,7 +419,7 @@ end;
 procedure float_asign_float;
 begin
   if p1.catOp <> coVariable then begin  //validación
-    Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
+    GenError('Solo se puede asignar a variable.'); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
   vars[p1.ivar].valFloat:=p2.GetValFloat;
@@ -497,7 +497,7 @@ end;
 procedure bool_asig_bool;
 begin
   if p1.catOp <> coVariable then begin  //validación
-    Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
+    GenError('Solo se puede asignar a variable.'); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
   vars[p1.ivar].valBool:=p2.GetValBool;
@@ -538,7 +538,7 @@ end;
 procedure str_asig_str;
 begin
   if p1.catOp <> coVariable then begin  //validación
-    Perr.GenError('Solo se puede asignar a variable.', PosAct); exit;
+    GenError('Solo se puede asignar a variable.'); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
   vars[p1.ivar].valStr:=p2.GetValStr;
@@ -584,20 +584,21 @@ var
 begin
   ///////////define la sintaxis del compilador
   //crea y guarda referencia a los atributos
+  tkEol      := xLex.tkEol;
   tkIdentif  := xLex.tkIdentif;
   tkKeyword  := xLex.tkKeyword;
-  tkKeyword.Foreground:=clGreen;
   tkKeyword.Style := [fsBold];     //en negrita
   tkNumber   := xLex.tkNumber;
   tkString   := xLex.tkString;
   //personalizados
   tkOperator := xLex.NewTokType('Operador'); //personalizado
+  tkBoolean  := xLex.NewTokType('Boolean');  //personalizado
+  tkSysFunct := xLex.NewTokType('SysFunct'); //funciones del sistema
   tkExpDelim := xLex.NewTokType('ExpDelim');//delimitador de expresión ";"
   tkBlkDelim := xLex.NewTokType('BlkDelim'); //delimitador de bloque
   tkBlkDelim.Foreground:=clGreen;
   tkBlkDelim.Style := [fsBold];     //en negrita
   tkType     := xLex.NewTokType('Types');    //personalizado
-  tkBoolean  := xLex.NewTokType('Boolean');  //personalizado
   tkStruct   := xLex.NewTokType('Struct');   //personalizado
   tkStruct.Foreground:=clGreen;
   tkStruct.Style := [fsBold];     //en negrita

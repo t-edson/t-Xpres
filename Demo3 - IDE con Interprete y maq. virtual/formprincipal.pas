@@ -318,7 +318,7 @@ begin
             e.LoadFile(PErr.ArcError);
             //Ubicamos número de línea, si hay
             MarcarError(Perr.nLinError,Perr.nColError);
-            {If MostrarError Then }Perr.MosError;
+            {If MostrarError Then }Perr.Show;
         end Else begin
             //Hay un archivo cargado
             If Perr.ArcError = e.NomArc Then begin
@@ -327,14 +327,14 @@ begin
                    MarcarError(Perr.nLinError,Perr.nColError);
                    edXpr.Invalidate;
                 end;
-                {If MostrarError Then }Perr.MosError;
+                {If MostrarError Then }Perr.Show;
             end Else begin
                 //Es otro archivo. Lo abre en otra ventana
 //               AbrirPreSQL(PErr.ArcError, PErr.TxtError);
             end;
         end;
     End else begin   //no hay archivo de error
-      {If MostrarError Then }Perr.MosError;
+      {If MostrarError Then }Perr.Show;
     end;
 End;
 procedure TfrmPrincipal.acHerEjecutarExecute(Sender: TObject);

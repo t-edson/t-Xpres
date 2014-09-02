@@ -646,6 +646,9 @@ begin
         if Shift = [] then begin  //envía al editor
            ed.CommandProcessor(ecLineStart, #0, nil);
            MenuComplet.Deactivate;  //desactiva
+        end else if Shift = [ssShift] then begin
+          ed.CommandProcessor(ecSelLineStart, #0, nil);
+          MenuComplet.Deactivate;  //desactiva
         end;
         Key:=VK_UNKNOWN;   //marca para que no lo procese SynCompletion
       end;
@@ -653,6 +656,9 @@ begin
         if Shift = [] then begin  //envía al editor
            ed.CommandProcessor(ecLineEnd, #0, nil);
            MenuComplet.Deactivate;  //desactiva
+        end else if Shift = [ssShift] then begin
+          ed.CommandProcessor(ecSelLineEnd, #0, nil);
+          MenuComplet.Deactivate;  //desactiva
         end;
         Key:=VK_UNKNOWN;   //marca para que no lo procese SynCompletion
       end;
