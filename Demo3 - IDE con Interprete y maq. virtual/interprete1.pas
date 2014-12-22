@@ -607,8 +607,8 @@ begin
   xLex.ClearMethodTables;           //limpìa tabla de métodos
   xLex.ClearSpecials;               //para empezar a definir tokens
   //crea tokens por contenido
-  xLex.DefTokIdentif('[$A..Za..z_]', 'A..Za..z0..9_');
-  xLex.DefTokContent('[0..9]', '0..9.', '', tkNumber);
+  xLex.DefTokIdentif('[$A..Za..z_]', '[A..Za..z0..9_]*');
+  xLex.DefTokContent('[0..9]', '[0..9.]*', tkNumber);
   if xLex.Err<>'' then ShowMessage(xLex.Err);
   //define palabras claves
   xLex.AddIdentSpecList('THEN var type', tkKeyword);
@@ -644,7 +644,7 @@ begin
   xLex.DefTokDelim('''','''', tkString);
   xLex.DefTokDelim('"','"', tkString);
   xLex.DefTokDelim('//','', xLex.tkComment);
-  xLex.DefTokDelim('/*','*/', xLex.tkComment, tdMulLin);
+  xLex.DefTokDelim('/\*','\*/', xLex.tkComment, tdMulLin);
   //define bloques de sintaxis
   xLex.AddBlock('{','}');
   xLex.Rebuild;   //es necesario para terminar la definición

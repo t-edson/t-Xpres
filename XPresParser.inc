@@ -1,8 +1,11 @@
-//Parte del código de XpresParser, que se espera que se mantenga fija aún con
-//diversas implementaciones.
+{Parte del código de XpresParser, que se espera que se mantenga fija aún con
+diversas implementaciones.
+En principio no se debería incluir código que use SkipWhites() o SkipWhitesEOL(),
+porque usar una u otra función excluiría a lso casos en que se requiera a la otra
+función}
 var
-  cIn       : TContexts;   //entrada de datos
-  types: TTypes;   //lista de tipos
+  cIn    : TContexts;   //entrada de datos
+  types  : TTypes;      //lista de tipos
 //    oper: string;      //indica el operador actual
   //tipos de tokens
   vars  : array of Tvar;  //lista de variables

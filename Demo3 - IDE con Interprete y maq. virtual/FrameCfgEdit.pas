@@ -11,8 +11,8 @@ unit FrameCfgEdit;
 interface
 
 uses
-  Classes, SysUtils, FileUtil, Forms, Controls, StdCtrls, Dialogs, Buttons,
-  ExtCtrls, Spin, SynEdit, Graphics, SynEditMarkupHighAll, SynEditMarkup, Menus,
+  Classes, SysUtils, Forms, StdCtrls, Dialogs,
+  Spin, SynEdit, Graphics, SynEditMarkupHighAll, SynEditMarkup,
   ConfigFrame;   //para interceptar TFrame
 
 type

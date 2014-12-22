@@ -20,7 +20,7 @@ unit XPresParser;
 interface
 uses
   Classes, SysUtils, fgl, Forms, LCLType, Dialogs, lclProc,
-  SynEditHighlighter, SynFacilHighlighter, SynFacilCompletion,
+  SynEditHighlighter, SynFacilHighlighter, SynFacilBasic,
   XpresBas, FormOut;
 
 type
@@ -166,7 +166,7 @@ var //variables públicas del compilador
   mem   : TStringList; //texto de salida del compilador
   p1, p2: TOperand;    //operandos de la operación actual
   res   : TOperand;    //resultado de la evaluación de la última expresión.
-  xLex  : TSynFacilComplet; //resaltador - lexer
+  xLex  : TSynFacilSyn; //resaltador - lexer
   ejecProg: boolean;   //Indica que se está ejecutando un programa o compilando
   DetEjec: boolean;   //para detener la ejecución (en intérpretes)
 
@@ -894,7 +894,7 @@ initialization
   //crea el operador NULL
   nullOper := TOperator.Create;
   //inicia la sintaxis
-  xLex := TSynFacilComplet.Create(nil);   //crea lexer
+  xLex := TSynFacilSyn.Create(nil);   //crea lexer
   CreateSysFunction('', nil, nil);  //crea la función 0, para uso interno
 
   StartSyntax; //Debería hacerse solo una vez al inicio
