@@ -1,25 +1,29 @@
-t-Xpres 0.6
-===========
+t-Xpres 0.7b
+============
 
 Sencillo marco de trabajo (framework) para implementar compiladores o intérpretes para  lenguajes imperativos y tipados. Como parte del proyecto, se define un nuevo lenguaje, al que también se le llama Xpres.
 
-Esta desarrollado en Lazarus e incluye una sencilla IDE.
+Esta desarrollado con Free Pascal y  Lazarus.
 
-Xpres no es solo una librería, es también una infraestructura que define normas y procedimientos en la creación de intérpretes o compiladores, usando Lazarus. Sin embargo, como ejemplo, se incluyen implementaciones simples de un intérprete y un compilador.
+Xpres no es solo una librería, es también una infraestructura que define normas y procedimientos en la creación de intérpretes o compiladores, usando Lazarus. Como ejemplo, se incluyen implementaciones simples de un intérprete y un compilador.
 
-El framework, incluye las siguientes partes:
+El framework, incluye las siguientes dependencias:
 
-* Editor de texto. Se usa el control SynEdit que ya viene con Lazarus y se usa la librería de utilidades https://github.com/t-edson/UtilEditSyn para facilitar la implementación del editor.
-* Analizador léxico o lexer. Requiere el uso el resaltador de sintaxis https://github.com/t-edson/SynFacilSyn al que usaremos, más como analizador léxico que como resaltador de sintaxis.
-* Rutinas básicas del framework. Incluye el manejo de contextos como entrada de datos. Se incluyen en la unidad 'XpresBas.pas', y por lo general no debería modificacrse.
-* Rutinas principales del framework. Incluyen el analizador sintáctivo o parser. Se incluyen en la unidad 'XpresParser.pas', e incluye el analizador de expresiones y de las estructuras del lenguaje. No debería cambiar si no cambia el lenguaje.
-* Intérpretes o Generadores de código. Se implementan en un archivo separado que será incluido luego como parte de 'XpresParser.pas'.
+*Paquete SynEdit. Que viene incluido en Lazarus. Se requiere para poder usar la librería SynfacilSyn. No significa que debe usarse el componente SynEdit, sino que  el resaltador SynfacilSyn, usa clases definidas en este paquete.
+* Librería SynFacilSyn https://github.com/t-edson/SynFacilSyn.  Necesaria porque se usará al resaltador de sintaxis SynfacilSyn, como analizador léxico. Xpres no implementa un analizador léxico propio.
 
-Xpres está diseñado para trabajar con el paquete SynEdit de Lazarus, porque el analizador léxico trabaja sobre SynEdit. Así se espera crear aplicaciones gráficas más que de consola. Esto implica que para implementar un intérprete/compilador, se debe usa el paquete SynEdit, siempre. La arquitectura planteada no implica el uso de SynEdit como editor, pero si se requiere SynEdit, para el analizador léxico.
+Xpres está diseñado para trabajar con el paquete SynEdit de Lazarus. Esto implica que para implementar un intérprete/compilador, se debe usar el paquete SynEdit, siempre. La arquitectura planteada no implica el uso de SynEdit como editor, pero si se requiere de algunas clases definidas en el paquete SynEdit, para el analizador léxico.
 
 Además, al ser el analizador léxico, también un resaltador de sintaxis, se puede resaltar el código fuente con las mismas rutinas del analizador léxico, sin necesidad de implementar algún otro resaltador. De esta forma se garantiza una correspondencia al 100% entre los tokens del analizador léxico, y el coloreado que se puede lograr en pantalla.
 
-Hay que notar que de SynFacilSyn, solo se está usando su capacidad de lexer, más no de manejo de bloques de sintaxis. De momento los bloques de sintaxis, los maneja internamente el analizador sintáctico. He intentado usar las opciones de manejo de bloques de SynFacilSyn como parte del analizador sintáctico, pero de momento no he logrado implementarlo exitósamente.
+Hay que notar que de SynFacilSyn, solo se está usando su capacidad de lexer, más no de manejo de bloques de sintaxis. De momento los bloques de sintaxis, los maneja internamente el analizador sintáctico.
+
+La librería Xpres, incluye a los siguientes archivos:
+
+* "XpresBas.pas". Unidad con rutinas básicas del framework. Incluye el métodos para el manejo del texto fuente y el procesamiento de errores. Por lo general no debería modificarse. Funciona como una capa que se coloca sobre el analizador léxico o "lexer".
+* "XpresParser.pas". Unidad con rutinas principales del framework. Incluyen el analizador sintáctivo o "parser". Incluye el analizador de expresiones y de las estructuras del lenguaje. No debería cambiar si el lenguaje sigue la línea del lenguaje Xpres.
+
+Para la implementación de un Intérpretes o Generadores de código. Se debe crear una unidad que incluya a "XpresParser.pas" y ahí definir a  una clase (p. ej. TCompiler o TInterpreter) que descienda de la clase TCompilerBase.
 
 Los generadores de código pueden desarrollarse para generar código intermedio, como el bytecode de Java, o cualquier otro. Este proyecto no incluye ninguna máquina virtual.
 

@@ -14,24 +14,22 @@ uses Classes, SysUtils, fgl,
   Forms, LCLType,  //Para mostrar mensajes con Application.MessageBox()
   SynEditHighlighter, SynFacilHighlighter;
 
-const
-  //Tipos de contextos
-  TC_ARC = 0 ;     //contexto de tipo archivo
-  TC_TXT = 1 ;     //contexto de tipo texto
 
 type
+  //Tipos de contextos
+  tTypCon = (
+    TC_ARC,      //contexto de tipo archivo
+    TC_TXT);     //contexto de tipo texto
 
   TContext = class;
 
   {Posición dentro de un contexto. A diferencia de "Tcontexto", es un registro y siempre
    guardará una copia permanente. No guarda el contenido del contexto}
   TPosCont = record
-    arc   : String  ;      //Nombre de archivo
-    fil   : LongInt ;      //Fila
-    col   : Integer ;      //Columna
-    nlin  : LongInt ;      //Número de líneas
+//    arc   : String  ;      //Nombre de archivo
+//    nlin  : LongInt ;      //Número de líneas
     fCon  : TContext;      //Referencia al Contexto
-    fPos  : TFaLexerState;  //Posición en el contexto
+    fPos  : TFaLexerState;  //Posición (estado) en el contexto
   End;
 
   { TPError }
@@ -49,8 +47,9 @@ type
     procedure IniError;
     procedure Clear;
     procedure GenError(msje: String; archivo: String; nlin: LongInt);
-    procedure Generror(msje: String; posCon: TPosCont);
+    procedure Generror(msje: String; ctx: TContext);
     function TxtError: string;
+    function TxtErrorRC: string;
     procedure Show;
     function ArcError: string;
     function nLinError: longint;
@@ -64,10 +63,11 @@ type
   de forma simple.}
   TContext = class
   private
-    fFil     : integer;     //fila actual de lectura en el contexto
+    fLexerState: TFaLexerState;  //almacenamiento temporal
+    function getRow: integer;
     function getCol: integer;
   public
-    tip      : integer;
+    tip      : tTypCon;
     arc      : String;      //Nombre de archivo. En caso de que el contexto corresponda a uno.
     nlin     : LongInt;     //Número de líneas del Contexto
     intLines : TStringList; {Líneas de texto. Se usa como almacenamiento interno, cuando
@@ -77,24 +77,24 @@ type
 //    tok      : string;        //token actual
 //    tokType  : TSynHighlighterAttributes;  //tipo de token actual
     //posición del cursor actual
-    property fil: integer read fFil write fFil;
+    property row: integer read getRow;
     property col: integer read getCol;
     //Métodos de lectura
     Function IniCont:Boolean;
     Function Eof:Boolean;
-    function SkipWhites: Boolean;
-    Function SkipWhitesNoEOL:Boolean;
+    procedure SkipWhites;
+    procedure SkipWhitesNoEOL;
 
     procedure Next;   //Pasa al siguiente token
-    //Control de la posición actual
-    procedure SetStartPos;
-    procedure SetPos(lexPos: TFaLexerState);
-//    procedure CurPosFin;
     function ReadSource: string;         //Lee el contenido del contexto
-    //Métodos de inicialización
-    procedure DefSyn(lex0: TSynFacilSyn);  //Fija la sintaxis del lexer con un archivo
+    //Control de la posición actual
+    procedure SetStartPos;       //Posiciona al inicio del contexto
+    procedure SaveLexerState;    //Guarda el estado actual del lexer
+    procedure RestoreLexerState; //Restaura el estado actual del lexer
+  public    //Métodos de inicialización
+    procedure DefSyn(lex0: TSynFacilSyn);  //Fija la sintaxis del lexer
     procedure SetSource(txt : string);   //Fija el contenido del contexto con cadena
-    procedure SetSource(lins: Tstrings; MakeCopy: boolean = false); //Fija contenido a partir de lista
+    procedure SetSource(lins: Tstrings; MakeCopy: boolean = false); //Fija contenido a partir de una lista
     procedure SetSourceF(file0: string);  //Fija el contenido del contexto con archivo
     constructor Create;
     destructor Destroy; override;
@@ -108,27 +108,28 @@ type
   //Extructura para manejar diversas fuentes de datos de contexto
   TContexts = class
   private
-    lex    : TSynFacilSyn; //resaltador - lexer
-    cEnt : TContext;       //referencia al contexto de entrada actual
-    ctxList : TListaCont;     //Lista de contextos de entrada
+    lex    : TSynFacilSyn;   //resaltador - lexer
+    cEnt   : TContext;       //referencia al contexto de entrada actual
+    ctxList : TListaCont;    //Lista de contextos de entrada
     function LeePosContAct: TPosCont;
     procedure FijPosContAct(pc: TPosCont);
   public
     MsjError : string;
-    tok      : string;        //token actual
+    tok      : string;       //token actual
     tokType  : TSynHighlighterAttributes;  //tipo de token actual
-    function tokL: string;    //token actual en minúscula
+    function tokL: string;   //token actual en minúscula
     property PosAct: TPosCont read LeePosContAct write FijPosContAct;
+    property curCon: TContext read cEnt;
     procedure NewContextFromFile(arc0: String);
     procedure NewContextFromFile(arc0: String; lins: Tstrings);
     procedure NewContextFromTxt(txt: string; arc0: String);
     procedure QuitaContexEnt;
     procedure ClearAll;      //elimian todos los contextos
 
-    function Eof:Boolean;
-    function SkipWhites: Boolean;
-    Function SkipWhitesNoEOL:Boolean;
-    procedure Next;           //Pasa al siguiente token
+    function Eof: Boolean;
+    procedure SkipWhites;
+    procedure SkipWhitesNoEOL;
+    procedure Next;          //Pasa al siguiente token
   public
     constructor Create(Lex0: TSynFacilSyn);
     destructor Destroy; override;
@@ -157,7 +158,6 @@ var
 begin
   p :=lex.GetXY;
   Result := (p.x = 1) and (p.y = 1);
-//    Result := (fFil = 1) And (col = 1);
 end;
 function TContext.Eof: Boolean;
 //Devuelve verdadero si se ha llegado al final del Contexto.
@@ -167,16 +167,10 @@ begin
       Result := True;
       Exit;
   End;
-  //Verifica optimizando verificando primero la condición más probable
-  If fFil < nlin Then
-    Result := False
-  Else If fFil > nlin Then
-    Result := True
-  Else If fFil = nlin Then begin  //estamos en la línea final.
-    Result := lex.GetEol;   //si apunta al final
-  End;
+  //Verifica
+  Result := (lex.GetY = nlin) and lex.GetEol;
 end;
-function TContext.SkipWhitesNoEOL: Boolean;
+procedure TContext.SkipWhitesNoEOL;
 //Coge los blancos iniciales del contexto de entrada, sin considerar saltos de línea.
 //Si no encuentra algun blanco al inicio, devuelve falso
 begin
@@ -189,7 +183,7 @@ begin
 //  tok := lex.GetToken;    //lee el token
 //  tokType := lex.GetTokenAttribute;  //lee atributo
 end;
-function TContext.SkipWhites: Boolean;
+procedure TContext.SkipWhites;
 //Coge los blancos iniciales y comentarios del contexto de entrada.
 //Si no encuentra algun blanco al inicio, devuelve falso
 begin
@@ -202,17 +196,22 @@ begin
 //  tok := lex.GetToken;    //lee el token
 //  tokType := lex.GetTokenAttribute;  //lee atributo
 end;
+function TContext.getRow: integer;
+begin
+  Result:=lex.GetY;  //deberías ser equivalente a leer "fFil"
+end;
 function TContext.getCol: integer;
 begin
-  Result:=lex.GetXY.x;
+  Result:=lex.GetX;
 end;
 procedure TContext.Next;
+var fFil: integer;
 begin
   if nlin = 0 then exit;  //protección
   if lex.GetEol then begin  //llegó al fin de línea
-    fFil := fFil + 1;  //Pasa a siguiente fila.
+    fFil := lex.GetY + 1;  //Pasa a siguiente fila.
     if fFil <= nlin then begin //se puede leer
-      lex.SetLine(curLines[fFil-1],fFil-1);  //prepara exploración
+      lex.SetLine(curLines[fFil-1],fFil);  //prepara exploración
       //actualiza estado
 //      tok := lex.GetToken;    //lee el token
 //      tokType := lex.GetTokenAttribute;  //lee atributo
@@ -225,15 +224,13 @@ begin
   end;
 end;
 procedure TContext.SetStartPos;
-//Mueve la posición al inicio del contenido.
+//Mueve la posición al inicio del contexto.
 begin
   if curLines.Count = 0 then begin
     //No hay líneas
     lex.ResetRange;   //fRange_= nil y también inicia información de bloques
-    fFil := 0;
   end else begin //hay al menos una línea
-    fFil := 1;
-    if lex = nil then begin //no hay lexer
+    if lex = nil then begin  //No hay lexer. Es posible
 //      tok := '';
 //      tokType := nil;
     end else begin
@@ -245,17 +242,17 @@ begin
     end;
   end;
 end;
-procedure TContext.SetPos(lexPos: TFaLexerState);  //Acceso aleatorio
-{Pone al contexto, en la posición indicada. La posición se indica con un parámetro
-"TFaLexerState", porque para ubicar al contexto en una posición específica se
-requiere fijar correctamente el estado. Dicha posición corresponde siempre al inicio
-de un token.}
+procedure TContext.SaveLexerState;
+//Guarda el estado actual del lexer en la variable interna "fLexerState".
+//Este estado incluye las coordenadas actuales de lectura en el Lexer.
 begin
-  lex.State := lexPos;
-  fFil := lex.GetXY.y;  //actualiza la nueva fila
-  //actualiza estado
-//  tok := lex.GetToken;  //lee el token
-//  tokType := lex.GetTokenAttribute;  //lee atributo
+  fLexerState := lex.State;
+end;
+procedure TContext.RestoreLexerState;
+//Copia el estado del lexer grabado en "fLexerState". Se debe ejecutar siempre
+//después de SaveLexerState().
+begin
+  lex.State := fLexerState;
 end;
 function TContext.ReadSource: string;
 //Devuelve el contenido del contexto en una cadena.
@@ -315,35 +312,29 @@ end;
 function TContexts.LeePosContAct: TPosCont;
 //Devuelve Contexto actual y su posición
 begin
-    Result.fCon := cEnt;
+  Result.fCon := cEnt;
+  if cEnt = nil then begin
+    //Aún no hay Contexto definido
+  end else begin
     Result.fPos := cEnt.lex.State;
-    if cEnt = nil then begin
-      //Aún no hay Contexto definido
-      Result.fil  := 1;
-      Result.col  := 1;
-      Result.arc  := '';
-      Result.nlin := 0;
-    end else begin
-      Result.fil  := cEnt.Fil;
-      Result.col  := cEnt.col;
-      Result.arc  := cEnt.arc;
-      Result.nlin := cEnt.nlin;
-    end;
+//      Result.fil  := cEnt.row;
+//      Result.col  := cEnt.col;
+//    Result.arc  := cEnt.arc;
+//      Result.nlin := cEnt.nlin;
+  end;
 end;
 procedure TContexts.FijPosContAct(pc: TPosCont);
 //Fija Contexto actual y su posición
 begin
   cEnt := pc.fCon;
   if cEnt = nil then begin
-    //no tiene un Contexto actual
-//    filAct := 1;
-//    colAct := 1;
-//    cEnt.arc := '';
-//    nlin := 0;
+    //No tiene un Contexto actual
   end else begin
-    cEnt.SetPos(pc.fPos);  //posiciona al contexto
-    cEnt.arc := pc.arc;
-    cEnt.nlin := pc.nlin;
+    cEnt.lex.State := pc.fPos;
+//    cEnt.row := pc.fil;
+//    cEnt.col := pc.col;
+//    cEnt.arc := pc.arc;
+//    cEnt.nlin := pc.nlin;
   end;
   //actualiza token actual
   tok := lex.GetToken;    //lee el token
@@ -415,14 +406,14 @@ begin
   Result := cEnt.Eof;
 end;
 
-function TContexts.SkipWhites: Boolean;
+procedure TContexts.SkipWhites;
 begin
   cEnt.SkipWhites;
   //actualiza token actual
   tok := lex.GetToken;    //lee el token
   tokType := lex.GetTokenAttribute;  //lee atributo
 end;
-function TContexts.SkipWhitesNoEOL: Boolean;
+procedure TContexts.SkipWhitesNoEOL;
 begin
   cEnt.SkipWhitesNoEOL;
   //actualiza token actual
@@ -474,29 +465,32 @@ begin
   arcER := archivo;
   fil := nlin;
 end;
-procedure TPError.Generror(msje: String; posCon: TPosCont);
-//Genera un error en la posición indicada
+procedure TPError.Generror(msje: String; ctx: TContext);
+//Genera un error en la posición actual del contexto indicado.
 begin
   numER := 1;
   cadER := msje;
-  arcER := posCon.arc;
-  fil := posCon.fil;
-  col := posCon.col;
+  arcER := ctx.arc;  //toma nombre de archivo del contexto
+  fil := ctx.row;
+  col := ctx.col;
 end;
 function TPError.TxtError: string;
+//Devuelve el mensaje de error
 begin
-  If arcER <> '' Then begin
+  Result := cadER;
+end;
+function TPError.TxtErrorRC: string;
+//Devuelve el mensaje de error con información de fila y columna
+begin
+//  If arcER <> '' Then begin
     //Hay nombre de archivo de error
     If fil <> -1 Then       //Hay número de línea
-  //      Result := Pchar('[' + arcER + ']: ' + cadER + ' Línea: ' + IntToStr(fil);
-      //Se usa este formato porque incluye información sobre fila-columna y se puede usar como
-      //parámetro de la línea de comnando /MSJE.
-      Result := '('+ IntToStr(fil) + ',' + IntToStr(col) + ') ' + cadER
+      //Se usa este formato porque incluye información sobre fila-columna.
+      Result := '['+ IntToStr(fil) + ',' + IntToStr(col) + '] ' + cadER
     Else          //No hay número de línea, sólo archivo
-  //      Result := '[' + arcER + ']: ' + cadER;
       Result := cadER;
-  end Else
-    Result :=cadER;
+//  end else
+//    Result :=cadER;
 end;
 procedure TPError.Show;
 //Muestra un mensaje de error
