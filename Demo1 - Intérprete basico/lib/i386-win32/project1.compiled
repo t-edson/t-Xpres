@@ -1,5 +1,0 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<CONFIG>
-  <Compiler Value="C:\lazarus\fpc\2.6.4\bin\i386-win32\fpc.exe" Date="1154382129"/>
-  <Params Value=" -MObjFPC -Scghi -O1 -g -gl -WG -vewnhi &quot;-FiD:\SILICIO\Software\Proyectos\Lazarus\Xpres 0.7b\Demo1 - Intérprete basico\lib\i386-win32&quot; &quot;-FiD:\SILICIO\Software\Proyectos\Lazarus\Xpres 0.7b&quot; &quot;-FuD:\SILICIO\Software\Proyectos\Lazarus\Xpres 0.7b&quot; &quot;-FuD:\SILICIO\Software\Proyectos\Lazarus\_Librerias\SynFacilUtils 0.4b&quot; -FuC:\lazarus\components\synedit\units\i386-win32\win32 -FuC:\lazarus\lcl\units\i386-win32\win32 -FuC:\lazarus\lcl\units\i386-win32 -FuC:\lazarus\components\lazutils\lib\i386-win32 -FuC:\lazarus\packager\units\i386-win32 &quot;-FuD:\SILICIO\Software\Proyectos\Lazarus\Xpres 0.7b\Demo1 - Intérprete basico\&quot; &quot;-FUD:\SILICIO\Software\Proyectos\Lazarus\Xpres 0.7b\Demo1 - Intérprete basico\lib\i386-win32\&quot; -l -dLCL -dLCLwin32 project1.lpr"/>
-</CONFIG>
