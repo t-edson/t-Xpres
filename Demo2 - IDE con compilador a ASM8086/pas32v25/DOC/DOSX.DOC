@@ -1,0 +1,437 @@
+****************************************************************************
+*                                                                          *
+*   Pro32 DOS Extender                    written by Dieter Pawelczak      *
+*                                                                          *
+*                           D O S X - Manual                               *
+*                                                                          *
+*   (c) 1996,1997 by Dieter Pawelczak, Fasanenweg 41, 85540 Haar, Germany  *
+*                                                                          *
+****************************************************************************
+
+The include file DOSX.INC provides a number of extended DOS functions for
+the Pro32 DOS extender. To use these extended int 21h functions, you must
+include DOSX.INC. The initialization is done by the START procedure INITDOSX.
+So including DOSX.INC automatically enables extended DOS support. In an OVL
+or DLL file, extended DOS support must be given by the main program. An OVL
+or DLL therefore should not include DOSX.INC!
+
+
+
+The following example initializes the extended DOS functions:
+
+  .INCLUDE DOSX.INC   ; EXTENDED DOS FUNCTIONS ARE NOW ACTIVATED ....
+  .CODE                                      
+  START:
+         MOV EDX, OFFSET HELLOMESG
+         MOV AH,9
+         INT 21H                                ; DOS PRINT FUNCTION
+  ...
+
+This is a list of the supported DOS Functions:
+
+    Function 09h - Write $ terminated string to standard output
+    Function 1Bh - Get allocation information for default drive
+    Function 1Ch - Get allocation information for specific drive
+    Function 1Fh - Get drive parameter block for default drive
+    Function 25h - Set interrupt vector
+    Function 2Fh - Get disk transfer area
+    Function 32h - Get drive parameter block for specific drive
+    Function 34h - Get address of InDOS flag
+    Function 35h - Get interrupt vector
+    Function 39h - Create subdirectory
+    Function 3Ah - Remove subdirectory
+    Function 3Bh - Set directory
+    Function 3Ch - Create file
+    Function 3Dh - Open file
+    Function 3Fh - Read from file
+    Function 40h - Write to file
+    Function 41h - Delete file
+    Function 43h - Get/Set file attributes
+    Function 47h - Get directory path
+    Function 48h - Allocate memory block
+    Function 49h - Free memory block
+    Function 4Bh - Load and execute Program
+    Function 4Eh - Search for first filename
+    Function 56h - Rename File
+
+We should not forget, that DOS is a real mode product...:
+
+The DTA is resident in the real mode memory area, as DOS can only cope
+with this memory area. Function 2fh therefore returns a real mode
+address with selector/offset.
+
+The function call is principially equivalent to the real mode DOS call,
+but the offset registers are used in the 32 bit form, EDX instead of DX,
+the segment registers are used with valid selectors...
+
+Any data transfered to or from the DOS call will be placed in a real
+mode memory area. DOSX uses the 32 KByte data buffer, which is provided
+by the Pro32 DOS Extender. You should not leave valuable data in this
+area! Any extended DOS call will destroy data previously stored in this
+buffer...
+
+As DOS provides us with 16-bit handlers and error codes, these registers
+remain 16-bit. There would be no need for a 32 bit error code.
+
+DOSX runs in an 16-bit application as well, as it is coded conditionally.
+
+The DOSHELLO.ASM example:
+
+; No Model - as this file is able to run in both modes ...
+.UCU
+.NM
+.INCLUDE DOSX.INC         ; include extended DOS library ...
+
+.DATA
+     mesg      db         'Hello, World - with extended DOS!',13,10,'$'
+.CODE
+START:
+     call INITDOSX        ; initialize extended DOS functions...
+     mov edx,OFFSET mesg  ; offset to text string
+     mov ah,9h            ; extended dos function string to standard output
+     int 21h              ; dos call
+     mov ax,4c00h
+     int 21h              ; terminate
+END START
+END
+
+
+Don't forget to mark the program's entry point with the END directive!
+
+
+APPENDIX A - List of the extended DOS functions
+
+
+
+
+    Function 09h - Write $ terminated string to standard output
+    ===========================================================
+
+Call:    AH     = 09h
+         DS:EDX -> '$' terminated string to write
+
+    Function 1Bh - Get allocation information for default drive
+    ===========================================================
+
+Call:    AH     = 1Bh
+
+Returns: AL     = sectors per cluster
+         ECX    = bytes per sector
+         EDX    = total number of clusters
+      at DS:EBX : media ID byte
+
+DS:EBX is converted from the real mode segment to descriptor and offset.
+Note that DS is a zero selector after this function call
+
+
+    Function 1Ch - Get allocation information for specific drive
+    ============================================================
+
+Call:    AH     = 1Ch
+         DL     = drive number
+
+Returns: AL     = sectors per cluster
+         ECX    = bytes per sector
+         EDX    = total number of clusters
+      at DS:EBX : media ID byte
+
+on error:AL     = FFh
+
+DS:EBX is converted from the real mode segment to descriptor and offset.
+Note that DS is a zero selector after this function call!
+
+
+    Function 1Fh - Get drive parameter block for default drive
+    ==========================================================
+
+Call:    AH     = 1Fh
+
+Returns: AL     = 0
+      at DS:EBX : drive parameter block
+
+on error:AL     = FFh
+
+DS:EBX is converted from the real mode segment to descriptor and offset.
+Note that DS is a zero selector after this function call!
+
+    Function 25h - Set interrupt vector
+    ====================================
+
+Call:    AH	 = 25h
+         AL	 = interrupt number
+         DS:EDX  : interrupt routine
+
+Note that this functions set a protected mode interrupt and not a real
+mode interrupt!
+
+
+    Function 2Fh - Get disk transfer area
+    =====================================
+
+Call:    AH	 = 2Fh
+
+Returns: ES:EBX  : DTA
+
+ES:EBX is converted from the real mode segment to descriptor and offset.
+Note that ES is a zero selector after this function call!
+
+    Function 32h - Get drive parameter block for specific drive
+    ===========================================================
+
+Call:    AH     = 32h
+         DL     = drive number
+
+Returns: AL     = 0
+      at DS:EBX : drive parameter block
+
+on error:AL     = FFh
+
+DS:EBX is converted from the real mode segment to descriptor and offset.
+Note that DS is a zero selector after this function call!
+
+    Function 34h - Get address of InDOS flag
+    ========================================
+
+
+Call:    AH = 34h
+
+Returns: ES:EBX : Address of InDOS flag
+
+ES:EBX is converted from the real mode segment to descriptor and offset.
+Note that ES is a zero selector after this function call!
+
+
+    Function 35h - Get interrupt vector
+    ========================================
+
+Call:    AH      = 35h
+         AL      = interrupt number
+
+Returns: ES:EBX  = interrupt routine
+
+This function returns the address of a protected mode interrupt handler!
+
+
+    Function 39h - Create subdirectory
+    ========================================
+
+Call:    AH     = 39h
+         DS:EDX = zero terminated string
+
+Returns: carry flag clear
+
+on error:carry flag set
+         AX     = error code
+
+
+    Function 3Ah - Remove subdirectory
+    ==================================
+
+Call:    AH     = 3Ah
+         DS:EDX = zero terminated string (path name)
+
+Returns: carry flag clear
+
+on error:carry flag set
+         AX     = error code
+
+
+    Function 3Bh - Set directory
+    ============================
+
+Call:    AH     = 3Bh
+         DS:EDX = zero terminated string (path name)
+
+Returns: carry flag clear
+
+on error:carry flag set
+         AX     = error code
+
+
+    Function 3Ch - Create file
+    ===========================
+
+Call:    AH     = 3Ch
+         CX     = attribute
+         DS:EDX = zero terminated string (path name)
+
+Returns: carry flag clear
+         AX = handle
+
+on error:carry flag set
+         AX     = error code
+
+
+    Function 3Dh - Open file
+    ========================
+
+Call:    AH     = 3Dh
+         AL     = open code
+         DS:EDX = zero terminated string (path name)
+
+Returns: carry flag clear
+         AX = handle
+
+on error:carry flag set
+         AX     = error code
+
+
+    Function 3Fh - Read from file
+    =============================
+
+Call:    AH     = 3Fh
+         BX     = file handle
+         CX     = number of bytes to read
+         DS:EDX : buffer to read to
+
+Returns: carry flag clear
+         AX     = number of bytes read
+
+on error:carry flag set
+         AX     = error code
+
+Note that the real mode file buffer is only 32 KBytes in size.
+You should not read more than 32768 bytes at once...
+
+
+    Function 40h - Write to file
+    ============================
+
+Call:    AH      = 40h
+         BX      = file handle
+         CX      = number of bytes to write
+         DS:EDX  = buffer to write from
+
+Returns: carry flag clear
+         AX      = number of bytes written
+
+on error:carry flag set
+         AX     = error code
+
+Note that the real mode file buffer is only 32 KBytes in size.
+You should not write more than 32768 bytes at once...
+
+
+    Function 41h - Delete file
+    ==========================
+
+Call:    AH     = 41h
+         DS:EDX = zero terminated string (path name)
+
+Returns: carry flag clear
+
+on error:carry flag set
+         AX     = error code
+
+
+    Function 43h - Get/Set file attributes
+    ======================================
+
+Call:    AH     = 43h
+         AL     = subfunction code
+         CX     = attributes
+         DS:EDX = zero terminated string (path name)
+
+Returns: carry flag clear
+         CX = current attributes
+
+on error:carry flag set
+         AX     = error code
+
+
+    Function 47h - Get directory path
+    =================================
+
+Call:    AH     = 47h
+         DL     = drive number
+         DS:ESI : buffer for path
+
+Returns: carry flag clear
+         buffer is filled with the path (zero terminated)
+
+on error:carry flag set
+         AX     = error code
+
+    Function 48h - Allocate memory block
+    ====================================
+
+Call:    AH     = 48h
+         BX     = paragraphs to allocate
+
+Returns: carry flag clear
+         AX     = selector for memory block
+
+on error:carry flag set
+         AX     = error code
+         BX     = maximum paragraphs available
+
+You can allocate only DOS memory below 1MB.
+
+
+    Function 49h - Free memory block
+    ================================
+
+Call:    AH     = 49h
+         ES     = selector for memory block
+
+Returns: carry flag clear
+         ES     = zero
+
+on error:carry flag set
+         AX     = error code
+
+The selector in ES must be created by the DOS Function 48h or the DPMI
+Function 100h!
+
+
+    Function 4Bh - Load and execute Program
+    =======================================
+
+Call:    AH     = 4Bh
+         AL     = 00h
+         DS:EDX = path name (zero terminated)
+         ES:EBX = parameter line (zero terminated)
+
+Returns: carry flag clear
+
+on error:carry flag set
+
+Notes:
+Not compatible with the actual DOS call, but much easier to handle.
+
+    Function 4Eh - Search for first filename
+    ========================================
+
+Call:    AH     = 4Eh
+         CX     = file attribute
+         DS:EDX = zero terminated string (path name)
+
+Returns: carry flag clear
+         First Filename loaded at the DTA
+
+on error:carry flag set
+         AX     = error code
+
+
+    Function 56h - Rename File
+    ==========================
+
+Call:    AH     = 56h
+         DS:EDX = old filename (zero terminated string)
+         ES:EDI = new filename (zero terminated string)
+
+Returns: carry flag clear
+
+on error:carry flag set
+         AX     = error code
+
+
+
+                        *       *       *
+
+
+Dieter Pawelczak, May, 1997
+
+WWW:        http://www.eikon.e-technik.tu-muenchen.de/~et_514/
+email:      dieter.pawelczak@eikon.e-technik.tu-muenchen.de
+post code:  Fasanenweg 41, 85540 Haar, Germany

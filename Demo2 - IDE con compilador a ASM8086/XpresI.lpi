@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CONFIG>
+  <ProjectOptions>
+    <Version Value="9"/>
+    <PathDelim Value="\"/>
+    <General>
+      <SessionStorage Value="InProjectDir"/>
+      <MainUnit Value="0"/>
+      <Title Value="XpresI"/>
+      <ResourceType Value="res"/>
+      <UseXPManifest Value="True"/>
+      <Icon Value="0"/>
+    </General>
+    <i18n>
+      <EnableI18N LFM="False"/>
+    </i18n>
+    <VersionInfo>
+      <StringTable ProductVersion=""/>
+    </VersionInfo>
+    <BuildModes Count="2">
+      <Item1 Name="Debug" Default="True"/>
+      <Item2 Name="Release">
+        <CompilerOptions>
+          <Version Value="11"/>
+          <PathDelim Value="\"/>
+          <Target>
+            <Filename Value="XpresI"/>
+          </Target>
+          <SearchPaths>
+            <IncludeFiles Value="$(ProjOutDir)"/>
+            <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+          </SearchPaths>
+          <CodeGeneration>
+            <SmartLinkUnit Value="True"/>
+            <Optimizations>
+              <OptimizationLevel Value="3"/>
+            </Optimizations>
+          </CodeGeneration>
+          <Linking>
+            <Debugging>
+              <GenerateDebugInfo Value="False"/>
+            </Debugging>
+            <LinkSmart Value="True"/>
+            <Options>
+              <Win32>
+                <GraphicApplication Value="True"/>
+              </Win32>
+            </Options>
+          </Linking>
+          <Other>
+            <CompilerMessages>
+              <MsgFileName Value=""/>
+            </CompilerMessages>
+            <CompilerPath Value="$(CompPath)"/>
+          </Other>
+        </CompilerOptions>
+      </Item2>
+    </BuildModes>
+    <PublishOptions>
+      <Version Value="2"/>
+    </PublishOptions>
+    <RunParams>
+      <local>
+        <FormatVersion Value="1"/>
+      </local>
+    </RunParams>
+    <RequiredPackages Count="2">
+      <Item1>
+        <PackageName Value="SynEdit"/>
+      </Item1>
+      <Item2>
+        <PackageName Value="LCL"/>
+      </Item2>
+    </RequiredPackages>
+    <Units Count="10">
+      <Unit0>
+        <Filename Value="XpresI.lpr"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="XpresI"/>
+      </Unit0>
+      <Unit1>
+        <Filename Value="formprincipal.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="frmPrincipal"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="FormPrincipal"/>
+      </Unit1>
+      <Unit2>
+        <Filename Value="synhighlighterfacil.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="SynHighlighterFacil"/>
+      </Unit2>
+      <Unit3>
+        <Filename Value="utileditsyn.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="utilEditSyn"/>
+      </Unit3>
+      <Unit4>
+        <Filename Value="parser.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Parser"/>
+      </Unit4>
+      <Unit5>
+        <Filename Value="globales.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="Globales"/>
+      </Unit5>
+      <Unit6>
+        <Filename Value="XpresBas.pas"/>
+        <IsPartOfProject Value="True"/>
+        <UnitName Value="XpresBas"/>
+      </Unit6>
+      <Unit7>
+        <Filename Value="formconfig.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="Config"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="FormConfig"/>
+      </Unit7>
+      <Unit8>
+        <Filename Value="FrameCfgEdit.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="fraCfgEdit"/>
+        <HasResources Value="True"/>
+        <ResourceBaseClass Value="Frame"/>
+        <UnitName Value="FrameCfgEdit"/>
+      </Unit8>
+      <Unit9>
+        <Filename Value="FormOut.pas"/>
+        <IsPartOfProject Value="True"/>
+        <ComponentName Value="frmOut"/>
+        <ResourceBaseClass Value="Form"/>
+        <UnitName Value="FormOut"/>
+      </Unit9>
+    </Units>
+  </ProjectOptions>
+  <CompilerOptions>
+    <Version Value="11"/>
+    <PathDelim Value="\"/>
+    <Target>
+      <Filename Value="XpresI"/>
+    </Target>
+    <SearchPaths>
+      <IncludeFiles Value="$(ProjOutDir);.."/>
+      <OtherUnitFiles Value="..;..\..\_Librerias\SynFacilUtils 0.4b"/>
+      <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
+    </SearchPaths>
+    <Parsing>
+      <SyntaxOptions>
+        <IncludeAssertionCode Value="True"/>
+      </SyntaxOptions>
+    </Parsing>
+    <CodeGeneration>
+      <Checks>
+        <IOChecks Value="True"/>
+        <RangeChecks Value="True"/>
+        <OverflowChecks Value="True"/>
+        <StackChecks Value="True"/>
+      </Checks>
+    </CodeGeneration>
+    <Linking>
+      <Debugging>
+        <DebugInfoType Value="dsDwarf2Set"/>
+        <UseHeaptrc Value="True"/>
+        <UseExternalDbgSyms Value="True"/>
+      </Debugging>
+    </Linking>
+    <Other>
+      <CompilerMessages>
+        <MsgFileName Value=""/>
+      </CompilerMessages>
+      <CompilerPath Value="$(CompPath)"/>
+    </Other>
+  </CompilerOptions>
+  <Debugging>
+    <Exceptions Count="3">
+      <Item1>
+        <Name Value="EAbort"/>
+      </Item1>
+      <Item2>
+        <Name Value="ECodetoolError"/>
+      </Item2>
+      <Item3>
+        <Name Value="EFOpenError"/>
+      </Item3>
+    </Exceptions>
+  </Debugging>
+</CONFIG>

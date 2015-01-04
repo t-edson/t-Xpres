@@ -1,0 +1,19 @@
+Xpress 0.7b
+===========
+
+* Se adecúa la librería Xpres para que pueda usar la versión 0.4b de la librería "SynFacilUtils".
+* Se cambia complétamente la estructura de los archivos de la librería. Ahora Se usan los archivos 
+"XpresBas.pas" y "XpresParser.pas" y se debe crear una unidad adicional que incluya a "XpresParser.pas"
+para implmentar el analizador sintáctico y generador de código.
+* Se encapsula en clases, gran parte del código que se encontraba definido directamente en la unidad 
+"XpresParser.pas".
+* Se cambia la forma en que se debe crear el generador de código. Se elimina las constantes de tipo 
+"STORED_???" y se mueve quita la declaración obligatoria de los métodos de TOperand. .
+* Se quita el campo "estOp" de "TOperand". 
+* Se corrigen varias rutinas de "XpresParser.pas" para mejorar el manejo de los contextos.
+* Diversos cambios más.
+
+Como han habido cambios drásticos, se pierde la compatibilidad con la versión 0.6. Pero los conceptos
+básicos del framework se mantienen.
+
+La docuemntación referida al Framework, ha mejorado considerablemente.

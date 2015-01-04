@@ -1,0 +1,3738 @@
+****************************************************************************
+*                                                                          *
+*   PASS32 32 Bit Assembler V 2.5           written by Dieter Pawelczak    *
+*                                                                          *
+*                         Instruction Manual                               *
+*                                                                          *
+*   (c) 1996,1997 by Dieter Pawelczak, Fasanenweg 41, 85540 Haar, Germany  *
+*                                                                          *
+****************************************************************************
+
+  Contents:
+
+  Introduction
+
+  Part 1:
+
+  1. Defining Code, Data and Memory Model
+  2. Addressing Data, Defining Labels and Procedures
+  3. Pre-processor, Macros and Conditional Assembly
+  4. The OVL model
+  5. The DLL model
+  6. Debugging and Code Optimization
+
+  Part2:
+
+  1.  First Steps In Assembler With Flat and Tiny Model
+  2.  Basic Information For Protected Mode Programming
+  3.  More Protected Mode Programming and DPMI
+  4.  Co-Processor programming
+  5.  Writing A DLL Library
+  6.  A short chapter on OVL writing
+  7.  Macro Power
+  8.  Another protected mode demo
+
+  APPENDIX A - Pass32 Arguments
+  APPENDIX B - Messages from the assembler
+           B.1  Error Messages
+           B.2  Warning Messages
+           B.3  Fatal Error Messages
+  APPENDIX C - Copyright and Credits
+  APPENDIX D - Limits
+  APPENDIX E - Other DOS Extenders
+  APPENDIX F - RTL and Example Routines
+  APPENDIX G - Pro32 Gold
+
+ This document is valid for Pass32 Version 2.5 and Pass32 Version 3.0 alpha,
+ release 0.8.
+
+
+    Introduction
+    ============
+
+  Welcome to the world of PASS32 Assembler! PASS32 was created for easy
+  protected mode programming.
+  The idea for the assembler was on the one hand to create a programming
+  tool for the Pro32 Dos Extender. On the other hand, I wanted to create
+  my own assembler. I don't like complicated linking and code with
+  public or extern variables. I am used to write code straight forward
+  and that's the idea of this assembler. The assembler does not create
+  obj code, but standalone executable code. You can, of course, link
+  binaries into the code or include from other source files.
+
+  The assembler is a combination of Assembler and Linker. For protected
+  mode programming the Dos Extender Pro32 is linked to the program.
+  The assembler is a two pass assembler with about 1000 lines source
+  code per second on a 80486 DX-4-100 processor.
+
+  The Assembler supports 4 memory models:
+
+    -TINY for regular 16 bit DOS .COM files
+    -FLAT for 32 bit protected mode files (fully compatible with Pro32)
+    -DLL for a PASS32 Version of 32 bit Dynamic Link Library
+    -OVL for a PASS32 Version of 32 bit overlay code
+
+  For a more comfortable program development the assembler has a build-in
+  debug function, which allows to set break points, to trace through the code
+  and to view the source code.
+
+  I want to introduce all methods of the assembler with this instruction
+  manual and I want to explain some methods of protected mode programming.
+
+  The manual is divided into two parts:
+
+    Part 1 : Overview of PASS32 directives, Arguments, short Examples
+    Part 2 : Protected Mode and DPMI Programming demonstrated with
+             Examples
+
+  If you already know about assembler, the fastest way is to read Part 1
+  of the Pass32 manual. This part is an overview of the assembler usage.
+  Part 2 provides detailed information on protected mode programming with
+  Pass32.
+
+  The assembler files are stored in several subdirectories:
+
+  \BIN\         binaries like PASS32.EXE, PRO32.EXE, PROSET.EXE
+  \INC\         include files, assembler modules for demo files
+  \DOC\         documentation PASS32.DOC, PASS32.TXT, PRO32.DOC etc
+  \DEMO\        example files - introduced in the manual
+  \DISS32\      source files for the 32 bit disassembler
+  \GRAPH\       example files for VESA graphics driver
+  \PRO\         example files of the Pro32 Dos Extender
+
+  You should add the \BIN\ directory to your path!
+
+  PASS32.TXT is a short reference guide on the assemblers directives,
+  supported Pass32 instructions, etc.
+
+
+
+
+=====================================================================
+         ********                   ****             ***
+          **    **                    **            ****
+          **    **  *****     ** ***  ****         *****
+          *******       **     ***    **             ***
+          **        ******     **     **             ***
+          **       **   **     **     **             ***
+         ****       ***** **  ****     ***          *****
+=====================================================================
+
+  Contents:
+
+  1. Defining Code, Data and Memory Model
+  2. Addressing Data, Defining Labels and Procedures
+  3. Pre-processor, Macros and Conditional Assembly
+  4. The OVL model
+  5. The DLL model
+  6. Debugging and Code Optimization
+
+
+= 1. Defining Code, Data and Memory Model ====================================
+
+  Pass32 supports two main memory models: The Dos compatible TINY
+  model which is used for .COM executables and the Pro32 compatible
+  FLAT memory model. The TINY model is restricted to a 64 Kbyte
+  segment for code, data and stack. The FLAT memory model can use
+  up to 4 Gigabytes code and data.
+  The creation of .COM files is useful, if you like to create DOS
+  oriented code (file transfer, file filters etc). The flat memory
+  model is used for working with a great amount of data, for example
+  for a graphic oriented system. It is the decision between real and
+  protected mode, between 16 and 32 bit!
+
+  You define the memory model with the .MODEL directive. You should
+  always use this directive! This directive defines the segement type
+  attribute (USE16 or ZSE32).
+
+  Defining the TINY model:              Defining the FLAT model:
+
+  .MODEL TINY                           .MODEL FLAT
+
+  ษออออออออออออออออออออออออออออออออป    ษออออออออออออออออออออออออออออออออป
+  บ PSP  0000h - 00ffh             บ    บ PSP 00000000h - 000000ffh      บ
+  บ                                บ    บ                                บ
+  ฬออออออออออออออออออออออออออออออออน    ฬออออออออออออออออออออออออออออออออน
+  บ Main Program 0100h             บ    บ Main Program    00000100h      บ
+  บ .CODE                          บ    บ .CODE                          บ
+  บ                                บ    บ                                บ
+  ฬออออออออออออออออออออออออออออออออน    ฬออออออออออออออออออออออออออออออออน
+  บ Main Program predefined Data   บ    บ Main Program predefined Data   บ
+  บ .DATA                          บ    บ .DATA                          บ
+  ฬออออออออออออออออออออออออออออออออน    ฬออออออออออออออออออออออออออออออออน
+  บ Main Program undefined Data    บ    บ Main Program undefined Data    บ
+  บ .DATA?                         บ    บ .DATA?                         บ
+  บ                                บ    บ                                บ
+  ฬออออออออออออออออออออออออออออออออน    ฬออออออออออออออออออออออออออออออออน
+  บ HEAP and STACK                 บ    บ HEAP                           บ
+  ศออออออออออออออออออออออออออออออออผ    ศออออออออออออออออออออออออออออออออผ
+
+  Total Segment Size 64K                Total Segment Size 4G
+
+  The .MODEL directive provides two functions:
+    1. It sets compiler range checking for the module size down to 64K
+    2. It sets the default code segment attribute:
+          TINY: USE16
+          FLAT, OVL, DLL, WIN32: USE32
+
+  You can set the code attribute directly by using the .USE16 or .USE32
+  directive. Basically you don't need this and you should use the .MODEL
+  directive instead. You may need it, when you want to program a real mode
+  program, that enables 32 bit protected mode and changes the code segment
+  attribute, e.g. a dos extender program.
+
+
+  As you can see from the figure, there are different data types:
+    - predefined data - at the end of the .EXE / .COM file
+    - undefined data - value is unknown
+    - constant data - part of the code
+
+  You define the beginning of data with the .DATA, .DATA? or .CONST
+  directive:
+
+  .DATA     The following definitions are part of the "data segment"
+            Allocates and Initializes a data storage at the current
+            end of the program code
+  .DATA?    The following definitions are no part of the program.
+            A data storage is allocated, but of course not initialized
+  .CONST    The following definitions will be placed directly into the
+            code. A .CONST directive at the begin of an assembler source
+            forces the first bytes of the code to be data storage and
+            not instructions!
+
+  The .DATA and the .CONST directive differ in the location of the
+  data storage and in the usage of the data. The syntax is for both
+  directives the same. You can place constant variable identifiers
+  directly into the code segment:
+
+     H1    DW  ?
+   PROC Test
+     mov H1,AX
+     mov BX,H2
+     ...
+     ret
+     H2    DW  ?
+   ENDP Test
+
+  A constant variable is usually accessed via the CS selector; mov H1,AX
+  therefore will become mov CS:h1,AX. To avoid a general exception (a write
+  memory access with CS) you must use a segment override, for example DS,
+  to alter constant data.
+  In a clear source code you should use constant data as constants and
+  not alter them!
+
+  A data definition is done by defining an identifier (variable name)
+  a storage size directive (size of variable type) and the data value.
+  Pass32 offers the following storage size directives:
+
+      DB   1 byte   allocates one byte storage
+      DW   2 bytes  allocates one word storage
+      DD   4 bytes  allocates a double word storage
+  DF, DP   6 bytes  allocates a 32-bit far pointer
+      DQ   8 bytes  allocates a quadword storage
+      DT  10 bytes  allocates a ten bytes storage
+
+  For floating point constants there are four more directives:
+
+      RS   4 bytes  allocates storage for a single floating point number
+      RD   8 bytes  allocates storage for a double floating point number
+  RC, RE  10 bytes  allocates storage for a comp (extended) floating point
+                    number
+
+  Any directive/label/procedure name is treated not-case-sensitive.
+
+  To initialize data you use the following syntax:
+
+ [ NAME ]  DB | DW | DD | DF | DP | DQ | DT  expression {,expression}
+
+  To initialize a floating point number
+
+ [ NAME ]  RS | RD | RE | RC floating-point-constant {,floating-point-constant}
+
+  An expression might consist of the following numbers:
+
+    -hexadecimal : denoted with an h following the number, eg. 0ffffh
+                   must begin with one of the digits 0 - 9.
+    -octal       : denoted with an o suffix, eg. 0123o
+    -binary      : denoted with a b at the end of the number, eg. 010100b
+    -decimal     : this is the standard notation, eg. 65535
+    -characters  : a character is presented by its ascii code, eg. 'A' = 65
+                   several characters are stored as they are:
+                   'YOU' = 59h,4fh,55h
+
+  and the following operations:
+
+    - (unary) -  : changes the sign of the expression
+    - +          : adds two integer expressions
+    - *          : multiplies two integer expressions
+    - /          : divides two integer expressions
+    - %          : gives the remainder of an integer division
+    - ( )        : marks an expression for priority evaluation
+    - [ ]        : marks an expression as a memory reference
+    - AND        : logical AND of two expressions
+    - OR         : logical OR of two expressions
+    - XOR        : logical XOR of two expressions
+    - NOT (unary): logical NOT (inversion) of the expression
+    - SIZE       : size of a data type (DB = 1, DW = 2, ...)
+    - BYTE PTR   : to address a single byte memory location
+    - WORD PTR   : to address a word memory location
+    - DWORD PTR  : to address a double word memory location
+    - FWORD PTR  : to address a 32-bit far pointer location
+    - QWORD PTR  : to address a quad word memory location
+    - TBYTE PTR  : to address a ten byte memory location
+
+  Inside a .CONST data expression, you can use the directive
+
+    - OFFSET     : to get the address of a label / procedure / identifier
+
+  Some examples of data definitions:
+
+  .DATA
+    ByteVar      DB   01000b OR 01b OR 100001b
+    ByteRow      DB   0,1,2,3,4,5,6,7,8,9,10
+    WordVar      DW   0EF7Ah AND 01110011011b
+    WordRow      DW   10+2*20,20+2*20,30+2*20,48*8,48*16,128%7
+    DWordVar     DD   0000100h+SIZE ByteRow*11+SIZE ByteVar
+    BCDNumber    DT   ?
+    mesg         DB   'Hello, World!',0
+    unicode      DW   'Hello, World!',0
+
+  The question mark is a special expression, the value of the expression
+  is unknown and unimportant! You can not use the question mark with an
+  operation: 10*?,? or 01b (wrong!!!!)
+  The question mark is the only allowed expression for undefined data:
+
+   .DATA?
+     IntResult    DD   ?
+     ResultVector DD   ?,?,?
+     FloatResult  RD   ?
+     BCDResult    DT   ?
+
+  A floating point constant can be defined with RS, RD, RE or RC:
+  RS is the identifier for a single floating point number (4 bytes).
+  The constant has the following format:
+
+  [-] digits [.digits] [e +|- digits]
+
+  The range for the floating point numbers are:
+
+   RS     Single     1.5E-45    ...    3.4E+38          7-8 digits
+   RD     Double     5.0E-324   ...    1.7E+308         15-16 digits
+   RC, RE Comp       3.4E-4932  ...    1.1E+4932        19-20 digits
+
+  Some examples for floating point constants:
+
+   .DATA
+     Single      RS    1.5
+     SingleRow   RS    3.7E-8, 19.2145, 18.125E+12, 29.111, 77.99
+     Double      RD    1.999E+200
+     DoubleRow   RD    1.77125, 1.998192, 0.25E-38, 0.125E+128
+     Comp        RC    -1.999e-500
+     CompRow     RE    0.999999999E-22,33344556E+88,9123456E-88
+
+  The DUP duplicate directive creates a list of a data type:
+
+ [ NAME ]  DB | DW | DD | DF | DP | DQ | DT  field-count DUP ( expression )
+ [ NAME ]  RS | RD | RE | RC field-count DUP (floating-point-constant)
+
+  The expression or floating-point-constant is duplicated field-count times.
+  Examples:
+
+   .DATA
+     SingleArray RS 1000 DUP(0.1)        ; 1000 times the constant 0.1
+     ByteFiled   DB 1024 DUP(0)          ; 1k bytes with value 0
+   .DATA?
+     VideoBuffer DB 256*1024 DUP(?)         ; 256K Video Buffer
+
+  Note, there's no recursive usage of DUP, instead of DB 256 DUP(1024 DUP(?))
+  write DB 256*1024 DUP(?)!
+
+  Basically, data identifiers are treated as local inside a module. This
+  means, you can access only data identifiers, which are defined in the
+  same module; and, in different modules, you can use the same names for
+  data identifiers...
+
+  If you want to access data defined inside another module, you have to make
+  export this variable. There are basically two ways of exporting data:
+  You can use the .PUBLIC directive inside this module:
+
+   .DATA
+     privateid          DB   0
+     .PUBLIC publicid   DB   1
+
+  The identifier publicid can now be accessed from other modules. You can use
+  .PUBLIC before the .DATA directive to make all data identifiers public:
+
+   .PUBLIC .DATA
+     ispublic           DB   0
+     ispublic2          DB   1
+
+  The first method needs a change to the module file. This might not always
+  be useful as the identifiers made public will always be exported (if they
+  are needed or not).
+  You can force a module to export a data identifier (which is not made
+  public) with the .EXTERN directive:
+
+  MODULEA.INC:
+
+   .DATA
+     privateid          DB   0
+     .PUBLIC publicid   DB   1
+
+  MODULEB.INC:
+
+  .INCLUDE MODULEA.INC
+    .EXTERN privateid           ; now publicid and privateid can be accessed!
+
+  For the .EXTERN directive, the identifier must be known, this means, the
+  module must be included first.
+
+  Note, the .EXTERN directive actually copies the information of the private
+  module data identifier into the public data area. For this reason, .EXTERN
+  allocates the identifier twice and needs more memory than the use of
+  .PUBLIC.
+  .EXTERN is ignored, if the data identifier is already made public.
+  .EXTERN can also be used with lables and procedures.
+
+
+  The .ALIGN directive forces the assembler to align data or code, depending
+  in which segment the directive is used. Note, that Pass32 V2.0 ignores an
+  .ALIGN directive outside any segment (for example at the beginning).
+
+  With .ALIGN you can enable alignment inside a data segment:
+
+  Every data identifier begins at an offset divisible by 2 (TINY) or 4 (FLAT)
+  according to the memory model. If you need a complete block of data,
+  you can use the .BLOCK and .NOBLOCK directive. Between .BLOCK and .NOBLOCK
+  each data identifier follows the other without a gap. Therefore you have
+  data alignment for the first item, but not certain for the other elements.
+  The .NOALIGN directive disables data alignment.
+  You can specify the data alignment by a cardinal number of 2,4 or 8
+  irrespective of the memory model.
+
+  Example:
+
+  .MODEL FLAT
+  .DATA
+  .ALIGN                ; same as .ALIGN 4
+     AlignedByte        db      ?
+     AlignedWord        dw      0
+     ALignedDWord       dd      0123456h
+   .BLOCK
+     TextStrings        db 'INPUT ','OUTPUT','LIST  ','RUN   '
+                        db 'NEW   ','OPEN  ','CLOSE ','CLEAR '
+     TextStringEnd      db 0
+     TextStringElements db 8
+   .NOBLOCK
+     AlignedBytes       db 0,0,1,1,2,2
+
+  If you use .ALIGN inside the code segment, Pass32 will insert as many nop
+  instructions until the next instruction is aligned. Note, .ALIGN
+  doesn't have an effect on the code segment generally.
+
+  Pass32 defines one global variable identifier for the TINY and two global
+  variable identifier for the FLAT memory model:
+
+  TINY:
+
+  LASTDATA (DW) OFFSET of the first free data address of the program heap
+                points to the last .DATA? identifier + its size
+  COFFS    (DW) current code offset
+ 
+  FLAT:
+
+  LASTDATA (DD) OFFSET of the first free data address of the program heap
+                points to the last .DATA? identifier + its size
+  MEMSIZE  (DD) points to CS:[0Ah] of the protected mode PSP = amount of
+                allocated memory for the program segment.
+  COFFS    (DD) current code offset
+
+  If you name any variable identifier with one of these names, you will get
+  a warning message.
+
+  Any variable or constant identifier replaces the actual address. You
+  can use the variable instead of its address:
+
+    mov ax,WordValue           ; would be the same as:
+    mov ax,[OFFSET WordValue]  ;
+
+  The OFFSET identifier returns the address of a label, a procedure or
+  a variable.
+
+  If you want to address different elements of a variable identifier, you
+  can use the PTR identifier. For example, if you want to make a far call
+  via a variable:
+
+   .DATA
+     FarPtrVar  DF  ?
+   .CODE
+     mov ax,cs
+     mov WORD PTR FarPtrVar+4,AX        ; AX and FarPtrVar different types!
+     mov DWORD PTR FarPtrVar,EDI        ; EDI and FarPtrVar different types!
+     call FarPtrVar                     ; FarPtrVar is expected type!
+
+  If you try to load or store with a different type of variable, you will
+  get an error message:
+
+     mov ax,ByteVar                     ; illegal types!
+
+  You must use the PTR identifier if you want to avoid an error:
+
+     mov ax,BYTE PTR ByteVar
+
+  Pay attention, if you use aligned data, you can not be sure what the other
+  bytes of a byte or word identifier contain! You should not use the knowledge
+  that an aligned data storage uses a minimum of 2,4,8 or 16 bytes to store
+  other values than the defined one! For example it would be terrible
+  programming if you'd store a double word value into AlignedByte, because
+  you know that four bytes had been reserved! The SIZE identifier will return
+  an amount of 4 for the aligned byte, word or dword identifier and 8 for a
+  32 bit far pointer and a quad word!
+
+  You can define data anywhere in your source code:
+
+    PROC Print
+    .DATA
+      PrintX   DW  ?
+      PrintY   DW  ?
+    .CODE
+      mov PrintX,Cx
+      mov PrintY,Cy
+
+      cmp ax,0
+      je AxIsZero
+    .Data
+      AXZero   db   0
+    .CODE
+      mov AxZero,1
+    AxIsZero:
+
+  Note that memory for the data identifier is allocated at the end of the
+  program code. As constant data defined with the .CONST directive is
+  allocated directly in the code segment, you can not define data with the
+  .CONST directive anywhere in the code!!!
+
+    wrong:
+
+    .CODE
+    PROC Dummy
+    .CONST
+      Dummy1 DD ?
+      Dummy2 DD ?
+    .CODE
+      xor eax,eax
+      mov Dummy1,eax
+      mov Dummy2,eax
+    ...
+
+  When the procedure Dummy is called, the first 8 bytes contain undefined
+  data - the behaviour of the procedure is unknown... You can place .COMST
+  definitions at the end of a procedure (after the RET instruction) or
+  between two procedures. Or you can use the .CONST directive, to create
+  special instructions, for example:
+
+    PROC NewInt8
+      call Newinthandler
+   .CONST
+      DB 0EAh                   ; JUMP
+      OLD8OFFS DD ?             ; FAR JUMP TO OLD INTERRUPT HANDLER
+      OLD8SEL  DW ?
+   .CODE
+    ENDP NewInt8
+
+   PROC InitNew8
+     mov ax,204h
+     mov bl,8
+     int 31h                    ; get interrupt address
+     mov DS:OLD8OFFS,edx        ; stroe old interrupt vector
+     mov DS:OLD8SEL,cx          ; .CONST data needs DS Prefix!
+     ...
+   ENDP InitNew8
+
+
+
+  Usually it makes no difference whether a variable is declared before or
+  after its usage. Immediate memory access, eg. mov [0],0100h,
+  cmp ByteVar,0 etc must use an argument override if the variable is not
+  defined:
+
+    wrong:
+
+      mov AxIsZero,0
+    .DATA
+      AxIsZero db      ?
+
+  AxIsZero is not defined when assembling the immediate mov instruction.
+  The assembler therefore doesn't know what type AxIsZero will be. You need
+  an argument override:
+
+    right:
+
+      mov byte ptr AxIsZero,0
+    .DATA
+      AxIsZero db      ?
+
+      or
+
+    .DATA
+      AxIsZero db      ?        ; AxIsZero now defined
+    .CODE
+      mov AxIsZero,0
+
+
+  Basically you should define data before using it. This makes reading the
+  code easier.
+
+
+
+
+= 2. Addressing Data, Defining Labels and Procedures =========================
+
+  The Pass32 supports the 32 bit address modes of the 80386 and newer
+  processors. You should use square brackets to address with index
+  or base registers.
+  In both models 16 and 32 bit addressing is allowed. In the TINY model
+  you must make sure, that the extended registers do not override a segment,
+  they should not address offsets above 0ffffh!
+
+  Some examples of 16 bit addressing:
+
+    mov al,bytevar+bx+di             ; you can leave square brackets out
+    mov al,[bx+di]                   ; you must use square brackets!
+    mov dx,word ptr [bytevar+DI]
+    mov bx,es:[WordVar+SI]
+
+  You can leave square bracket out, if the first item makes sure that this
+  is an addressing form. If the first item is a register, the assembler only
+  recognizes the register, .eg:  mov ax,bx+di makes mov ax,bx and +di which
+  produces an error.
+  If you are using 16 bit address modes in protected mode programs - you must
+  make sure, that the base address is below 64K! This might happen, for
+  example, if you like to index a variable with the SI register and your
+  program code exceeds 64K:
+
+    mov al,[ByteVar+SI]    ; forces an error, when the offset of ByteValue
+                           ; is above 0ffffh !!!
+
+
+  Some examples of 32 bit addressing:
+
+    mov ax,es:[eax+ecx*4]
+    mov eax,dword ptr bytevar+edi
+    mov [esp+8],edi
+    mov ax,[eax+edi*8+0111h]
+    cmp word ptr [eax+edx*2],0
+
+  You can use any extended register as base and index register. The scale
+  factor for the index register must be 2,4 or 8.
+  A segment override should be placed before the square brackets / before
+  the expression.
+
+  Square brackets or a variable identifier refer to a memory location.
+  To load a value direct into a register don't use square brackets:
+
+    mov dx,01111b and 47h or 1000000b
+    mov ecx,4*1000h + 2*0100h +88h
+
+
+  Pass32 as well allows to load character or string values in a register:
+
+    mov al,'$'
+    mov eax,'.COM'
+    mov ax,'DX'
+
+  Against the TASM convention, the string is stored in the register, like
+  it would be stored in memory; so you can use this method to scan the memory
+  for string expressions:
+
+    mov eax,'.COM'
+    mov edi,OFFSET Parameter_1
+  ScanParameter:
+    cmp [edi],eax
+    je ok_is_COM_File
+    inc edi
+    ...
+    jmp ScanParameter
+
+  You can also calculate string expressions:
+
+  Upcase:
+    mov al,'a'-'A'        ; al  = 32
+    mov edx,'HEY!'+'   '  ; edx = 'hey!'
+
+  Labels are part of the program code. They define the beginning of a loop,
+  an address of a procedure, the entry point of the code, etc.
+  In the TINY model a label is a 16 bit offset,  in the FLAT model a label
+  is a 32 bit offset.
+
+  A label is defined by a colon at the end of the name. The label name
+  must not begin with a digit 0..9. It can consist of letters A-Z,a-z,
+  digits 0-9, special characters as _@#., some examples:
+
+    .PUBLIC ProgramStart:
+        ....
+    ProgramExit:
+        mov ah,4ch
+        int 21h
+    FirstChoice:
+        ....
+    SecondChoice:
+        ....
+    @loop:
+        mov es:[ecx*2+0b800h],al
+        loop @loop
+
+    END ProgramStart
+
+  The END [label | procedure] defines the entry point of a program. Without
+  this directive any assembler source will start at the first .CODE
+  instruction or at the first .CONST entry. The start label / procedure must
+  be defined before the END directive.
+  The .PUBLIC directive defines a label globally.
+
+  Labels are always treated as local in the procedure they are used.
+  You can use the same label name in different procedures:
+
+  PROC ProcA
+    ...
+  @Start:
+    ...
+    je @Start
+  ENDP ProcA
+
+  PROC ProcB
+    ...
+    je @Start
+    ...
+  @Start:
+  ENDP ProcB
+
+  If you want to use a label globally, for example if you want to jump
+  from one procedure into a specific offset in another procedure, you have
+  to define this Label as public:
+
+  PROC ProcA
+    ...
+  .PUBLIC Exit:
+    ...
+  ENDP ProcA
+
+  PROC ProcB
+    ...
+    jmp Exit
+    ...
+  ENDP ProcB
+
+  Without the directive .PUBLIC the instruction jmp Exit would produce an
+  error. You can't use a labelname more than once inside a procedure,
+  you can't use the same labelname for different global labels and you
+  can't use the name of a public label for a local label:
+
+  PROC ProcA
+  @loop:
+  @loop:        ; wrong, duplicate label
+  .PUBLIC Exit:
+  ENDP ProcA
+
+  PROC ProcB
+  @loop:        ; right, used for the first time
+  Exit:         ; wrong, 'Exit' already defined as public!
+  ENDP ProcB
+
+  You can use the .EXTERN directive to make a label public after
+  the label definition:
+
+  PROC ProcA
+    ...
+  Exit:
+    ...
+  ENDP ProcA
+
+
+  .EXTERN Exit
+
+  PROC ProcB
+    ...
+    jmp Exit
+    ...
+  ENDP ProcB
+
+  Note, Pass32 will make the first label which is found public! You should
+  prefer the .PUBLIC method, as it is not ambiguous!
+
+
+
+  You can define a procedure with the PROC directive. With PROC, the name
+  and attributes of a procedure are defined. The procedure attributes
+  NEAR, FAR and START are optional.
+  There are two ways of using the PROC directive:
+
+
+     PROC Main                 ; same as
+     Main PROC
+
+  Or, the same definition with attributes:
+
+     PROC Main NEAR START
+     Main PROC NEAR START
+
+  A procedure should end with the ENDP directive. This directive is especially
+  necessary in combination with code optimization!
+  There are again two ways of using the ENDP directive:
+
+     ENDP Main                  ; same as
+     Main ENDP
+
+
+  A procedure can have three attributes: NEAR, FAR or START.
+  Generally all procedures of the main program are NEAR procedures. This
+  means, all procedures share the same code segment. A FAR procedure is
+  a procedure outside the main code segment. If you use a DLL, for example,
+  the procedures of the DLL are resident in another code segment: therefore
+  all procedures in the DLL are defined as FAR procedures.
+
+  NEAR is the default attribute for TINY or FLAT model procedures. You can
+  explicitly force the assembler to generate a near procedure with
+
+     PROC Main NEAR
+
+  a far procedure with
+
+     PROC Main FAR
+
+  Far procedures must be defined before they can be called. If you are working
+  with far procedure and you want a forward reference, you can use the
+  directive .FAR. All procedure calls are now treated as far calls, so
+  every far procedure has a forward definition. If you don't want far
+  procedures to be treated like that, you can disable the function by .NOFAR.
+
+  The attribute START produces an implicit call to this procedure at the
+  beginning of the program (before the start label is called).
+  For example DOSX.INC uses such a procedure type to install the new
+  DOS interrupt handler, to create extended DOS functions.
+  A procedure with the attribute start must be defined as a near procedure,
+  the attribute START is not valid in the DLL / OVL model. In these
+  models, Pass32 generates a warning message, that these procedures are
+  not called implicitely by program execution.
+
+
+  You can define a variable type as a jump target. The variable type can be
+  a 16 bit offset = WORD PTR (TINY only), a 16:16 pointer = DWORD PTR (TINY
+  only), a 32 bit offset = DWORD PTR (FLAT ONLY) and a 16:32 pointer = FWORD
+  PTR (FLAT ONLY).
+
+  If you have two alternative procedures and you want to use a variable
+  identifier to access them, this could be done like this:
+
+     .MODEL FLAT
+     .DATA
+          GraphPutPixel    DD   ?
+     .CODE
+     PROC VGAPutPixel NEAR
+        ...
+     ENDP VGAPutPixel
+     PROC SVGAPutPixel NEAR
+        ...
+     ENDP SVGAPutPixel
+
+     START:
+           ....
+           mov eax,offset VGAPutPixel
+           mov GraphPutPixel,eax      ; initialize one of the Procs
+           ...
+           call GraphPutPixel
+           ...
+           call GraphPutPixel
+           ...
+     END START                        ; define START as entry point
+     END
+
+  Conditional jumps or jumps to a forward reference can be optimized with
+  the SHORT directive, if the target is in the next 127 bytes.
+
+  For some instructions you must explicitly distinguish between 32 bit and
+  16 bit instructions:
+
+  The loop instruction can be used with the CX and ECX registers. Usually
+  Pass32 uses loop with the CX register, as this is in most cases more
+  efficient (small loops). To use the ECX register you must use the (pseudo)
+  instruction loopd:
+
+    .CODE
+         mov cx,10
+    @loop:
+         mov al,[esi]
+         inc esi
+         loop @loop             ; repeat ten times
+    ...
+         mov ecx,0b80000h+100h
+    @@loop:
+         mov fs:[ecx],al        ; from b80100 to b80001
+         loop @@loop            ; repeat 100h times (low word part of ECX)
+    ...
+         mov ecx,10000h
+    extloop:
+         mov fs:[ecx*4+esi]
+         loopd extloop           ; repeat 65536 times (ECX)
+
+
+  The push immediate instruction can push a 16 bit or a 32 bit immediate.
+  We use again the suffix 'D' to distinguish the instructions:
+
+    push 1234h                  ; pushes an immediate of 16 bit
+                                ; in the TINY model
+    push 1234h                  ; pushes an immediate of 32 bit
+                                ; in the FLAT models
+    push 12345678h              ; pushes an immediate of 32 bit
+                                ; in the FLAT models
+                                ; you'll get an error in the TINY model
+
+    pushw 1234h                 ; pushes an immediate of 16 bit
+                                ; in all models
+    pushd 12345678h             ; pushes an immediate of 32 bit
+                                ; in all models
+
+  Note: Pass32 always creates the push instruction according to the current
+        model: In Tiny a 16 bit push, in FLAT a 32 bit push, to use a different
+        operand size (or to use the operand size model independend) use the
+        suffix 'W' for 16 bit and 'D' for 32 bit.
+
+  The JCXZ and JECXZ instructions already show their difference in the
+  instruction name!
+
+
+
+
+= 3. Pre-processor, Macros and Conditional Assembly ==========================
+
+  We can define a variable for values and text strings with the .EQU
+  directive.
+  For example if we want a special colour design for our program, we can use
+  the .EQU directive:
+
+    BackColor         .EQU    0
+    WindowFrameColor  .EQU    14
+    ScriptColor       .EQU    15
+    GraphColor        .EQU    7
+
+  It is easier to change the .EQU command at the beginning of our source,
+  than changing all colour attributes in the source, .eg mov al,14.
+  The .EQU command is a pre-processor command. Actually all text strings
+  'BackColor' are replaced by the text string '0'. You can not define a
+  variable with this! You can not store to BackColor for example, this
+  would be like: mov BackColor,1  ===>  mov 0,1 (!!!).
+  As the .EQU directive forces a string replacement you can even replace
+  text strings:
+
+    HelloMesg         .EQU    'Hello, World!',0
+
+  Note, the HelloMesg is no variable and has no offset! You can use the
+  replacement in a data definition:
+
+    Message           db      HelloMesg
+
+  You can even replace instructions with the .EQU directive:
+
+    ClearRegs         .EQU xor eax,eax//xor ecx,ecx//xor ebx,ebx//xor edx,edx
+
+    .CODE
+      ClearRegs
+      mov ah,4ch
+      int 21h
+    END
+
+  The // in the replacement is understood as a line feed.
+
+  Note, that the name can be 40 characters long and the replacement 60
+  characters. The total number of .EQU replacements is 640.
+
+  You can declare multiple .EQU replcaements with the .TYPE directive.
+  The .TYPE directive can be used to declare an enumeration type. For
+  Example:
+
+  .TYPE (Red, Green, Blue)
+
+  The .TYPE definition assigns the strings RED the value 0, GREEN the
+  value 1 and BLUE the value 2. Basically .TYPE generates .EQU replacements
+  for integer expressions. For every item, the value is increased.
+  You can define a value explicit:
+
+  .TYPE (Red=1, Green, Blue=4, Black=0fh)
+
+  Here, the result would be: RED = 1, GREEN = 2, BLUE = 4, BLACK = 15.
+
+
+
+  The pre-processor generates the source code for the assembler with all
+  modules included. The pre-processor actually understands only the following
+  commands:
+
+   .EQU       : replace
+   .UCU       : target for uncommercial use only  - Dos Extender variable
+   .NB        : no break function - Dos Extender variable
+   .NM        : no message - Dos Extender variable
+   .DOSX      : select dos extender stub file
+   .SMART     : code optimization
+   .SMARTn    : code optimization
+   .INTERFACE : interface part of a DLL / OVL
+   .INCLUDE   : include another source code
+   .INCLUDEDIR: additional directory for the include files
+   .MACRO     : definition of a macro
+   .TYPE      ; multiple .EQU definitions for enumeration types.
+
+  The .EQU identifiers are all replaced, when the regular assembly begins.
+  You should not define with the .EQU directive in a conditional assembly!
+
+  With the .INCLUDE directive you can include another source file.
+  Note that the assembler includes the same file only once. Two files are
+  equal for the assembler, if the name and extension are equal.
+  You can include with the correct path:
+
+   .INCLUDE E:\PASS32\INC\DPMI.INC
+
+  And without a path:
+
+   .INCLUDE Module
+
+  The extension .ASM is added if the name is without extension.
+  Without a path, the file is searched in the current directory and
+  then in a parallel directory of the PASS32.EXE directory called \INC.
+  Usually the assembler is located in the \BIN directory, all include
+  files in the \INC directory.
+  You can define an alternative directory for include files with the
+  .INCLUDEDIR directive:
+
+   .INCLUDEDIR C:\TEST\INC
+
+  Now, Pass32 will search in this directory before searching any other
+  directory. So Pass32 will look in the current directory and then in
+  the directory defined with .INCLUDEDIR.
+
+  Unlike to C/C++, any model is included only once, so you don't need to
+  test if a module is already included!
+
+  Another powerful tool of the preprocessor is the .MACRO directive.
+  A macro is a storage for assembler commands, which can be used several times
+  in your code. A macro is a kind of subroutine. But in the opposit of a
+  procedure defined with PROC, the code inside a macro definition is directly
+  placed into your code. The best way to explain the macro method is to
+  show an example:
+
+   .MACRO Exit(ExitCode)
+      mov al,ExitCode
+      mov ah,4ch
+      int 21h
+    ENDMACRO
+
+  The usage of the macro in your code can be for example:
+
+   .CODE
+   START:
+      ...
+      Exit(3)
+   END START
+   END
+
+  This example will be expanded by the preprocessor to the following code:
+
+   .CODE
+   START:
+      ...
+      mov al,3
+      mov ah,4ch
+      int 21h
+   END START
+   END
+
+  Wherever we use the macro Exit in our code, these three instructions will
+  be expanded. We can see, that the parameter Exitcode is replaced by its
+  value. We could use for example Exit(Ah) and the result would be
+  mov al,ah / mov ah,4ch / int 21h - parameters are similar to an .EQU
+  expression textual replacements, but they are only valid inside the
+  macro.
+
+  The definition of a macro generally has the following syntax:
+
+  .MACRO name [ ( parameter [,parameter] ) ]
+  ENDM [ name ] | ENDMACRO [ name ]
+
+  You can end a macro with ENDM or ENDMACRO.
+
+  As we learned, when a macro occurs in your source, it will be replaced
+  by its definition contents. This can cause problems, when you are defining
+  labels, or data storages in your macro, because all labels or data
+  definitions will have the same name. We need the .LOCAL directive to
+  use a label locally inside a macro.The .LOCAL directive simply extends
+  a symbol name by an '@' following a macro specific hex number. This method
+  guarantees, that every label / data definition has an individual name.
+  The following example uses the .LOCAL directive to define a label:
+
+   .MACRO WRITE(stringoffs)
+       mov edi,stringoffs
+   .LOCAL @start:
+       mov dl,[edi]
+       cmp dl,0
+       je short .LOCAL @end
+       mov ah,2
+       int 21h                  ; display string char by char
+       inc edi
+       jmp .LOCAL  @start
+    .LOCAL @end:
+    ENDMACRO
+
+    .DATA
+          mesg db  'Hello, World!',0
+    .CODE
+          Write(offset mesg)
+          Exit(0)
+    END
+
+  As local only extends the label name, we must use the directive also
+  when we refer to the definition.
+
+  You can not nest macros in the definition, but you can use a macro inside
+  other macros, when the macro is already known to Pass32. The number of
+  macros in total is limited to 256 macros, the number of words in a macro
+  is limited to 256. As macros are expanded by the preprocessor, the number
+  of macros does not influenze the amount of memory for the main assembler
+  pass.
+
+  Note, that a macro definition doesn't produce code, even, if you place the
+  definition inside your code segment. Therefore, you won't get an error, as
+  long as you don't use the macro, if the macro definition is wrong.
+  Another thing is the error report: Pass32 dosen't remember the macro
+  definition in the assembler pass, so it can't display the line of the
+  error. If a macro contains an error, Pass32 reports:
+
+  Error in  Macro: <name> : <instruction>
+
+
+
+  If you want to test if a module is included, you can use the .IFM directive.
+  The .IFM directive is a part of the .IF directives.
+  The .IF directives are:
+
+   .IF   expression   ; tests an expression for unequal zero
+   .IFM  modul.asm    ; tests if a module is included
+   .IFPM              ; tests if the target is a protected mode executable
+   .IFMODEL TINY|FLAT|WIN32|WIN32 CONSOSLE|WIN32 DLL|DLL|OVL
+                      ; tests for which target platform the application
+                      ; is build.
+
+   .IFS  expr         ; tests, if expr is a string (*)
+   .IFE  expr1,epxr2  ; tests, if expr1 is equal to expr2 (*)
+   .IFR  expr         ; tests, if expr is a register (*)
+                        (AL..DH, AX..SI, EAX..ESI, CS..SS)
+   .IFR  R8 expr      ; tests, if expr is an 8 bit register  (*)
+   .IFR  R16 expr     ; tests, if expr is a 16 bit register  (*)
+   .IFR  R32 expr     ; tests, if expr is a 32 bit register  (*)
+
+   .ELSE              ; alternative assembly
+   .ENDIF             ; end of conditional assembly
+
+  (*) These directives are especially designed for the usage with macros.
+
+  All .IF directives (except .IFPM) can be used in the opposite way by
+  writing:
+
+   .IF NOT       expr
+   .IFR NOT R16  expr
+   .IFE NOT      expr1, expr2
+
+
+  With the .IFPM you can create modules for real and protected mode. You
+  can make sure that a module is only used for real mode:
+
+
+   .IFPM
+     DISPLAY    Modul Only for Real Mode!
+     .ERR       ;force an error
+   .ENDIF
+
+  The .IF directive tests if an expression is unequal to zero. You can test
+  if a variable is defined, if an .EQU definition has been made:
+
+   .IF NOT VideoBuffer
+     .DATA?
+        VideoBuffer     DB 256*1024 DUP(?)
+     .ENDIF
+
+   OVL_ERROR    .EQU    1
+
+   .IF NOT OVL_ERROR
+     call printerror
+   .ENDIF
+
+  With .IFS, .IFR and .IFE, you can write multiply functional macros.
+  An example for a multiple write string macro could look like this:
+
+   .MACRO SWriteLn(String)
+   .IFS String
+       .DATA
+          .LOCAL mesg DB String
+       .CODE
+        mov edi,OFFSET .LOCAL mesg,0
+   .ELSE
+       .IFR String
+           mov edi,String
+       .ELSE
+           mov edi,offset String
+       .ENDIF
+   .ENDIF
+      call SystemWriteLn
+   ENDMACRO
+
+  Now this macro can be called with three different types of parameters:
+
+   .DATA
+       mesg db 'Hello, World!',0
+   .CODE
+       mov eax,offset mesg
+       Swriteln(eax)
+       Swriteln(mesg);
+       Swriteln('Hello, World!');
+
+  The Macro library SYSTEM.MAC has already included this macro definition
+  for the WriteLn macro.
+
+
+
+= 4. The OVL model ===========================================================
+
+  The OVL model is a model defined for protected mode use. The idea is simple:
+  Several procedure can share the same memory; at run time you can load
+  special driver functions to adapt the software to the given hardware.
+  The first idea of course is nearly unimportant: If you can use so much
+  memory, procedures don't need to share memory. The second idea is far more
+  important: To access several music boards, graphic adapters etc. you can add
+  several different optimized OVLs to your code. You can set-up the program,
+  so that only the best fitting OVL is load and used.
+  The OVL model of the Pass32 is very simple. The OVL code is load to a given
+  offset in the code and data segment. Usually somewhere in the heap.
+  A short 256 byte long interface tells the assembler at run time where the
+  different routines are stored in memory.
+
+  This is the syntax of an OVL source:
+
+  .MODEL OVL
+  .INTERFACE
+  .ORG   50000h                 ; OVL start address in the heap
+
+     PROC FirstOVLProcedure     OFFSET      OvlProc1
+     PROC SecondOVLProcedure    OFFSET      OvlProc2
+
+  .DATA
+     Mesg  db  'OVERLAY load!',0
+  .CODE
+     OvlProc1  PROC FAR
+       mov edi,offset Mesg
+       ...
+     OvlProc1  ENDP
+     OvlProc2  PROC FAR
+
+     OvlProc2  ENDP
+  END
+
+  The .INTERFACE directive is the start of the 256 byte long OVL interface.
+  The .ORG directive defines the address where the overlay is loaded to.
+  The PROC directive defines a public procedure. This identifier is public and
+  can be called from the main program.
+  The OFFSET identifier makes a connection between the OVL procedure and the
+  public procedure identifier. The names could be the same of course.
+
+  To use an OVL, you include the OVL source interface part into your code.
+  Independent of the OVL size, the 256 byte long interface will be part of
+  the code.
+
+  A program which uses the OVL could look like this:
+
+    .MODEL FLAT
+    .INCLUDE TSTOVL.ASM
+
+    .DATA
+        ovlname      db    'TSTOVL.OVL',0
+    .CODE
+        mov esi,offset tstovl        ; OFFSET TO DATA BUFFER TSTOVL
+        mov edi,offset ovlname       ; OFFSET TO Filename
+        call initovl                 ; to initialise the OVL
+        call loadovl                 ; to load the OVL
+        call FirstOVLProcedure       ; use the OVL procedure after loading
+        call SecondOVLProcedure
+        mov ah,4ch
+        int 21h
+    END
+
+  The loadovl procedure is part of the OVLSYS.INC file, which is part of
+  the Pass32 assembler. If any overlay module is included, this module is
+  automatically included. You must make sure that the OVL is loaded.
+
+  The loadovl procedure will set the carry flag, if the OVL could not be
+  load. You can define an identifier called OVL_ERROR, the loadovl procedure
+  will then terminate the program with an error message:
+
+     OVL_ERROR         .EQU         1
+
+  The OVL interface structure has the following format:
+
+    00 - 03   loadoffset - address of the OVL
+    04 - 1F   reserved for future applications, can be used for copyright etc.
+    20 - 23   offset of the first procedure
+    24   25   selector of the first procedure
+    26 - FE   pointers of the second to 37th procedure.
+    FF        reserved.
+
+  The loadovl procedure does the following jobs:
+    - load the interface and determine the load offset
+    - load the ovl
+    - alter the pointers in the interface
+
+  The initovl procedure simply initialises all procedure calls with a
+  far return. You should run this procedure on all overlays at the
+  beginning of the program.
+
+  If procedures share the same memory, you should use the first procedure as
+  an id procedure, which tells the program which overlay is load at the
+  moment.
+
+= 5. The DLL model ===========================================================
+
+  The DLL model is a model defined for protected mode use only. It's idea
+  is similar to the OVL model, but far more effective. A DLL is a library
+  file containing several procedures, which can be load at run time. The
+  library is no part of the program code segment; a DLL therefore does not
+  limit the heap memory for the program.
+  You can use single procedures of a DLL and you can write whole programs
+  as DLL to use the memory more efficient:
+  If you want to write a program which needs for example 8 MByte memory and
+  you want to make sure that your program can even run if only 3 or 4 MByte
+  memory are available, you can split your program in different DLLs and
+  a global data area. If the computer offers enough memory the program
+  can load all DLLs at the beginning. If not, it can for example hold only
+  one DLL in memory at the same time.
+  Besides, a DLL is usually stored in real memory, if enough real memory is
+  available.
+  A DLL again consists of a 256 byte long interface and its code. The
+  program entry of the DLL is usually at the offset 00000100h. The first 100h
+  bytes represent the DLL interface.
+
+  The first 20h bytes are reserved for the DLL:
+
+   OFFSET LENGTH DESCRIPTION
+     00     2    DS : Value of the DLL Data Descriptor
+     02     2    ES : Video Selector
+     04     2    FS : Zero Selector
+     06     2         Real Mode File Buffer Selector
+     08     2         Real Mode File Buffer Segment Value
+     0A     4         DLL Memory Size
+     0E     4         DLL Memory Handle
+     12     2    CS : Value of the DLL Code Descriptor
+     14     4         DLL Linear Memory Address
+     18     2    DS : Value of the Main Program Data Descriptor
+     1A     6    reserved
+
+   You can load those data in the DLL via CS. Note that when the DLL is
+   called usually DS is the data descriptor of the main program. You
+   can either use this descriptor to access global data, or save the
+   descriptor and load the DLL data descriptor from CS:[0]:
+
+
+     push ds
+     mov ds,word ptr CS:[0]         ; set DLL - DS
+     ...
+     pop ds
+
+  This is the syntax of a DLL source:
+
+  .MODEL DLL
+  .INTERFACE
+
+     PROC MainDLLProcedure      OFFSET      DLLMain
+     PROC FirstDLLProcedure     OFFSET      DLLProc1
+     PROC SecondDLLProcedure    OFFSET      DLLProc2
+
+  .CODE
+     DLLMain PROC FAR
+       ...
+     ENDP DLLMain
+     DLLProc1  PROC FAR
+       push ds
+       mov ds,word ptr CS:[0]         ; set DLL - DS
+       mov edi,offset Mesg
+       ...
+       pop ds
+       ret
+     DLLProc1  ENDP
+
+     DLLProc2  PROC FAR
+       ...
+     DLLProc2  ENDP
+  END
+
+  The .INTERFACE directive is the start of the 256 byte long DLL interface.
+  The PROC directive defines a public procedure. This identifier is public and
+  can be called from the main program.
+  The OFFSET identifier makes a connection between the original DLL procedure
+  and the public procedure identifier. The names can be the same, of course.
+
+  The use of a DLL is the same as the use of an overlay: you include the DLL
+  interface part into your code.
+  Independent of the DLL size, the 256 byte long interface will be part of
+  the code.
+
+  A program which uses the DLL example from above could look like this:
+
+    .MODEL FLAT
+    .INCLUDE TSTDLL.ASM
+
+    .DATA
+        DLLname      db    'TSTDLL.DLL',0
+    .CODE
+        mov esi,offset tstdll        ; OFFSET TO DATA BUFFER TSTDLL
+        mov edi,offset dllname       ; OFFSET TO Filename
+        call initDLL                 ; to initialise the DLL
+        call loadDLL                 ; to load the DLL
+        call DLLMAIN                 ; use a DLL procedure after loading
+        call SecondDLLProcedure
+        ...
+        call FirstDLLProcedure
+        mov esi,offset tstdll        ; OFFSET TO DATA BUFFER TSTDLL
+        call FreeDLL                 ; to free the DLL
+        ...
+        mov ah,4ch
+        int 21h
+    END
+
+  The procedures LoadDLL, InitDLL and FreeDLL are part of the DLLSYS.INC file,
+  which is part of the Pass32 assembler. If any DLL interface is included,
+  this module is automatically included.
+  You must make sure that the DLL is loaded or at least initialised, before
+  using any DLL procedure.
+
+  The loadovl procedure will set the carry flag, if the DLL could not be
+  found. You can define an identifier called DLL_ERROR and the loadDLL
+  procedure will terminate the program with an error message:
+
+     DLL_ERROR         .EQU         1
+
+  The DLL interface structure has the following format:
+
+    00 - 1F   reserved for the data structure above
+    20 - 23   offset of the first procedure
+    24   25   selector of the first procedure
+    26 - FE   pointers of the second to 37th procedure.
+    FF        reserved.
+
+  The first argument for the LoadDLL procedure is the offset to the
+  zero terminated filename string in the EDI register. The second
+  parameter is the offset to the interface structure in the ESI register.
+  The interface structure has always the same name as the filename of
+  the DLL source file without extension. If your DLL source file is
+  called TSTDLL, the interface structure has the name TSTDLL.
+
+  Note, the LoadDLL procedure will search in the current directory and in
+  the path for the DLL filename.
+
+  The InitDLL and the FreeDLL procedure both need the second parameter
+  TSTDLL.
+
+  If you are good at assembler you can use or even modify the DLLSYS.INC
+  or OVLSYS.INC file to create your own DLL/OVL handling.
+
+
+
+= 6. Debugging and Code Optimization =========================================
+
+  When you already wrote your first 32 bit program, you'll know,
+  that debugging in protected mode is hard. The Turbo Debugger from
+  Borland, Inc. for example hangs when the processor is switched
+  into protected mode.
+  The current version of the Pro32 Dos Extender does not support
+  debugging, so we need a special method for the debugging.
+  The easiest method is to include the debugger in your program -
+  and this is exactly,  what the .DEBUG directive does:
+
+  When the pre-processor discovers a .DEBUG directive, he appends the
+  DEBUG.INC (TINY) or the DEBUG32.INC (FLAT/DLL(OVL) module to the source
+  code. Every instruction which is debugged is extended to the form:
+
+    PUSH DebugInfoOffset
+    CALL DebugProc
+    [ instruction ]
+
+  The 16 bit debugger (DEBUG.INC) is a only small utility, which displays the
+  contents of all registers, segment registers and flags. The debugger waits
+  for a  keystroke  before the next instruction is executed. You can stop the
+  debugging process by [CRTL]+C and return to DOS/WINDOWS.
+  As there are so many 16 bit real mode debugger I had no intention to
+  create another one.
+
+  The protected mode debugger (DEBUG32.INC) offers a lot more functions.
+  Here is a list of all commands:
+
+  key         description
+  [SPACE]     Execute next instruction. The program is executed until the next
+              debugged instruction occurs.
+  [ESC]       Run until the next debugged RET/RETF instruction occurs
+  [RETURN]    Run until the next debugged JMP/CALL (INC/DEC) instruction occurs
+  [BCK SPC]   Run until the breakpoint occurs
+  [a]         Display Hexdump at [EAX]
+  [b]         Display Hexdump at [EBX]
+  [c]         Display Hexdump at [ECX]
+  [d]         Display Hexdump at [EDX]
+  [e]         Display Hexdump at [EDI]
+  [f]         Display Hexdump at [ESI]
+  [h]         To display hexdump every time (hold)
+              note: A hexdump beyond the MEMSIZE offset produces 0ff - to
+                    avoid an exception by the debugger.
+  [SHIFT]+[a] to alter the value of the EAX register
+  [SHIFT]+[b] to alter the value of the EBX register
+  [SHIFT]+[c] to alter the value of the ECX register
+  [SHIFT]+[d] to alter the value of the EDX register
+  [SHIFT]+[e] to alter the value of the EDI register
+  [SHIFT]+[f] to alter the value of the ESI register
+              note: altering a register value might force an exception,
+                    if the register is used as index or base register.
+                    You can enter a new hex value. The resulting value
+                    for the register is the displayed value. If the former
+                    value of EAX = 12345678h, and you alter only the first
+                    two digits to zero, the result is 00345678h. Pressing
+                    [ESC] during the input restores the old value. The input
+                    is finished either with [RETURN] or when all 8 digits
+                    are entered. During the input only the keys 0..9, a..f,
+                    A..F, [ESC],[BCK SPC],[RETURN] are valid.
+
+  [crs up]    decrement hexdump address by 10h bytes
+  [crs dwn]   increment hexdump address by 10h bytes
+  [pgup]      decrement hexdump address by 100h bytes
+  [pgdwn]     increment hexdump address by 100h bytes
+  [F5]        to display program's output screen
+  [CRTL]+[C]  to abort the debugging session
+  [CRTL]+[B]  to set a breakpoint at the following address -
+              note that only one breakpoint may be set.
+              The breakpoint is marked by an '*' before the debug line
+              information.
+
+  When the program runs with [ESC],[RETURN] or [BCK SPC], you can interrupt
+  the execution by hitting any key.
+
+  A 'debugged instruction' is an instruction between the .DEBUG and
+  the .NODEBUG directive.
+
+  Within the .DEBUG and the .NODEBUG directive you can go step by step
+  through the program. If you want to set a breakpoint at a certain
+  instruction, you can set the .DEBUG here; either around a single
+  instruction or around a group, a procedure, etc.
+
+  To generally debug a source file you can use the option -D.
+
+  The debugger supports video mode swapping. If the program to debug
+  runs for example in graphics mode, you can enable video mode swapping by
+  setting the debugvideo identifier with the .EQU directive:
+
+    debugvideo     .EQU       1
+
+  How can I display the source code of my program during debugging?
+
+  The module DLOADS.INC is able to load the debug file format.
+  The procedure DISPLAYSDEBUGSOURCE loads and shows the debug source file
+  (program file name with the extension .DMP) at the offset address in EDI.
+
+  The -MM or -DMP option produces a debug file with the extension .DMP.
+  This file contains the whole source code (including all submodules), with
+  the offset address for every line. The output could look like this:
+
+   00000000: ;Pass32 DEBUG FILE (c) 1996 by Dieter Pawelczak
+   00000000:   .MODEL TINY
+   0000010C:   .DATA
+   0000010C:        HelloMesg        db      'Hello,World',10,13,'$'
+   0000011A:   .CODE
+   00000100:   START:
+   00000100:        mov dx,OFFSET HelloMesg  ; offset of the text string
+   00000103:        mov ah,9                 ; print string function number
+   00000105:        int 21h                  ; dos call
+   00000107:        mov ah,4ch               ; terminate function number
+   00000109:        int 21h                  ; dos call
+   0000010B:   END START                     ; marks the entry procedure of the program
+   0000010B:
+
+  The first 8 bytes of a line contain the hexadecimal offset of the line.
+  This offset information is analysed by DLOADS.INC.
+
+  A combination of the -MM option and the -D option (or the equivalent
+  .DEBUG directive) automatically adds DLOADS.INC to the source code.
+  The debugger realizes the presents of DLOADS.INC and displays - if
+  possible the debug source file. (The debug source file must be in the
+  current directory, when the first instruction is debugged!)
+
+  Try for example to debug the DISPLAY example (see part 2 for further
+  information) with the command: Pass32 DISPLAY -mm -d
+
+  DLOADS.INC loads the whole debug source file into a buffer. This buffer
+  is 256 Kbytes in size. If your debug source file is above 256 KBytes, you
+  must alter the buffer in DLOADS.INC:
+
+        DebugFILEBUFFER   DB 256*1024 DUP(?)
+
+  You can use the debugger as well in DLL or OVL files.
+  When displaying the source code is enabled in combination with the OVL
+  model, you must make sure that the main program allocates enough memory.
+  The overlay will need about 260 KBytes more heap memory because of the
+  source code file buffer.
+  You can test for example debugging the OVLTEST demo (see part 2), with
+  assembling the overlay TESTOVL with the debug option:
+
+    Pass32 testovl -ovl -d -mm
+    Pass32 ovltest -uc
+    ovltest
+
+  You can test debugging an DLL source as well...
+
+  The advantage of the internal debugger is of course, that you can write
+  your own debugger, or alter the given debugger.
+  If you want to alter the debugger, you should save DEBUG32.INC under
+  another name and alter this file. To use this special debugger, you
+  can use the .DEBUGFILE directive:
+
+   .DEBUGFILE Filename
+
+  Instead of DEBUG32.INC / DEBUG.INC the filename (standard extension .ASM)
+  is used as debugger. The debug module is appended when a .DEBUG directive
+  or the option -D is used (.DEBUGFILE itself does not append, but names the
+  debugger module). Your debugger procedure must be called DEBUGPROC and must
+  save and restore all registers and flags!
+
+
+  If you want to use an external debugger (for example the Pro32 Debugger
+  PRODB32.EXE), you should assemble with the -MM or -DMP option. The external
+  debugger is then able to load the debug file, and display the source code,
+  add watches etc.
+
+
+  If your program is producing an exception, you can run the program
+  with the .CORE directive. The program displays the exception and saves
+  the current memory contents of the code+data  segment under the file name
+  CORE.COR in the current directory.
+  You can analyse the core file with a disassembler (for example DISS32),
+  a debugger (for example PRODB32) etc.
+  Note that the segment attribute is 32 bit!
+  The disassembler Diss32 Version 2.1 is part of the Pass32 Assembler Package.
+  It supports nearly all Pass32 instructions, and can be helpful to analyze
+  the core file.
+  You can define a larger core, if you want to examine the heap memory as
+  well with .CORE size. The Size should be a decimal value and presents the
+  core size in Kbytes. Make sure that the core size is equal or below the
+  main memory size!
+
+  You can use the -C option to enable the core dump function. With the
+  -CORE:size option you can alter the size of the core (See ProSet.DOC
+  for more information).
+
+  To gain general information of the assembled program, we can create a
+  map file: We assemble with the -M option. A map file shows all symbols
+  which had been created during the assembling. A typical map file could
+  look like this( eg. HELLO1.MAP):
+
+   Pass32 MAP FILE (c) 1996 by Dieter Pawelczak
+
+   SOURCE     :HELLO1.ASM
+   DESTINATION:HELLO1.COM
+
+   PROGRAM TYPE DOS TINY
+
+   SEGMENT TYPE CODE
+   ENTRYPOINT :00000100
+
+   OFFSET    TYPE       NAME
+
+   00000100  LABEL      START
+
+   SEGMENT TYPE DATA
+
+   OFFSET    TYPE       NAME
+
+   0000010C  DATA       HELLOMESG
+
+
+
+
+
+
+
+  With the directive .SMART, .SMART1, .SMART2, .SMART3 or the equivalent
+  options  -o, -os, -or, -oj, you can enable code optimization.
+  Code optimization covers two main aspects: optimization of the
+  instructions and optimization of the linker.
+
+  Some optimizations are always done: For example if you work with the
+  (E)AX register, the faster and shorter (E)AX instruction are used,
+  when possible. Relative 8 bit jump instructions are used when possible.
+
+  With .SMART3, or the option -oj, Pass32 optimizes the jump instructions:
+  Pass32 tries to assemble all jump instructions as short jump instructions,
+  even if the target is unknown. This is exactly the optimization, a user
+  can do with the SHORT directive...
+
+  With .SMART2, or the option -or, Pass32 optimizes the register instructions:
+
+    - any register immediate load with a zero constant will be replaced
+      by the shorter register XOR register instruction.
+    - any immediate add,sub,cmp etc. with 16 or 32 bit registers/
+      memory locations and an immediate byte value will be replaced by the
+      shorter rm16, imm8 / rm32, imm8 instruction.
+    - any instruction like MOV AL,AL will be removed completely
+      (such an instruction might appear, when using macro parameters)
+
+  The .SMART1 (-o1 option) optimization excludes all procedures from the
+  linker, which are not explicitly called in the source file, addressed via
+  the OFFSET directive or included with the .PUBLIC directive.
+
+  The .SMART directive (-o option) includes all other optimizations .SMART1,
+  SMART2. and .SMART3.
+  Furthermore, with .SMART Pass32 scans through the source file (similar to a
+  debugger) and excludes all procedure which are not called or addressed
+  via the OFFSET directive in the assumed course of the program at
+  run time. This is the best optimization, because only actually used
+  procedures remain part of the program.
+
+  Four main rules for the use of .SMART or .SMART1:
+
+  - you must define every procedure correctly between the PROC and ENDP
+    directive,
+  - you should not use the optimization until the unoptimized code is
+    assembled correctly,
+  - you should not optimize and debug at the same time. The optimize function
+    tries to shorten the code, whereas the debug function expands the code
+    (actually, the debug option even disables some optimizations)
+
+
+  The optimization with .SMART and .SMART1 (-o and -o1) might take until 30%
+  longer than usual assembling, because of a third pass.
+  The other optimizations with .SMART2 and .SMART3 (-or and -oj) might take
+  1-2% longer.
+
+
+
+==============================================================================
+
+
+                              *       *       *
+
+
+  These are the general principles of the Pass32 Assembler. Part 2 is
+  a collection and a description of protected mode assembler sources.
+  In the appendix there is a description of all Pass32 program arguments,
+  error and warning messages.
+
+
+
+
+
+
+
+=====================================================================
+         ********                   ****             ******
+          **    **                    **           ***   ***
+          **    **  *****     ** ***  ****               ***
+          *******       **     ***    **               ***
+          **        ******     **     **             ***
+          **       **   **     **     **           ***
+         ****       ***** **  ****     ***         *********
+=====================================================================
+
+  Contents:
+
+  1.  First Steps In Assembler With Flat and Tiny Model
+  2.  Basic Information For Protected Mode Programming
+  3.  More Protected Mode Programming and DPMI
+  4.  Co-Processor programming
+  5.  Writing A DLL Library
+  6.  A short chapter on OVL writing
+  7.  Another protected mode demo
+
+
+
+                             Chapter 1
+
+========== First Steps In Assembler With Flat and Tiny Model =================
+
+  I want to start as all assembler, C or Pascal manuals start - with a simple
+  Hello-World example. This will be the only real mode example, but I think
+  you can create any real mode program, if you read Part 1 and understand
+  this example: (Hello1.ASM)
+
+  .MODEL TINY
+  .DATA
+       HelloMesg        db      'Hello,World',10,13,'$'
+  .CODE
+  START:
+       mov dx,OFFSET HelloMesg  ; offset of the text string
+       mov ah,9                 ; print string function number
+       int 21h                  ; Dos call
+       mov ah,4ch               ; terminate function number
+       int 21h                  ; Dos call
+  END START                     ; marks the entry procedure of the program
+  END
+
+  You must assemble the program with "PASS32 HELLO1 -t". The -t option is
+  used in combination with the TINY model. Actually the -t option is a
+  linker option and tells PASS32 to create a .COM file.
+  The output of the assembler tells you about a correct assembling:
+
+  Pass32-Assembler (c) 1996 by Dieter Pawelczak
+
+  Assembling:HELLO1.ASM
+
+  Pass: 1
+  Pass: 2
+
+  Linking
+
+  Total Source Lines:13
+  Total Code Bytes  :12
+  Total Data Bytes  :14
+  Total Bytes       :26
+  Total instructions:5
+  Total Time        :0.27
+  Output File       :HELLO1.COM
+
+  If you run Hello1 you will get the output "Hello,World". The same example
+  in protected mode could look like this (HELLO2.ASM):
+
+  .MODEL FLAT
+  .DATA
+       HelloMesg        db      'Hello,World',0
+  .CODE
+       mov edi,OFFSET HelloMesg ; offset of the text string
+       call systemwriteLn       ; call a protected mode library function
+       mov ah,4ch               ; DPMI terminate function
+       int 21h                  ; call DPMI function
+  .include system.inc           ; include SYSTEM.INC (contains systemwriteLn)
+  END
+
+  You assemble the demo with PASS32 HELLO2. If you run Hello2, you will
+  get the same output, but now from protected mode!
+
+  Let's take a closer look at the example:
+
+  The first line .MODEL FLAT defines the FLAT memory model. This is the
+  standard memory model for the Pro32 Dos Extender. Data and Code are in the
+  same segment. The Assembler automatically links the Pro32 Dos Extender to
+  the program.
+
+  The .DATA directive tells the assembler the start of data. We can
+  define variables and strings here.
+  The next line is the definition of a text string. The first item
+  is the identifier - the name of the variable: HelloMesg.
+  The next directive defines the size of each element of the identifier.
+  An ascii text string consists of bytes, each element therefore needs
+  1 byte. The text string is between quotation marks. For each letter
+  a byte is allocated and initialized with the ascii code. As you can
+  see, you can add more bytes with commas.
+
+  With the .CODE directive, we tell the assembler the start of our code
+  segment. We can use a semicolon to add comments to our code. The comment
+  ends at the end of the line.
+
+  The .INCLUDE directive tells the assembler to include another assembler
+  file at the current cursor position. The assembler file may contain data,
+  functions, procedures and may even include again another module.
+  Any module is only included once, too avoid duplicate data or code
+  definitions.
+  If you do not add an extension to your file name, the file name is extended
+  with .ASM. The Assembler searches the following directories for the module:
+   - The current directory, from which Pass32 has been called
+   - The subdirectory \INC of the Pass32 directory
+   - The parallel directory \INC of the Pass32 directory
+
+  Usually the Assembler is located in the \BIN directory, include files
+  are located in the parallel directory \INC.
+
+  You should try the following assembler function: PASS32 HELLO2 -o
+  As we see the assembler uses a third pass to optimize the code:
+
+  Pass32-Assembler (c) 1996 by Dieter Pawelczak
+
+  Assembling:HELLO2.ASM
+
+  PrePass
+  Pass: 1
+  Pass: 2
+
+  Linking
+
+  Total Source Lines:508
+  Total Code Bytes  :248
+  Optimized Code    :81%
+  Total Data Bytes  :98
+  Total Bytes       :10058
+  Total instructions:84
+  XMS required      :1048576
+  Total Time        :0.83
+  Output File       :HELLO2.EXE
+
+  The code optimization includes only procedures and functions which are
+  explicitly called. As we use only one function from the SYSTEM.INC file,
+  all other functions won't be part of the code. Therefore the high
+  optimization factor!
+
+  Try other Pass32 Arguments for example:
+
+  PASS32 Hello2 -mem:8192
+  PASS32 Hello2 -uc -nm
+
+  As we can see from these examples, there's no big difference between the
+  DOS .COM format and the Pro32 FLAT memory model. You could say, the Pro32
+  FLAT memory model is a huge .COM format, with 32 bit offsets instead of
+  16 bit. When you start writing protected mode programs, you should think
+  of this model and you can't go wrong!
+
+  As Pro32 does not support extended DOS function, we cannot directly use
+  DOS functions which use segment registers. With the include file DOSX.INC
+  most DOS functions are extended. As DOS can not access data above 1 MByte,
+  all data is copied and buffered in the DOS memory. The third example is
+  HELLO3.ASM - it uses the extended DOS function 9h to display the message:
+
+  .UCU
+  .NM
+  .INCLUDE DOSX.INC       ; include extended DOS library ...
+
+  .DATA
+     mesg      db         'Hello, World - with extended DOS!',13,10,'$'
+  .CODE
+  START:
+     mov edx,OFFSET mesg  ; offset to text string
+     mov ah,9h            ; extended dos function string to standard output
+     int 21h              ; dos call
+     mov ax,4c00h
+     int 21h              ; terminate
+  END START
+  END
+
+  A list of all extended DOS function can be found in the DOSX.DOC file.
+
+
+
+
+
+
+                         Chapter 2
+
+====== Basic Information For Protected Mode Programming ======================
+
+
+  Before we go on with protected mode programming, we need to learn some
+  basic ideas of the Pass32 assembler. How does the program starts, where
+  is the program in memory?
+
+  The Pro32 Dos Extender loads the program into the XMS Memory.
+  The execution of the program is therefore somewhere beyond 1 MByte. We can
+  define the program entry point with the END directive at the end of our
+  code:
+
+  .CODE
+  START:
+     ; Begin of our Main program
+  ...
+  END START
+  END
+
+  The directive END [LABEL|PROCEDURE] tells the assembler the program entry
+  point. Usually the program starts at the first .CODE instruction. If
+  you include source code with the .INCLUDE command, you can not be sure,
+  where the first .CODE instruction is. A typical pitfall would be this:
+
+  include system.inc
+  .CODE
+  START:        ; !!! START is not the program start, because system.inc
+                ; !!! uses already code. You must use the END START
+                ; !!! directive to make START the entry point.
+  END
+
+  Such a program usually hangs under DOS and forces an exception under Pro32.
+  If we need a procedure, which is called before our real program starts,
+  for example, if we want to install an exception handler, we can force
+  Pass32 to generate code before the original program starts.
+
+  The END [LABEL|PROCEDURE] directive produces the assembler instruction
+
+    jmp [LABEL|PROCEDURE] at offset 00000100h.
+
+  If we define a procedure with the attribute START, for example
+
+  PROC INIT0 START
+    ...
+  ENDP
+  PROC INIT1 START
+    ...
+  ENDP
+
+  Pass32 generates the following assembler instructions at offset 00000100h:
+
+    call INIT0
+    call INIT1
+    jmp [LABEL|PROCEDURE]
+
+  But be careful when using such procedures: We will learn, that at the
+  program start all selector registers have defined contents. Such a start
+  procedure should not alter the selector register contents!
+
+  Pro32 offers some more information to our program:
+
+  At the program start, we find the segment / selector registers with the
+  following information:
+
+         CS:    32 bit High Code Selector = Our program code segment
+         DS:    32 bit High Data Selector = Our program data segment
+         ES:    16 bit Video Selector (points to b800:0000 / b000:0000 )
+         FS:    32 bit Zero Selector (LIMIT: FFFFFFFF);
+         GS:    32 bit Zero Selector (LIMIT: FFFFFFFF);
+         SS:    32 bit Stack Selector (usually 32K)
+
+  We can access the video memory for example with
+
+  .CODE
+     mov es:[0],'A'          ; write an 'A' to top of the screen
+
+  We can access the bios data area with
+
+  .CODE
+     mov ax,FS:[41Ah]       ; read the address of the Keyboard buffer
+     mov KeyboardBuffer,ax  ; this would be in real mode 0040:001A
+
+  The segment registers are used to access memory locations with a different
+  basis address. The 'selectors' FS and GS point to the basis address 0.
+  You can address the whole memory with this selector. But use with care!!!!
+
+  We can access the video screen via FS
+
+  .CODE
+     mov FS:[0b8000h],'A'
+
+  DS and CS have the same basis address. Note that just like in the TINY
+  model, code and data are in the same segment. We cannot write into the
+  code segment with CS, this would lead to a general exception. But
+  we can read from CS and write with DS.
+
+  The DS descriptor is the default descriptor. Every memory access without
+  a segment definition refers to the DS segment:
+
+     mov [25h],AX         ; is same as mov DS:[25h],AX
+
+  The stack segment is placed in another memory location, so that stack
+  code and data never collide.
+
+  In case our DS or ES register will be destroyed, Pro32 offers a constant
+  data area at the begin of our code segment. The first bytes of our code
+  segment contain the following data:
+
+      OFFSET    SIZE       TYPE
+        0        2         DSEG - Selector   (initial DS)
+        2        2         Video - Selector  (initial ES)
+        4        2         Zero - Selector   (initial FS,GS)
+        6        2         RealMode File Buffer - Selector (32 KByte)
+        8        2         RealMode File Buffer - Realmode Segment
+        A        4         Value of MainMemory  (in Bytes)
+(*)     E        1         Flag, if Windows is active (1=YES, 0=NO)
+(*)     F        1         Flag, if DPMI handled by Pro32 (0=Pro32, 1=other)
+        2C       2         Selector to DOS environment
+
+(*) available with Pro32 Version 1.47 and newer versions.
+
+  You can access each of these data via CS:
+
+  .CODE
+     mov ax,CS:[2]
+     mov es,ax            ;restore es value
+     mov ax,CS:[4]
+     mov fs,ax            ;restore fs value
+     mov gs,ax            ;restore gs value
+     mov ax,CS:[0]
+     mov ds,ax            ;restore ds value
+     cmp byte ptr cs:[0eh],1
+     je Windows
+     mov eax,cs:[0AH]
+     mov eax,MEMSIZE
+
+  The predefined variable identifier MEMSIZE points to CS:[0AH]. The last two
+  examples are equivalent!
+
+  The real mode file buffer selector is a 32 KByte buffer placed in real mode
+  memory. You can use this buffer for DOS, BIOS or other real mode functions.
+  The real mode file buffer segment is the correspondening real mode segment
+  value. Note, that you must use this value for real mode functions, in
+  protected mode you must use the selector value!
+
+  CS:80h and the following bytes are a copy of the parameter line in the
+  PSP. The following example (TESTPARA.ASM) reads all parameters from the
+  parameter line and displays the parameters on the screen. At the beginning
+  we want to clear the screen. With 32 bit addressing, and the video selector
+  in ES, this can be done very fast (TESTPARA.ASM):
+
+     mov eax,17201720h        ; Attribute = 17 (blue/gray), Character = 20 (space)
+     mov ecx,(80*25*2)/4-1    ; ecx = (size of screen memory) / 4
+   clearscreenloop:
+     mov ES:[ecx*4],eax       ; write 4 bytes into screen at once
+     loop clearscreenloop
+
+  To analyse the parameter line we use the procedure GetParamStr (SYSTEM.INC).
+  The procedure counts the parameters in the parameter line and replaces
+  any white space by 0. As argument you give the parameter number in
+  AL, if the parameter exist, you'll get in EDI the offset to a zero
+  terminated string (part of the parameter line), otherwise you'll
+  get the number of parameters in AL. At the beginning, we check
+  how many parameters there are(TESTPARA.ASM):
+
+     xor eax,eax
+     mov al,255               ; maximum of parameters
+     call getparamstr
+     mov paramnumber,al       ; now in AL (EAX) the number of parameters
+     cmp al,0
+     je NoParameters
+     mov edi,Offset paramstr
+     call mathtostring        ; The integer Number in EAX will be converted
+                              ; to a zero terminated string (SYSTEM.INC).
+
+  Depending on the number of parameters, we either display all parameters
+  on the screen, or we display the message that there was no parameter.
+  For printing we use the systemprint procedure from SYSTEM.INC. The
+  procedure gets as parameters the offset of the string, the colour and
+  the position on the screen. This procedure again uses the ES video
+  selector. As this procedure does not alter the cursor position, we
+  first set the cursor position to the last line of the output.
+  We can use the bios function 02h of int 10h to set the cursor. This is
+  a real mode function, but as this real mode function does not use
+  a (real mode) segment register as parameter, we can call the procedure
+  directly(TESTPARA.ASM):
+
+     cmp ParamNumber,24          ; can display only 24 parameters
+     jb LessThan24Lines
+     mov ParamNumber,24          ; if more than reduce parameters to 24
+   LessThan24Lines:
+     xor dl,dl                   ; DL = X - Pos = 0 = column 1
+     mov dh,ParamNumber          ; DH = Y - Pos = ParamNumber = line
+     xor bh,bh
+     mov ah,02
+     int 10h                     ; bios set cursor function
+
+
+  Before the END directive we use .INCLUDE SYSTEM.INC to include the
+  SYSTEM.INC assembler file.
+
+  We can now assemble and link the demo file with PASS32 TESTPARA.
+
+  The demo file DISPLAY.ASM shows again the use of the PSP to read
+  information from the parameter line. The first parameter to the
+  program is a file name (ascii file!), which will be displayed
+  character by character. The demo uses the LoadFile procedure from the
+  IO.INC file. This procedure needs two arguments: the offset to
+  the file name in EDI and the offset to where the file will be load
+  in ESI. It returns the file length in EAX, if the file is not found,
+  the Carry Flag is set. The file loading looks like this (DISPLAY.ASM)
+
+     mov al,1
+     call getparamstr                   ; check the first parameter
+     jc NoParameters                    ; no parameter found
+     mov esi,LASTDATA                   ; First Available Free Heap
+     call Loadfile                      ; load ParamStr(1)
+     jc FileNotFound                    ; file not found
+
+  After a correct loading of the file into the heap memory of the program,
+  We can display each byte from the file with the following code:
+
+     mov ecx,eax                        ; Number of Bytes
+     mov edi,LastData                   ; First Available Free Heap
+  DisplayLoop:                            ; = location of the file contents
+     mov dl,[edi]
+     mov ah,2
+     int 21h                            ; Dos display function
+     inc edi
+     loopd DisplayLoop                  ; note, we must use ECX to display
+                                        ; files longer than 64K!!!
+
+  We can assemble DISPLAY.ASM with PASS32 DISPLAY.ASM -UC and test our demo
+  file. The result is similar to the Dos TYPE function!
+
+
+
+
+
+
+                         Chapter 3
+
+=========== More Protected Mode Programming and DPMI =========================
+
+
+  The DPMI is the interface our Dos Extender provides us to the operation
+  system, independent if we are under DOS, Windows, Linux, etc. I want to
+  explain some DPMI functions while we start creating our first protected
+  mode graphic module. The module has the same format as any assembler source.
+  We name the module GRAPH.INC to demonstrate the difference between an
+  program source and a module source.
+
+  I want to start with the InitGraph Procedure. This procedure should
+  initialize the graphic mode, set up a new descriptor for the graphic
+  memory, install a new (user) defined graphic palette and get the
+  address for the internal character ROM. As we assume a real mode
+  graphic bios, you certainly see that we need a lot of real mode
+  procedures to get the job one.
+
+  To use the DPMI we can include the DPMI.INC file. The file contains
+  a data definition field for the communication with real mode. This field
+  is a 52 byte long field, where real mode registers, segment register,
+  real mode flags etc are stored. These register storage are simply
+  called intedi, inteax, intes etc, because they usually are used with a
+  real mode int instruction.
+
+  Let us first include the graphic palette into the graph library.
+  The palette is stored in the file graph.pal. We can include this
+  binary file with the .LOADBIN directive. The .LOADBIN is similar
+  to the .INCLUDE directive, it includes a binary file at the
+  current offset in the code segment. As we want to know the offset
+  of our palette, we define a label, before we include the palette
+  (GRAPH.INC):
+
+    .CODE
+    .PUBLIC colorpalette:          ; declare label as public
+    .loadbin graph.pal             ; load VGA Palette into program file
+
+  We can now address the palette via the offset: OFFSET colorpalette.
+  When we call the real mode bios to use our graphic palette, we must copy
+  the palette first to real mode. This is always the problem when using
+  real mode procedures. We should therefore try to use as less as possible
+  real mode functions!
+  To copy our palette to a real mode area, we use the File Buffer Area
+  (a 32 KByte free data area in real mode)(GRAPH.INC):
+
+    Initgraph PROC NEAR
+                                  ; Copy Colorpallete Into DOS Memory
+      mov ax,[6]                  ; Real Mode File Buffer Selector
+      mov es,ax
+      mov edi,offset colorpalette ; access the colorpalette
+      mov ecx,84                  ; number of entries / 4
+    INIT@PALLOOP:
+      mov eax,[edi+ecx*4]         ; make full use of 32 bit register and memory
+      mov es:[ecx*4],eax          ; copy to real
+      loop INIT@PALLOOP
+      mov eax,[edi]               ; copy the first 4 bytes as well
+      xor edi,edi
+      mov es:[edi],eax
+
+  After we initialized the graphic mode, we can install our own palette
+  (GRAPH.INC):
+
+      mov ax,13h
+      int 10h                       ; init 320x200x256 Color Mode
+
+  To install the palette, we use the real mode function AX=1012h of the
+  int 10h. But how can we use a real mode segment in protected mode?
+  The only possible ways are to load the segment registers in normal
+  register, like all DPMI functions, or to store the segment register
+  value in a data variable. As we defined a data buffer for real mode
+  DPMI calls, we can use this buffer. At first we must make sure, that
+  ES:EDI points to the buffer, than we can store all registers in the
+  buffer as we like them in real mode(GRAPH.INC):
+
+      mov ax,ds                     ;SetPalette
+      mov es,ax                     ; ES = DS !!!
+      mov edi,offset intedi         ; EDI = OFFSET of Data Field
+      mov inteax,1012h              ; BIOS function AX=1012h
+      mov intebx,0                  ; BX = first palette register
+      mov intecx,112                ; CX = 112 colors total
+      mov intedx,0                  ; DX = Offset of the palette
+      mov ax,[8]                    ; Real Mode Segment To File Buffer
+      mov intes,ax                  ; ES = Real Mode Segment of the palette
+      mov ax,300h                   ; DPMI Function 0300h: Call Real Mode Int
+      xor cx,cx                     ; No parameters on the PM Stack
+      mov bx,10h                    ; Interrupt Number, BH must be 0
+      int 31h                       ; call DPMI function
+
+  It is a few instruction longer and a bit more confusing, but it works:
+  The DPMI calls int 10h in real mode with our parameters. We could read
+  the return parameters as well from this data field.
+  Our next problem will be to get the address of the video character ROM.
+  We need as return parameters the ES register (Segment) and the BP (OFFSET)
+  register. Again, we can use the data field and the DPMI function 0300h
+  (GRAPH.INC):
+
+     mov ax,ds
+     mov es,ax
+     mov edi,offset intedi         ; make sure ES:EDI points to our structure
+     mov inteax,1130h              ; Get Offset of BIOS CHAR ROM
+     mov intebx,300h
+     mov ax,300h                   ; DPMI Function 0300h: Call Real Mode Int
+     xor cx,cx                     ; No parameters on the PM Stack
+     mov bx,10h
+     int 31h                       ; call real mode int 10h Function 1130h
+     xor eax,eax
+     xor ebx,ebx
+     mov ax,intes                  ; ax = real mode ES
+     mov bx,word ptr intebp        ; bx = real mode BP (intebp = EBP = dword!)
+     shl eax,4
+     add eax,ebx                   ; calculate linear address (Segment+Offset)
+     mov RomFont,eax               ; save address of ROM character set
+
+  The InitGraph procedure is now nearly finished. Our last thing to do is to
+  create a selector to access the graphic memory(GRAPH.INC):
+
+     mov ax,2                      ; create real mode selector
+     mov bx,0a000h                 ; for graphic screen
+     int 31h
+     mov GSEL,AX                   ; store selector
+     ret
+   ENDP InitGraph
+
+  Before we test our graphic module, I want to take a short look on the
+  PutPixel function. This function is now totally in protected mode
+  (GRAPH.INC):
+
+  PROC PutPixel                   ; ECX: X EDX: Y  BL : Color
+    push edx                      ; save edx
+    mov ax,gsel
+    lea edx,[edx*4+edx]           ; edx:=edx*5
+    mov es,ax
+    shl edx,6                     ; edx:=edx*64 <= edx*5*64 = edx * 320
+    mov es:[edx+ecx],bl           ; plot ( edx*320+ecx )
+    pop edx
+    ret
+  ENDP Putpixel
+
+  Let us test our graphic module GRAPH.INC with a simple test program
+  (TESTPAL.ASM):
+
+   .MODEL FLAT
+   .INCLUDE GRAPH.ASM
+   .CODE
+   START:
+     call initgraph
+     mov edx,0
+   @Loop:
+     mov ecx,0
+   @LineLoop:
+     mov ebx,edx
+     shr ebx,1
+     add ebx,ecx
+     shr ebx,2
+     call putpixel
+     inc ecx
+     cmp ecx,320
+     jb @LineLoop
+     inc edx
+     cmp edx,200
+     jb @Loop
+     mov ax,4c00h
+     int 21h
+   END START
+   END
+
+   What we dislike most is, that the program does not return to text mode.
+   We therefore need a procedure SetTextmode, and a procedure which waits
+   for a keystroke. For the keystroke we can either use a Dos (real mode)
+   call or we can read the keyboard buffer directly from protected mode:
+   Both function are also part of the SYSTEM.INC file, the SYSTEM.INC
+   functions are called SystemKeypressed and SystemGetKey(TESTPAL2):
+
+
+    SystemKeyPressed   PROC               ; Z Flag if No Keypressed
+        mov ax,gs:[41Ah]                  ; GS: ZERO Selector
+        cmp ax,gs:[41Ch]
+        ret
+    ENDP SystemKeyPressed
+
+    SystemGetKey      PROC                ; Key in AL
+        call keypressed
+        je SystemGetKey
+        mov di,gs:[41Ah]                   ; GS: ZERO Selector
+        mov gs:[41Ch],di
+        add di,400h
+        mov al,gs:[di]
+        ret
+    ENDP getkey
+
+
+
+
+
+                         Chapter 4
+
+================== Co-Processor programming ==================================
+
+  In some cases integer values, as they can be represented by the processor's
+  registers, are not able to solve a mathematical problem. We need as well
+  floating point operations. With the 80486 DX processors the FPU is
+  integrated in the processor. Therefor Pass32 treats FPU instructions
+  equal to CPU instructions. We want to add a function to our graphics module,
+  which is able to draw circles.
+  We use the simple mathematical expression to create the circle:
+
+    Y := R2 * cos (เ) + MY
+    X := R1 * sin (เ) + MX          ; with เ between 0..2*ใ
+
+  The first thing we do in our Procedure is to define data. Data which is
+  defined within the PROC and ENDP of a procedure can be optimized with
+  the .SMART option(GRAPH.INC):
+
+   PROC Circle                   ; CX:X DX:Y SI:Radius1 DI:Radius2   BL:Color
+   .DATA
+     CircleR1       dw   0
+     CircleR2       dw   0
+     CircleMX       dw   0
+     CircleMY       dw   0
+     CircleX        dw   0
+     CircleY        dw   0
+     CircleStart    re   0
+     CircleSolution re   0.02
+
+  As you can see we define also two floating point constants: CircleStart
+  and CircleSolution. The CircleSolution is the increment for เ, CircleStart
+  represents เ.
+  The FPU has 8 registers called ST(0) = ST to ST(7). The FPU is a stack
+  oriented processor. I therefore call its registers stack. We can store
+  results and constants on the stack (using the stack is faster than using
+  memory references!).
+
+  The first thing we do is to store our parameters in variable identifiers.
+  Then we use directly the FPU to set เ to zero(GRAPH.INC):
+
+   .CODE
+     mov CircleR1,si
+     mov CircleR2,di
+     mov CircleMX,cx
+     mov CircleMY,dx
+     fldz                        ; load stack top with zero
+     fstp CircleStart            ; store zero to CircleStart
+     fld Circlesolution
+
+  With the last instruction we store CircleSolution on the stack. We keep
+  this floating point constant on the stack as long as we calculate with it.
+  Note, that we load the constant at first and that we load this constant
+  only once, because when it is on the stack, we can use the stack directly.
+  The first register (stack top) contains now 0.02.
+
+  We initialize CX with 2*ใ/0.02 = 314; CX is again our loop register
+  (GRAPH.INC):
+
+     mov cx,314                     ; 'Pi'
+   CircleLoop:
+     push cx                        ; Save cx
+     fild CircleR2                  ; ST(2)
+     fild CircleMY                  ; ST(1)
+     fld CircleStart                ; ST(0)
+
+  We load the integer variables R2 (radius) and MY (centre position y)
+  with the FILD instruction. At last we load our เ. As a comment I added
+  the current register location of the FPU. Note that ST(3) is our 0.02
+  constant. We want to calculate Y := R2 * cos (เ) + MY. This is done
+  by the following sequence(GRAPH.INC):
+
+     fcos                           ; calculate the cosine of เ = ST(0)
+                                    ; result in ST(0)
+     fmul st,st(2)                  ; multiply ST(0) with R2
+     fadd st,st(1)                  ; add MY to ST(0)
+     fistp CircleY                  ; store the result as integer value in
+                                    ; CircleY and remove it from the stack
+     fcompp                         ; (compare and) remove MY and R2
+     mov dx,CircleY                 ; store the result in DX
+
+  Calculating the X coordinate done in the same scheme(GRAPH.INC):
+
+     fild CircleR1                  ; ST(2)
+     fild CircleMX                  ; ST(1)
+     fld CircleStart                ; ST(0)
+     fsin
+     fmul st,st(2)
+     fadd st,st(1)
+     fistp CircleX
+     fcompp                         ; ST(0) is now 0.02
+     mov cx,CircleX                 ; store the result in CX
+     fld CircleStart
+     fadd st,st(1)                  ; + CircleSolution
+     fstp CircleStart               ; store and remove เ
+     call putpixel
+     pop cx
+     loop CircleLoop
+     fcompp
+     ret
+     ENDP Circle
+
+  Adding the CircleSolution, the 0.02 factor, we don't need to load the
+  constant from memory, because the constant is still on the FPU stack!
+  Actually, after the FCOMPP instruction we find in ST(0) the 0.02 constant!
+
+  We will test the circle procedure with CIRCLE.ASM. The demo draws randomly
+  circles in different colors on the screen. Don't ask how the getrandom
+  function works - it is the creation of pseudo random numbers by altering
+  the last three results to a new number. The function creates random numbers
+  in the range of 1..65535, according to the value of AX.
+
+
+
+
+                         Chapter 5
+
+================== Writing A DLL Library =====================================
+
+  We want to take a look at DLL programming in this chapter. Our gaol is to
+  create a graphic DLL. But before we start, we will first have a look on
+  some easier examples.
+
+  Our first DLL should simply demonstrate the method of DLL programming.
+  The DLL consists of four public procedures, which simply print a message
+  on the screen, when the are called.
+  This is the interface of our first DLL (TESTDLL.ASM):
+
+    .MODEL DLL
+    .INTERFACE
+
+    PROC    TestDLLMain    OFFSET DLLMain
+    PROC    TestDLLProc1   OFFSET DLLProc1
+    PROC    TestDLLProc2   OFFSET DLLProc2
+    PROC    TestDLLProc3   OFFSET DLLProc3
+
+  The interface part ends with a .DATA, .DATA? ,.CODE or a .CONST directive.
+  The only elements of the interface are procedure definitions and their
+  corresponding procedure offsets. The interface is included in the
+  main program. When a DLL is load, the interface is load from the DLL.
+  You can now call any procedure defined in the interface from the main
+  program. If you need more memory to install another DLL you can free
+  the DLL until you want to use one of its procedures again.
+  We use the .FAR directive so that we can call far procedure with
+  a forward reference. The order of the DLL procedures is free.
+  Note that you must declare public procedure as FAR (TESTDLL.ASM):
+
+    .CODE
+    .FAR
+    PROC DLLMain FAR
+      push ds
+      mov ds, word ptr cs:[0]
+      mov edi,offset DLLMesg
+      mov bh,14
+      mov TextColor,bh
+      call systemwriteLn
+      pop ds
+      ret
+    ENDP DLLMain
+
+  As you see, the DS selector is saved and restored in the procedure. You
+  should not forget, that when calling the DLL form the main program, the
+  DS selector usually points to the segment of our main program. If we
+  want to access DLL data, we must get the 'DLL - DS' from the DLL interface.
+  As you can see from Part 1, Chapter 5, the 'DLL - DS' is stored at
+  CS:[0].
+
+  A DLL typically has no heap memory. If you want heap memory, you must
+  define a memory value with the .MEM directive.
+
+  Now we want to test the DLL. Look at the short demo program (DLLTEST.ASM)
+
+    .MODEL FLAT
+    .include TESTDLL.ASM
+
+    DLL_ERROR      .EQU 0
+    .DATA
+      DLLname      db    'TESTDLL.DLL',0
+      ErrorMesg    db    'ERROR: TSTDLL.DLL not found!',0
+      ErrorMesg2   db    'ERROR: Too less memory available!',0
+
+  As you can see, we simply include the DLL. This does not mean of course,
+  that the whole DLL code is included - this would make no sense! No, only
+  the interface part of the DLL is included. In our example, the interface
+  defines 5 variable identifier:
+
+      TESTDLL       DW ?
+      TestDLLMain   DF ?
+      TestDLLProc1  DF ?
+      TestDLLProc2  DF ?
+      TestDLLProc3  DF ?
+
+  The first identifier is not part of the interface, the first identifier is
+  simply a name for the interface. This name is taken from the source name:
+  TESTDLL.ASM. You'll need this identifier for the LoadDLL, InitDLL and
+  FreeDLL function. This identifier is a kind of identification for the DLL.
+  This identification needn't be equal with the file name 'TESTDLL.DLL'!
+  When the interface part of two different DLLs is equal, you can load both
+  DLLs in the same interface. This might be necessary, when you want to
+  address different graphic adapters, or different sound boards. You write
+  for each configuration a different DLL, but all with the same interface
+  part. This means: the public procedure identifiers must be equal and the
+  order of the interface. You can now include one interface in your main
+  program, and according to your hardware configuration at run time, you load
+  only the DLL required. Automatically your program is configured correctly
+  for the available hardware.
+
+  To load the DLL we can use this simple sequence (DLLTEST.ASM):
+
+   .CODE
+     mov esi,offset TESTDLL       ; OFFSET TO DATA BUFFER TESTDLL
+     mov edi,offset DLLname       ; OFFSET TO Filename
+     call InitDLL
+     call loadDLL
+     jc dllnotfound
+
+  The functions LoadDLL, InitDLL and  FreeDLL are part of the DLLSYS.INC
+  file. This file is automatically added to your source file, when you
+  include any DLL source file.
+  You use the DLL 'id' and the offset of the filename as parameters for
+  the loadDLL function. The InitDLL function simply needs the DLL 'id'.
+  You should initialize all DLL at the beginning of your program to avoid
+  calls to nowhere = exceptions! When you free a DLL, the DLL is
+  automatically initialized. Any call is useless, but does not harm the
+  system.
+
+  The loadDLL function sets the carry flag if any error occurs. You get an
+  error number in the AX register:
+
+     AX=1 Memory Error
+     AX=0 Load Error
+
+  If you don't want to handle the error messages by yourself, you can set a
+  label:
+
+     DLL_ERROR      .EQU 1
+
+  The loadDLL function then automatically aborts if an error occurs. After
+  a successful loading of our DLL we can use the DLL functions as if they
+  are part of our program (DLLTEST.ASM):
+
+     call TestDLLMain
+     mov edi,offset Mesg1
+     mov bh,13
+     mov TextColor,bh
+     call systemwriteLn
+     call systemgetkey
+     call TestDLLProc1
+     call TestDLLProc2
+     mov edi,offset Mesg1
+     call systemwriteLn
+     call systemgetkey
+     call TestDLLProc3
+     ...
+
+  You must assemble both files: TESTDLL and DLLTEST. To create a DLL you
+  must run PASS32 with the /DLL option:
+
+     PASS32 TESTDLL /DLL
+     PASS32 DLLTEST
+
+  You can alter the DLL and restart DLLTEST. You will see the effect! You
+  can use the internal debugger for DLLs. Why don't you try:
+
+     PASS32 TESTDLL /D /DLL
+
+  and run DLLTEST again?
+
+
+  Okay, I think we have learned enough to create our graphic DLL. The
+  fine thing about a DLL is, that you can easily create a DLL from an
+  assembler module. You can even create a DLL from a complete assembler
+  program. You simply add an interface to your file!
+  This is the interface of our graphics DLL (GRAPHDLL.ASM):
+
+     .MODEL DLL
+     .INTERFACE
+
+     PROC InitGraph     OFFSET Initgraph
+     PROC PutPixel      OFFSET PutPixel
+     PROC GetPixel      OFFSET GetPixel
+     PROC OutChar       OFFSET OutChar
+     PROC OutTextXY     OFFSET OutTextXY
+     PROC Circle        OFFSET Circle
+     PROC Line          OFFSET Line
+     PROC Rectangle     OFFSET Rectangle
+     ...
+
+  We must add the FAR directive in every public procedure definition
+  and - be careful, we must add loading and restoring the data
+  descriptor if we want to access DLL data!
+
+  Look at the example CIRCLE2.ASM. At the beginning we have the same code
+  sequence as in our DLLTEST demo. We load the DLL and check for an error,
+  if no error occurs, we can use the graphic routines just as they had
+  always been part of our program. For clear programming you should write
+  a short module, for example GRAPH2.ASM, which does the whole including and
+  testing.
+
+
+
+
+
+                         Chapter 6
+
+=============== A short chapter on OVL writing ===============================
+
+  The only difference between DLL and OVL is the location of the code.
+  A DLL is loaded in a totally new segment. When you free the DLL, all
+  memory and descriptors will be freed as well. An overlay is load
+  directly into your code segment. This has one advantage, and a lot
+  of disadvantages: The advantage is, that overlay and main program
+  share the same heap memory. It is easy to handle data with an overlay -
+  DS and CS must not change, you can use a 32 bit offset to address data
+  instead of an 48 bit pointer. But overlays are limited by the program
+  heap memory, and you must define the location of the overlay while you
+  are coding your program.
+  You can compare the overlays with Windows' Drivers. You can write
+  special hardware driver as overlays, and load the specific driver at
+  run time. Especially for drivers the memory sharing with the main
+  program is useful.
+
+  The only difference between an OVL source and a DLL source is the
+  .ORG directive in the interface part. I modified the TESTDLL
+  example to an overlay example. Look at the interface part (TESTOVL):
+
+    .MODEL OVL
+    .INTERFACE
+    .ORG 50000h
+
+    PROC    TestOVLMain    OFFSET OVLMain
+    PROC    TestOVLProc1   OFFSET OVLProc1
+    PROC    TestOVLProc2   OFFSET OVLProc2
+    PROC    TestOVLProc3   OFFSET OVLProc3
+
+
+  The .ORG directive sets the code offset. Without this directive, the
+  overlay would get an offset of 00000100h - the overlay would overwrite
+  the main program, when it is load!
+
+  You must make sure, that the offset for the overlay is unused memory heap
+  of your program!
+
+  The usage of an overlay module is again similar to the usage of a DLL module:
+  You include the interface part of the OVL file with .INCLUDE. When you
+  include an OVL module, the file OVLSYS.INC is appended to your source.
+  This module offers two main functions: InitOVL and LoadOVL. You should run
+  the InitOVL function at the beginning. LoadOVL loads the overlay directly
+  into the code segment, at the specified .ORG address!
+  This is the sequence to load an overlay:
+
+   .CODE
+     mov esi,offset TESTOVL       ; OFFSET TO DATA BUFFER TESTOVL
+     mov edi,offset OVLname       ; OFFSET TO Filename
+     call InitOVL
+     call loadOVL
+     jc OVLnotfound
+
+  The loadOVL functions sets the carry flag, if the overlay is not found.
+  When the overlay is load, you can treat any overlay function as part of
+  the program.
+
+
+
+
+
+                         Chapter 7
+
+======================= Macro Power ==========================================
+
+  Since Pass32 Version 2.0, you can use Macros in your source code. A macro
+  is a collection of instructions, directives and assembler commands, which
+  can be combined in one macro. The 'power'of a macro is, that you can once
+  define a complex set of instructions and then use them easily in your code.
+  What might look like pascal or basic can be correct assembler code:
+
+  .CODE
+      Writeln('Hello, World');
+      Exit(0);
+  END
+
+  Writeln and Exit are macros. First, we have a look at the macro exit.
+  This is a common macro type. The macro simple stands for a set of
+  assembler instructions. Instead of writing an exit sequence, or
+  calling an exit procedure, we can simply use the exit macro.
+  But as you see, a macro can more than inserting assembler instructions.
+  A macro can use Pass32 directives as well. So we can define data
+  storages with macros, use conditional assembly etc. And exactly this is,
+  how we can create a syntax like Writeln('Hello, World').
+
+  Let's have a look at the example file MACRO.ASM. In the main program,
+  we have a basic like syntax:
+
+  .CODE
+  START:
+      Print('********** HELLO! *************')
+      print('This is a simple macro example!')
+      print('*******************************')
+      PrintError('EOF Demo reached.')
+  END START
+  END
+
+  Print and PrintError are Macros. Now, lets have a look at the macro
+  Print:
+
+  .MACRO Print(Message)
+       Create_Message(.LOCAL MESG,Message)
+       Writeln(offset .LOCAL MESG)
+  ENDMACRO
+
+  Obviously, the macro uses again other macros. We don't learn much from
+  this macro. But we can see, that we can pass the parameter to another
+  macro. Obviously Create_Message is a macro, which generates a data
+  buffer with the contents of our message. So let's look at the macro
+  Create_message:
+
+  .MACRO Create_Message(name,string)
+      .DATA
+       name db string,0         ; create string message
+       .CODE
+  ENDMACRO
+
+  This macro produces data and not code. The parameter string contains
+  our message. But what is the parameter name for? Quite easy, to access
+  a data storage, we need an identifier, a name for the data storage.
+  The name comes from the macro print: As we see, Create_Message is called
+  with the parameter .LOCAL MESG. The name of the data storage is MESG.
+  As we want to use the macro print more than once, the identifier name
+  must be unambigous. This is done by the .LOCAL directive. Inside a
+  macro the .LOCAL directive simply extends the identifier name by a
+  hex number, so instead of MESG, our parameter is something like:
+  @HHHHHHHHMESG, where HHHHHHHH stands for an individual hex number.
+
+  The other macro used by print is WIRTELN:
+
+  .MACRO WRITELN(stringoffs)
+    WRITE(stringoffs)
+    mov dl,10
+    mov ah,2
+    int 21h
+    mov dl,13                     ; do Carriage Return
+    mov ah,2
+    int 21h
+  ENDMACRO
+
+  The parameter stringoffs is passed to the macro Write. The rest of the
+  macro simply prints #10,#13 via standard output. As we can see from the
+  Print macro, the parameter stringoffs is the same as the first parameter
+  to Create_Message. We first create a data storage and then call a function
+  to display this data storage.
+  The macro Write is simply a function to display the string via DOS:
+
+  .MACRO WRITE(stringoffs)
+       mov edi,stringoffs
+  .LOCAL @start:
+       mov dl,[edi]
+       cmp dl,0
+       je short .LOCAL @end
+       mov ah,2
+       int 21h                  ; display string char by char
+       inc edi
+       jmp .LOCAL  @start
+  .LOCAL @end:
+  ENDMACRO
+
+  Interesting is the use of .LOCAL inside of this macro. We need .LOCAL to
+  define unambigious label names. Without .LOCAL, the second use of this
+  macro would lead to the error: 'duplicate label', because @start would have
+  been defined already. With .LOCAL we create macro individual labels. Again,
+  the labelname is extended by an individual hex number.
+
+
+  Now, what happens when we call the macro print like this:
+  print('Hello, World')?
+
+  print('Hello World')
+    |
+    ======> Create_Message(.LOCAL MESG,'Hello World')
+              |
+              ======> .DATA
+                         @00000001MESG DB 'Hello World',0
+                      .CODE
+    |
+    ======> WriteLn(offset .LOCAL MESG)
+              |
+              ======> Write(offset .LOCAL MESG)
+                        |
+                        ======>  mov edi, @00000001MESG
+                               @00000002@start:
+                                 mov dl,[edi]
+                                 cmp dl,0
+                                 je short @00000002@end
+                                 mov ah,2
+                                 int 21h       ; display string char by char
+                                 inc edi
+                                 jmp @00000002@start
+                               @00000002@end:
+                mov dl,10
+                mov ah,2
+                int 21h
+                mov dl,13                      ; do Carriage Return
+                mov ah,2
+                int 21h
+
+  Now, with this knowledge, we can write totally different assembler code.
+  And exactly that's the reason why I added the macro library SYSTEM.MAC
+  to the Pass32 package. SYSTEM.MAC extends the SYSTEM.INC functions with
+  macros. Instead of a call to the function SystemWriteln, you can simply use
+  the Macro WriteLn(String). Look at the very short demo file MACRO2.ASM:
+
+  .include system.mac
+
+  .CODE
+  start:
+    call systemclrscr
+    print(15,6,'******************** MACRO 2 ***********************')
+    print(15,7,'*                                                  *')
+    print(15,8,'*                                                  *')
+    print(15,9,'*                                                  *')
+    print(15,10,'******************** MACRO 2 ***********************')
+    color(14,0)
+    print(31,8,'Simple Macro Demo')
+    color(14,7)
+    print(0,0,' Macro2.ASM                                                                    ');
+    print(0,24,' Press any key to continue                                                     ');
+    call systemgetkey
+    color(7,0)
+    print(0,24,'                                                                               ');
+    gotoxy(1,12);
+    exit(0)
+  END start
+  END
+
+  As you can see, it is a combination of macros and function calls.
+
+  We learned quite a lot advantages of macros. But I should mention the
+  disadvantage, too. A macro is not a funtcion, the usage of a macro is
+  not a call instruction, but the insertion of the macro instructions.
+  If you for example convert the whole SystemWriteln function into a
+  macro, your program will get quite long, if you often call this macro.
+  So you have to decide between a fast execution (without overhead like
+  call and ret) and a smaller code.
+  You should therefore use macros either to simplify your source code,
+  for example Writeln('Hello, World'), to gain speed by executing a
+  'fast' function call, or to combine a small number of assembler
+  instructions, which is used quite often, for example exit(0).
+
+
+
+
+
+                         Chapter 8
+
+=============== Another protected mode demo ==================================
+
+  The last demo I want to present here, is an example for a protected mode
+  mouse driver. We can of course use the real mode driver int 33h to access
+  the mouse, but this would mean, that our processor is running mainly in
+  real mode. We want to access the mouse driver directly. This means we
+  install our own mouse driver, which is totally written in protected mode.
+  I'm afraid, but I had only a minimum on information about a mouse driver,
+  so this material is mostly based on testing; as I had no information on
+  PS/2 mouse - the demos support only the serial mouse on COM1 or COM2.
+
+  The real mode mouse driver is a TSR program. It installs according to the
+  mouse port COM1 or COM2 (or PS/2 mouse), an interrupt service routine.
+  This interrupt routine is called every time, the serial mouse sends some
+  information over the port. In words, every time we move the mouse or press
+  a button, the real mode procedure is called.
+  If we write our own interrupt service routine, we would get two effects
+  at once: The processor mustn't switch to real mode and - every mouse
+  information is directly available - we do not even need to call the
+  int 33h!
+  With Pro32 Version 1.4 we can install HW interrupt service routines
+  directly with the DPMI Function 0205h. When an HW interrupt occurs,
+  our installed procedure is called; when an exception occurs, the
+  correspondending exception handler routine will be called. As long
+  as we do not create our own exception handling, Pro32 does the exception
+  handling. For more information about exception handling, you can look at
+  the Pro32 demo file DEMOEXC.ASM - this example detects a division by
+  zero with a user defined exception handler...
+  But back to our mouse interrupt:
+  We install our own mouse interrupt service routine with function 0205h:
+
+   PROC InitMouseCom1 NEAR
+     mov cx,cs
+     mov edx,OFFSET Com1Mouse
+     mov ax,0205h                ; set pm int
+     mov bx,0ch                  ; int 0ch
+     int 31h                     ; set new interrupt
+     ret
+   ENDP InitMouseCom1
+
+  We don't need to save the old state, because all protected mode interrupts
+  are invalid, when we return to real mode. As the mouse interrupt is an
+  hardware interrupt, we need to send an EOI (End OF Interrupt) to the
+  interrupt controller at the end of our routine:
+
+   PROC Com1Mouse
+       push eax
+     ....
+       mov al,20h
+       out 20h,al
+       pop eax
+       iret
+   ENDP Com1Mouse
+
+
+
+  The next problem is the communication with the mouse. We assume that a
+  real mode mouse driver had been load already, so we don't need to
+  initialize the mouse, the port, the interrupt, etc.
+
+  A MS compatible mouse sends three bytes for a movement, or a button click.
+  The first byte has information of the move directions and the button,
+  we realize the first byte, because the 6th bit is always set. Our service
+  routine does not wait for all three bytes - we receive a single byte and
+  wait until we got all three bytes. Here is a list of information in these
+  bytes:
+
+  +-------1st byte--------+ +--------2nd byte------+ +-------3rd byte-------+
+  |0  1  B  B  Y  Y  X  X | |0  0  X  X  X  X  X  X| |0  0  Y  Y  Y  Y  Y  Y|
+  +-----------------------+ +----------------------+ +----------------------+
+      +  +--+  +--+  +--+          +--------------+         +--------------+
+      |    |     |     |                   |                        |
+      |    |     |     +--------+          |                        |
+  1st byte |     |              |          |                        |
+  ndicator |     +--------------+----------+-------------+          |
+           |                    |          |             |          |
+           |                  +--+  +--------------+   +--+  +--------------+
+           |                  7  6  5  4  3  2  1  0   7  6  5  4  3  2  1  0
+         +--+                 +-----X increment----+   +-----Y increment----+
+         1  0 : 01 Right
+                10 Left
+
+
+  After we received the third byte, we can analyse the information, and store
+  the information in global data:
+
+  .PUBLIC .DATA
+
+   MSX     DW    100    ; mouse x position
+   MSY     DW    100    ; mouse y position
+   MSMAXX  DW    640    ; max mouse x position
+   MSMAXY  DW    400    ; max mouse y position
+   MSLEFT  DB    0      ; left mouse button
+   MSRIGHT DB    0      ; right mouse button
+
+  When our service interrupt is installed, we can access any mouse data
+  through these identifiers. We add to our service routine a dummy procedure
+  which should draw the mouse. In our main program we can define a procedure
+  which draws the mouse on screen, depending on the video mode of the program,
+  We replace the dummy procedure in our mouse driver - and our mouse support
+  is perfect!
+
+  The example files MSDEMO.ASM and MSDEMO2.ASM test our protected mode mouse
+  driver. MSDEMO2.ASM uses the GRAPHDLL.DLL we created in chapter 5, to
+  display graphics.
+
+  These two last examples should demonstrate, that you can access most of the
+  computer resources directly from protected mode. If you choose the
+  direct way, you will save a lot of CPU power!
+
+  On the other hand, you can get the resources via DOS and DPMI - but without
+  the real mode performance!
+
+
+
+
+                        *       *       *
+
+
+  I hope you learned something about protected mode programming with this
+  manual and the example files. With Pass32 I wanted to design a tool, which
+  makes protected mode programming very easy. I hope you realized this, when
+  you read the manual!
+
+
+
+
+
+
+
+
+
+
+
+= APPENDIX A - Pass32 Arguments ==============================================
+
+  The general syntax for the Pass32 Assembler is:
+
+    PASS32 Filename[.ASM] [-OPTIONS]
+  or
+    PASS32 Filename[.ASM] [/OPTIONS]
+
+  Here is a list of the Pass32 options:
+
+    Linker options:
+
+         -t               create com file (.COM)
+                          in combination with the TINY model
+         -f               create flat model binary (.BIN)
+                          in combination with the FLAT memory model
+         -ovl             create flat model overlay (.OVL)
+         -dll             create flat model DLL (.DLL)
+         -3               create flat model 3os file (.3OS)
+         -out:name        specify output (.EXE/.COM) file name
+
+    Assembling options:
+
+         -a               enable all warnings
+         -nw              enable no warnings
+         -e               do not halt on first error
+         -o               optimize maximal
+         -os              optimize for size (exclude unused procedures)
+         -or              optimize instructions
+         -oj              optimize short jump instructions
+         -i:name          use directory name to search for include files
+         -im:name         include assembler file in source
+         -s               silent: no output of the assembling
+         -spp             skip preprocessor: assemble without using the pp
+
+
+    Debugger options:
+
+         -m               create map file:
+                          A file with the extendion .MAP is created.
+                          This file displays all symbols created during
+                          the assembling.
+
+         -mm / -dmp       create debug file:
+                          A file with the extendion .DMP is created.
+                          This file displays the whole source (including
+                          all sub-modules) with the correspondending
+                          offset address for each line.
+
+         -d               add debug information:
+                          Debug information is added to the executable file.
+                          Note: Debug information is added until the first
+                                .NODEBUG directive!
+                          Combination of -mm and -d allows to display the
+                          source code during debugging...
+
+         -error:HHHHH     displays error at offset HHHHH (hex):
+                          The source is assembled without creating an
+                          executable program file.
+                          When the error address is found, the
+                          correspondending source line will be displayed.
+
+
+    Extender options: (ignored when assembling with -t -dll -ovl -f option)
+
+         -mem:XXXXX       allocate xxxxx KBytes of XMS:
+                          The initial program code/data segment is
+                          xxxxx KBytes in size.
+         -min:XXXXX       the program needs at least xxxxx KBytes of XMS.
+                          This option is equal to -mem
+         -max:XXXXX       the program uses max. xxxxx KBytes of XMS.
+         -st:XXXXX        sets the size of stack in KBytes
+
+         -nm              display no message:
+                          Usually the Dos Extender displays the linear
+                          address of the program segment. When DPMI is
+                          emulated, the DPMI Version number is displayed.
+                          These messages won't be displayed when assembling
+                          with this argument.
+         -nb              no control of CRTL-Break / CRTL+C:
+                          In emulated DPMI the Dos Extender takes control
+                          of [CRTL]+[Break] and [CRTL+C]. To avoid program
+                          abortion with [CRTL]+[Break]/[CRTL+C] you should
+                          use this option.
+         -c               write core on error:
+                          For post debugging the emulated DPMI can generate
+                          a core image of the program. When an exception
+                          occurs, the current program code (and data) segment
+                          will be stored in the file CORE.COR, which can be
+                          analysed by a disassembler / debugger.
+                          (not supported by the Pro32 GOLD series)
+         -core:XXXXX      write xxxxx KBytes core on error:
+                          Usually the core size is the .CODE and .DATA size.
+                          To store uninitialized data (.DATA?) you can alter
+                          the core size.
+                          (not supported by the Pro32 GOLD series)
+         -plug:NAME       forces the Pro32 dos extender to load a plug-in.
+                          (Pro32 GOLD)
+
+
+
+
+= APPENDIX B - Messages from the assembler ==================================
+
+  B.1  Error Messages:
+  ====================
+
+16 bit address index out of range.       - Model FLAT: you use a 16 bit
+                                           address and indexing mode with a
+                                           displacement above 64K - use a
+                                           32 bit address mode
+.ELSE without .IF directive.
+.ENDIF without .IF directive.
+.ERROR directive!
+.INTERFACE expected.                     - missing .INTERFACE directive
+                                           after MODEL DLL or MODEL OVL.
+.NAME expected.                          - error with user defined DLL/OVL
+                                           interface: missing .NAME directive
+                                           after .INTERFACE.
+.ORG or .PROC expected.                  - illegal directive in the interface
+                                           part of a DLL / OVL.
+.ORG after .CODE symbol.                 - the .ORG directive must be placed
+                                           before any code instruction.
+.ORG already defined or after PROC.      - in an ovl model the .ORG directive
+                                           must be placed before any code
+                                           instruction or interface definition
+                                           is done.
+address identifier or displacement expected.
+                                        - illegal memory reference - the
+                                          assembler expects a variable,
+                                          a memory location or a displacement.
+already declared as variable identifier.- you tried to define a label with
+                                          the same name as you declared
+                                          a variable identifier.
+AX expected.                            - the register AX is expected.
+code segment to large.                  - TINY model: the code segment
+                                          exceeds 64K .
+constant too big.                       - the expression is above byte or
+                                          word value.
+double scaled register.                 - more than one scaled register in an
+                                          address index.
+double segment override.                - more than one segment override.
+duplicate identifier.                   - duplicate label or procedure
+                                          identifier.
+duplicate variable identifier.
+EAX,EBX,ECD,EDX,ESI,EDI or EBP expected.- one of these registers is expected.
+entrypoint out of rel jmp range.        - TINY Model: the entry point is
+                                          beyond 32767 bytes from the program
+                                          begin.
+.EQU directive missing operand.
+.EQU expression too long.               - the expression of an .EQU directive
+                                          can contain 60 characters.
+error address:                          - the address with the option
+                                          -error:HHHH is found.
+error in expression.                    - a mathematical expression is wrong.
+error in real constant.
+extra character on line.                - invalid character in a line.
+Factor 2,4 or 8 expected.               - illegal scale factor for index
+                                          register.
+identifier expected.
+identifier with too many characters.    - name is too long (max. 128 char.)
+illegal index register.                 - you tried to use an illegal index
+                                          register (AX,DX etc).
+illegal instruction.                    - the instruction is invalid or not
+                                          supported by Pass32.
+illegal use of instruction.             - the instruction is not used
+                                          correcty, or this kind of usage
+                                          is not supported by Pass32.
+illegal variable type.                  - a wrong variable type is used with
+                                          a JMP or CALL instruction.
+illegal forward procedure reference     - a far procedure is called before
+                                          the procedure has been defined and
+                                          the option .FAR has not been used.
+illegal label name.
+illegal use of directive.               - the directive is placed inside the
+                                          wrong segment:
+                                          - the .FAR directive must be part
+                                            of the .CODE segment.
+                                          - the .DEBUG directive must be part
+                                            of the .CODE segment.
+index register or number expected.
+INTERFACE too long - header above 256 bytes
+                                        - more than 37 public DLL / OVL
+                                          procedures declared.
+invalid assembler command.
+invalid binary expression.              - a binary expression with digits
+                                          different than 0 and 1
+invalid combination of index registers. - you tried to use an illegal
+                                          combination of index registers
+                                          (for example AX+BX)
+invalid combination of opcode and data. - a relative jump instruction with a
+                                          data identifier as target.
+invalid error address.                  - the -error:HHHH option failed, the
+                                          error address could not be found.
+invalid hexadecimal expression.         - a hexadecimal expression with
+                                          digits  different from 0..F
+invalid indexing mode.
+invalid number.                         - a decimal value is incorrect
+                                        - an expression contains undefined
+                                          characters like (# . ^ ๘ ~ etc)
+invalid octal expression.               - an octal expression with characters
+                                          other than 0..8
+invalid register combination.           - add, sub or compare 16 and 32 bit
+                                          registers, 8 and 16 bit register etc
+missing DEBUG procedure.                - internal error: the files debug.inc
+                                          / debug32.inc may be destroyed.
+number expected.
+OFFSET expected.                        - the interface part of an DLL/OVL
+                                          is incorrect.
+operand types do not match.             - you try to load/store/add/sub/cmp
+                                          a variable identifier with
+                                          a different type cast.
+optimize error: open procedure          - the optimization -os / -o can only
+                                          run when all procedure are correctly
+                                          placed between PROC and ENDP.
+OVL and DLL only 32 bit model.          - the models DLL and OVL are 32 bit
+                                          models - they can not run in
+                                          real mode.
+parse error: ( expected.
+parse error: ) expected.
+parse error: : expected.
+parse error: PTR expected.               - after BYTE, WORD, DWORD, FWORD,
+                                           TBYTE the directive PTR is
+                                           expected.
+parse error: ] expected.
+positive count expected.                 - the DUP directive expects a
+                                           positive count number.
+program does not fit in COM format.      - TINY model: data and code are
+                                           above 64K.
+real constant overflow.
+real constant underflow.
+relative jump out of range.              - TINY model: a relative jump target
+                                           is beyond +/-32767 bytes.
+                                         - all models: a relative short jump
+                                           target is beyond +/-127 bytes.
+segment register expected.               - a segment override with an illegal
+                                           register name.
+string constant exceeds line.
+syntax error - directive expected.       - before the first .CODE/.DATA/.DATA?/
+                                          .CONST only directives are allowed.
+                                          directives usually begin with a '.'
+TINY model: use PUSHD                    - you try to push a 32 bit constant
+                                           in the TINY model with the push
+                                           instruction - use pushd instead
+Too many .EQU directive.                 - more than 640 .EQU directives
+undefined identifier.                    - the variable / label / procedure
+                                           is not defined in the whole source
+                                           or is not exported from an module.
+undefined memory reference.              - a memory reference is not defined
+                                           until this line. Typically occurs,
+                                           if you try to cmp/mov with an
+                                           immediate operand and a variable
+                                           identifier whose type is unknown
+                                           until this line. You should use a
+                                           PTR directive to avoid this
+                                           problem, eg.:
+                                           cmp dword ptr Counter,0
+                                         - might occur, if you access constant
+                                           data in your code segment,
+                                           and you don't use a segment override,
+                                           for example:    correct:
+
+                                           mov al,@alval   mov al,CS:@alval
+                                           ret             ret
+                                           alval db 0      alval db 0
+undefined symbol.
+unexpected END.                          - the END directive is not expected
+                                           in this case
+uninitialised data - ? expected.         - data which is defined in the .DATA?
+                                           segment can only have the
+                                           undefined value '?'
+unmatched ENDP.                          - the ENDP directive does not fit
+                                           with the last PROC directive
+use CL with SHL,SHR,SAR,SAL,ROL,ROR,RCL,RCR
+variable or label expected.
+[BX+SI,BX+DI,BP+SI or BP+DI] expected.
+
+  B.2  Warning Messages:
+  ======================
+
+access to constant data (*)              - you access constant data with
+                                           another segment override as CS
+alignment minor to default (*)           - you alter the default alignment
+code size above given limit              - the MEMSIZE variable is below the
+                                           current code size,
+                                           -> the MEMSIZE variable will be
+                                              adapted
+core size above mem size                 - the specified core size is above
+                                           the specified MEMSIZE
+directive in illegal segment             - you should use the directive in
+                                           the data segment / code segment;
+                                           the directive will probably be
+                                           ignored.
+duplicate .EQU definition (*)            - you re-define a .EQU expression
+ENDP already used                        - you used ENDP twice
+Extender Variable ignored                - TINY, DLL or OVL model: Pro32
+                                           DOS Extender variables are ignored
+INTERFACE empty.                         - the interface of a DLL/ovl is not
+                                           used
+missing .ENDIF directive.                - open .IF construct
+no code generated                        - the assembler produced no code
+                                           (maybe data only)
+no startaddress specified (*)            - the END startlabel directive is
+                                           missing. Program probably won't
+                                           work with the -IM option!
+open procedures encountered              - if you do not use the optimization,
+                                           you can leave procedures open
+privileged command                       - you are using a privileged
+                                           instruction
+probably missing ret instruction (*)     - the instruction before ENDP is not
+                                           ret / retf
+procedure as near declared (retf)        - you use the retf instruction in a
+                                           near procedure
+startlabel not public (*)                - If the program entry point is a
+                                           label, the label should be public
+undefined ENDP                           - you are using ENDP instead of
+                                           ENDP name
+unequal number of pushs and pops (*)     - when the ENDP directive is reached,
+                                           Pass32 checks the number of push and
+                                           pop instructions inside the sub-
+                                           procedure. If the number differs,
+                                           then you might have forgotten a pop
+                                           instruction, e.g.:
+                                              PROC DUMMY
+                                                push eax
+                                                push ebx
+                                                ...
+                                                pop eax
+                                                ret
+                                              ENDP DUMMY
+                                           It doesn't recognize multiple ret
+                                           instructions/paths inside a
+                                           procedure.
+
+using predefined symbol name             - you defined a variable identifier
+                                           with the name MEMSIZE or LASTDATA
+                                         - you defined a variable identifier
+                                           with register names, e.g. CH, BL...
+using DS for constant data               - generally pass32 uses CS to access
+                                           constant data. When the identifier
+                                           is declared after the usage, Pass32
+                                           can't create the CS segment prefix.
+.WARN directive!
+stacksize too small                      - TINY Model: the size of the stack
+                                           and heap for the .COM file is
+                                           below 4Kbytes
+                                         - FLAT Model: the size of the stack
+                                           and heap for the .EXE file is
+                                           below 32Kbytes (Pro32 V1.5)
+START proc not implicitly called         - you include a module, which defines
+                                           a procedure with the attribute
+                                           START, in a DLL/OVL module.
+                                           Attention: in these modules,
+                                           procedures with the START attribute
+                                           won't be called automatically.
+                                           You should explicitely call this
+                                           procedure in the init procedure of
+                                           the DLL!
+target for uncommercial use only.        - you are assembling with the .UCU
+                                           directive.
+                                           With regard to Pro32.doc these
+                                           programs are for uncommercial use
+                                           only!
+
+open procedure: name (*)                 - message of an open procedure
+
+  (*) appears only when the all warning option -a is enabled
+
+  B.3  Fatal Error Messages:
+  ==========================
+
+  DOS Extender not found
+    - the Dos Extender is not in the same directory as the pass32 assembler
+  MODEL OVL - run with the /OVL option
+  MODEL DLL - run with the /DLL option
+  need numeric co-processor
+  PASS ERROR - abort
+    - differences between first pass and second pass.
+      This error should not occur!
+  unexpected end of file
+    - a missing END directive at the end of the file or a destroyed
+      source file
+
+
+
+= APPENDIX C - Copyright and Credits =========================================
+
+
+  The Pass32 Assembler was written in 1996, 1997 by Dieter Pawelczak.
+  Pass32 Version 2 was written in 1997,1998  by Dieter Pawelczak.
+  Version 2.3 (c) 1998 by Dieter Pawelczak.
+
+  This software is public domain. This program may not be sold! You are
+  free to give the whole package to anyone you like.
+
+  You can use the source codes without admission.
+  For commercial use you must add a note in the program's information!
+  For commercial use, you must run the Extender in the commercial mode
+  (See PROSET.DOC for more information).
+
+  You are not allowed to alter any part of the Pass32 code or
+  manual.
+
+  You are using this code at your own risk.
+
+  This program is distributed WITHOUT ANY WARRANTY.
+
+  All programs have been totally written by myself, except the detectprocessor
+  routine in the Pro32 Dos Extender, which I adapted from PMODE.ASM
+  by Tran (a.k.a. Thomas Pytel).
+
+  For the code generation I used the Turbo Assembler (Version 2.0) and
+  Turbo Pascal (Version 7.0) by Borland Inc.
+
+  WDOSX is written by Michael Tippach a.k.a. Wuschel.
+
+  Thanks to Pr Spjuth, who provided me with really good ideas for the
+  assembler development, the correct mouse data package and did a lot of
+  testing and reported bugs!
+
+  Thanks to Johan Prins, who is developping the P32 Pascal Compiler.
+  He supported me with ideas and enhancements for the assembler and the
+  dos extender. With the aid of his compiler, I could find some really
+  hard bugs!
+
+  Thanks to Donato Stano for his suggestions - he finds bugs immediately!
+
+  Thanks to Chris Hazard for providing me the VESA library VIDEO.INC.
+  Part of his code is used in the VESA graphic driver.
+
+
+
+
+
+= APPENDIX D - Limits ========================================================
+
+  There is no limit in source file size. The limit for the memory size
+  (code, data and heap) is 64 MBytes.
+  As Pass32 is (still) a real mode product, the amount of symbols is limited
+  by the available Dos memory. Symbols are: Labels, Procedures and Data
+  identifier.
+  The maximal symbol length is 127 characters for labels and 128
+  characters for procedures and variable identifiers.
+  The maximal number of symbols is depending on the symbol length.
+  With an average of 11 characters per symbol, the maximum is about
+  18000 symbols, with prepass optimization about 16000 symbols.
+  With an average of 35 characters per symbol, the maximum is about
+  8000 symbols. The number of procedures is limited to 4000. The number
+  of modules (actually included) is limited to 50.
+
+
+
+= APPENDIX E - Other DOS Extenders ===========================================
+
+  Pro32 is the default dos extender used by Pass32, indeed, Pass32 even
+  defines extender directives, which can be used to control the Pro32
+  dos extender (.MIN, .MAX, .UCU, .NB, .NM, .STACK).
+
+  You can use other dos extenders, if these extenders support a linker
+  for flat model binaries by assembling with the -F option. The resulting
+  .BIN file can now be used with the other dos extender.
+
+  If the dos extender provides a stub file, which can be directly copied
+  together with the binarie (COPY /B), then you can use the directive .DOSX
+  at the beginning of your source:
+
+  .DOSX [STUBFILENAME.EXE]
+
+  Note, you must explicitly give the file name extension and you can not
+  enter a path. The stub file therefore must be in the same directory as
+  PASS32.EXE. (Maximal size for stub file is 65534 bytes).
+
+  Note, every dos extender provides a specific PM environment. Pro32
+  for example provides a program PSP (with further PM information,
+  parameter line, etc), loads the program at 0100h (.COM compatible),
+  and allocates a set of selectors for the program.
+  Other dos extender behave different! Other program offset, other ways
+  to access the PSP, other initial selectors, etc.
+  The Pass32 RTL (SYSTEM.INC, IO.INC, GAME.INC, STRING.INC, SYSTEM.MAC)
+  and all demo files assume a Pro32 program setting. So, you'll have to
+  adapt these files before using with other dos extenders!
+
+  The WDOSX extender, for example loads the program at offset 0.
+  The example file MACRO.ASM can easily be adapted for WDOSX, as it doesn't
+  use the Pass32 RTL, PSP or ES selector:
+
+  Add to MACRO.ASM:
+
+  .DOSX WDOSX.DX                ; use WDOSX extender
+  .ORG 0                        ; program offset is zero
+
+  Then copy wdosx.dx to the PASS32/BIN directory and assemble with
+  PASS32 MACRO. And you'll see, it works!
+
+
+
+= APPENDIX F - RTL and Example Routines ======================================
+
+  SYSTEM.INC - Some useful system routines:
+
+ Function SystemKeyPressed: returns Zero Flag, if no key pressed
+ Function SystemGetKey:     waits for key stroke, returns key in al
+ Function SystemGetMem:     allocates eax bytes of memory on the heap
+ Function SystemFreeMem:    frees eax bytes of memory on the heap
+ Function SystemMemAvail:   returns largest memory block available on the heap
+ Function MathToString:     32 bit (EAX) number to string at Offset EDI
+ Function SystemPrint:      prints at screen CX=X, DX=Y, EDI=string
+ Function SystemWrite:      prints string EDI at cursor
+ Function SystemWriteLn:    prints string EDI at cursor with LineFeed
+ Function SystemNewLine:    creates line feed and scrolling at cursor
+ Function SystemClrSrc:     clears the text screen
+ Function SystemReadLn:     reads line from keyboard to string in EDI
+ Function SystemGotoXY:     set cursor at CX, DX
+ Function SystemSound:      turn speaker on with frequency in AX
+ Function SystemNoSound:    turn speaker of
+ Function SystemDelay:      delays execution for ms in AX
+ Function SystemExec:       executes a program; prgname EDI, parameter line ESI
+ Function GetParamStr:      gets paramstr in EDI for parameter(AL)
+ Function GetEnvStr         returns environment string to matching string in EDI
+ Function GetPrgDir:        Returns Directory of the program path in EAX
+ Variable TextColor:  DB    foreground color
+ Variable Background: DB    background color
+ Macro    CheckCPU(CPUType) macro to check the CPU Type
+
+  SYSTEM.MAC - The Macro Version of SYSTEM.INC:
+
+ Macro GetMem(Mem):         allocates mem bytes of memory on the heap
+ Macro FreeMem(Ptr,Mem):    frees mem bytes of pointer ptr
+ Macro Print(X,Y,String):   prints string at screen
+ Macro Write(String):       prints string at cursor
+ Macro WriteLn(String):     prints string EDI at cursor with LineFeed
+ Macro ReadLn:              reads line from keyboard
+ Macro Color(Text,Back)     sets color variables
+ Macro GotoXY(x,y)          set cursor
+ Macro Exit(ExitCode)       terminate program
+
+  IO.INC - Disk Access:
+
+ Function FileLength: EDI offset to filename, length in EAX
+ Function LoadFile: EDI offset to filename, ESI destination, result:size in EAX
+ Function OpenFileToRead: EDI offset to filename, returns handle in ebx
+ Function OpenFileToWrite: EDI offset to filename, returns handle in ebx
+ Function CloseFile: EBX handle
+ Function SaveFile: EDI offset to filename, ESI Source, ECX: size
+ Function BlockRead: EBX handle, ECX size, EDI dest., returns bytes read in EAX
+ Function BlockWrite: EBX handle, ECX size, EDI dest., returns bytes written in EAX
+ Function GetDir: copies directory name of DRIVE in DL to STRING in EDI
+ Function ChDir: changes to the directory in String EDI
+
+  STRING.INC  - routines for zero terminated strings
+
+ Function strcat: appends string EDI with string ESI, returns new length
+ Function strupcase: converts string in EDI to upcase string, returns length
+ Function strcopy : copys string ESI to EDI, returns length
+ Function strlength: returns the EDI string length
+ Function strpos: Checks, if string ESI contains substring EDI
+ Function strcmp: compares string ESI with string EDI result in eax
+
+  GAME.INC - Joystick Access:
+
+ Function GetXAxis    : Returns value in EAX proportional to the X-Value
+ Function GetYAxis    : Returns value in EAX proportional to the Y-Value
+ Function CheckFire   : Zero-Flag set if Fire is pressed
+ Function CheckButton : Zero-Flag set if Fire is pressed
+
+  GRAPH.INC - VGA 320x200x256 graphic routines
+
+ Function INITGRAPH:       initializes graphic mode
+ Function SETTEXTMODE:     returns to textmode
+ Function PUTPIXEL:        sets pixel at CX:DX with color BL
+ Function GETPIXEL:        gets pixel color at CX:DX in BL
+ Function OUTCHAR:         displays a single character at CX:DX, color BL, char AL
+ Function OUTTEXTXY:       displays a string at CX:DX, color BL, string offset EDI
+ Function FILLBLOCK:       fills block CX:DX to SI:DI with color BL
+ Function CIRCLE:          draws a circle at CX:DX with radius SI and DI and color BL
+ Function LINE:            draws a line between CX:DX, SI:DI with color BL
+ Function PUTOBJECT:       displays a 'sprite' at CX:DX with size SI:BX and source EDI
+ Function PUTIMAGE:        displays an image at CX:DX with size SI:BX and source EDI
+ Function GETIMAGE:        gets an image from CX:DX with size SI:BX and image buffer EDI
+ Function COLOROUTCHAR:    displays a single character in different colors (s. outchar)
+ Function COLOROUTTEXTXY:  displays a string in different colors (s. outtextxy)
+
+
+  MSDEMO.INC - PMode mouse driver for COM1/COM2 port
+
+ Function InitMouse:   Initializes pm mouse driver for COM1 or COM2
+ Variable MSX:     DW  current mouse X position
+ Variable MSY:     DW  current mouse Y position
+ Variable MSLEFT:  DB  status of left mouse button
+ Variable MSRIGHT: DB  status of right mouse button
+ Pointer  MSDRAW:  DF  far pointer for mouse draw procedure;
+                       called with every mouse movement
+
+  GRAPHIC.INC - DLL based graphic driver library
+
+ Function PUTPIXEL    : ECX = X-Axis, EDX = Y-Axis, EBX = color
+ Function GETPIXEL    : ECX = X-Axis, EDX = Y-Axis, EBX = color
+ Function LINE        : ECX = X1, EDX = Y1, ESI = X2, EDI = Y2, EBX = color
+ Function RECTANGLE   : ECX = X1, EDX = Y1, ESI = X2, EDI = Y2, EBX = color
+ Function FILL        : ECX = X1, EDX = Y1, ESI = X2, EDI = Y2, EBX = color
+ Function CIRLCE      : ECX = X, EDX =Y, ESI = r1, EDI = r2, EBX = color
+ Function OUTTEXTXY   : ECX = X-Axis, EDX = Y-Axis, EBX = color, EDI = offset to textstr.
+ Function PUTSPRITE   : ECX = X, EDX = Y, EBX = Size X, EDI = Size Y, ESI = offset to sprite
+ Function FLUSHBUFFER : copys activ buffer to screen
+ Function CLEARSCREEN
+ Function FASTFILL    : ECX = X1, EDX = Y1, ESI = X2, EDI = Y2, EBX = color
+ Function PUTIMAGE    : ECX = X, EDX = Y, EBX = Size X, EDI = Size Y, ESI = offset to sprite
+ Function GETIMAGE    : ECX = X, EDX = Y, EBX = Size X, EDI = Size Y, ESI = offset to sprite
+ Function PUT16x16    : ECX = X, EDX = Y, EBX = Size X, EDI = Size Y, ESI = offset to sprite
+ Function FLUSHWINDOW : ECX = X1, EDX = Y1, ESI = X2, EDI = Y2
+ Function INITGRAPH   : EAX = video mode
+ Function SETTEXTMODE : return to co80 mode
+ Function GETMAXX     : returns max value for X
+ Function GETMAXY     : returns max value for Y
+ Function SETPAGE     : EAX = page (0=screen, 1..n = BUFFER)
+ Function GETACTPAGE  : returns in EAX active page
+ Function LOADPALETTE : loads palette
+ Function WAITFORVERTICALRETRACE : EAX and EDX destroyed
+ Macros DrawText(X,Y,String,Color)
+ Macros DrawLine(X1,Y1,X2,Y2,Color)
+ Macros DrawRectangle(X1,Y1,X2,Y2,Color)
+ Macros DrawFill(X1,Y1,X2,Y2,Color)
+ Macros DrawImage(X1,Y1,X2,Y2,offs)
+ Macros DrawIcon(X1,Y1,offs)
+
+  DOSX.INC - Extended DOS Support for PRO32
+
+ simply include DOSX.INC at the beginning of your source to enable extended
+ DOS support.
+
+
+
+
+
+= APPENDIX G - Pro32 Gold ====================================================
+
+Pass32 Version 2.4 supports the Pro32 Gold Dos extender. Pro32 Gold allows
+the usage of plug-ins. A plug-in is load and executed before the main program
+is started. A plug-in will add additional extensions to the dos extender. The
+following plug-ins come with Pro32 Gold:
+
+  DEBUG.DLL:   extended exception handler with integrated disassembler
+  DOSX.DLL:    extended dos support
+
+Per default, Pro32 doesn't load any plug-in. To load a plug-in, Pass32
+provides the directive .PLUGIN or the option -plug. The usage is:
+
+.PLUGIN Name   / -plug:name
+
+The name can be up to 7 characters long and should not contain a file
+extension. Pro32 always loads the plug-in with the extension .DLL.
+
+
+To create your own plug-ins, you can use the DLL model:
+
+.MODEL DLL
+.MEM 1024
+.INTERFACE
+
+PROC MAIN OFFSET MAIN
+
+.CODE
+
+PROC MAIN
+  PUSHAD
+    ..
+  POPAD
+  RET
+ENDP MAIN
+
+Note the interface part is not necessary, the main procedure is always
+executed at 100h, so the first procedure must be the main procedure!
+For more information see pro32.doc of the Pro32 Gold package.
+
+
+
+
+==============================================================================
+
+Dieter Pawelczak, November 1996, October 1997, January 1998, February 1998,
+April 1998, September 1998
+
+
+
+ email: dieterp@bigfoot.de
+ www  : Pass32 Home:
+        http://www.geocities.com/SiliconValley/Bay/3437/index.html
+
+        Personal Home:
+        http://www.geocities.com/SiliconValley/Bay/9159/
+        http://www.eikon.e-technik.tu-muenchen.de/~et_514/
+
+ Dieter Pawelczak,
+ Fasanenweg 41
+
+ 85540 Haar,
+ Germany

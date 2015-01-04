@@ -1,0 +1,342 @@
+****************************************************************************
+*                                                                          *
+*   Pass32 - 32 Bit Assembler             written by Dieter Pawelczak      *
+*                                                                          *
+*                       W I N 3 2 - R E A D M E                            *
+*                                                                          *
+*   (c) 1996,1999 by Dieter Pawelczak, Fasanenweg 41, 85540 Haar, Germany  *
+*                                                                          *
+****************************************************************************
+
+              PASS32 V 3.0 aplha - release 8 - october 1999
+
+ Contents:
+
+ 1. Example Win32 Application
+ 2. Example Win32 DLL - Implementation and Import
+ 3. Win32 Programming & RTL
+
+
+ Introduction ================================================================
+
+ This short section describes the Win32 ability of Pass32 V3.0. Note that
+ Pass32 V3 is still in an alpha stage. Therefore, the Win32 docu is
+ found in an extra file.
+
+ Pass32 V3.0 is able to create Win32 files. The files will consist of max.
+ 6 sections: .code .data .data? .import, .rsrc and .export
+
+ Currently only 5 sections are supported: .code .data .data? .import and
+ .export!
+
+ The Pass32 Assembler directly creates the Win32 PE format executables and
+ dynamic link libraries without any additional linker process.
+
+
+
+
+
+
+ 1. Example Win32 Application ================================================
+
+
+ The following description shows the basic outlook of a Win32 program (compare
+ with the file HELLOWIN.ASM):
+
+ .MODEL WIN32 ; the extended .MODEL directive
+ .MIN 32      ; heap allocation
+ .MAX 64
+ .STACK 32    ; stack allocation
+
+ .data        ; standard data section
+
+        szDisplayName db 'Hello World Demo',0
+        szMessage     db 'Hello, World with Pass32',0
+
+ .code
+
+ ; WIN 32 Prototypes :
+
+ proc MessageBox
+   .win32 'USER32.MessageBoxA'
+ endp MessageBox
+
+
+ Start:
+        mov ecx,0
+ loop:
+        push ecx
+        push ecx                    ; Style
+        push OFFSET szDisplayName   ; Message-Window-Title
+        push OFFSET szMessage       ; Message
+        push 0                      ; hwin
+        call MessageBox             ; call via Prototype
+        pop ecx
+        cmp eax,4                   ; = REPEAT
+        je short L1
+        inc ecx
+ L1:
+        cmp ecx,5
+        jb loop
+        push 0
+        .invoke .win32 'KERNEL32.ExitProcess'; call direct the API func
+ end start
+
+ The example shows two ways of accessing Win32 API functions. The standard
+ way is to use procedure prototypes. Actually even more useful is the
+ definition of macros, like MessageBox(hwin,Mesg,Title,Style).
+ The other way to import Win32 functions is using the .invoke directive.
+ This directive creates a call to the API function without a procedure
+ prototype.
+
+ Compile HELLOWIN.ASM with:
+
+    Pass32 Hellowin.asm -w
+
+ To create a Win32 Console application, you have to use the model:
+
+ .MODEL WIN32 CONSOLE
+
+
+
+
+
+ 2. Example Win32 DLL - Implementation and Import ============================
+
+ Pass32 can create 32 bit Dynamic Runtime Libraries. The implementation is
+ similar to the standard Pass32 DLL, compare Pass32.doc, 1.5 / 2.5.
+
+ Before I introduce a simple DLL example, I want to explain how a Win32
+ application is load to memory and executed.
+
+ A typical Win32 application uses at least one DLL - the Kernel32 DLL.
+ This DLL provides the 'ExitProcess' function, which will terminate the
+ application.
+ A Win32 application is load into a virtual 4G address space, i.e.
+ theoretically all applications can share the same code offset. The standard
+ Win32 code offset is 0400000h. The Win32 OS creates a virtual address space
+ for the application. Then it loads the program to 0400000h. Usually, each
+ section of the application, thus .data, .code, .idata, .edata is load to a
+ different start address: The PE-header defines the mapping between the
+ sections inside the exe-file and the actual offset location. A small Win32
+ application, could look like this:
+ .code : 0401000h, .idata : 0402000h, .data : 0403000h, .data? : 0404000h.
+
+ Now, how can an application access a DLL, like Kernel32?
+ The DLL is pre-compiled to a specific offset. My version of Kernel32 has
+ an image address of: bff70000h. When the application wants to access the
+ kernel32 DLL, it creates an entry in the import section (.idata). This
+ import section contains a pointer for each function of a DLL. In our
+ example, the application calls ExitProcess in Kernel32 DLL. The import
+ section therefore contains a pointer to Kernel32.ExitProcess.
+ When the application is load, Windows copies the import section into
+ the application address space. Now it looks for the DLL. When the DLL
+ is found, it opens the DLL and looks for the required function. The
+ entry point of the function is now updated in the import section of
+ the application. The application itself always refers to the DLL function
+ by using the pointer of the import section. When the imported DLL function
+ is loaded successfully, the import section contains the correct pointer.
+ When the application calls the specific function, it performs a near call
+ to the pointer in the import section!
+ Due to the virtual 4G address space, it does not matter, if two applications
+ start at the same offset. The first problem will occur, when two DLLs use
+ the same address offset and an application wants to address both DLLs.
+ For this reason, Pass32 creates DLL image offsets, which depends on the
+ DLL name. This should avoid, that two different DLLs start at the same
+ offset!
+
+ The following example describes a simple DLL (TESTDLL.DLL):
+
+ .MODEL WIN32 CONSOLE DLL
+ .INTERFACE
+
+; This is the Interface part of the DLL
+;
+; you can define the image base address of the DLL with the .ORG directive
+; .org 07000000h
+; otherwise, the image address is automatically generated.
+; note, that two DLLs can not have the same image base address!
+; note, that the image base must be 4k aligned!
+
+    PROC    'Proc1'    OFFSET DLLProc1
+    PROC    'Proc2'    OFFSET DLLProc2
+    PROC    'Proc3'    OFFSET DLLProc3
+
+
+ .CODE
+
+; init code - Win32 calls this code, when the DLL is load.
+; note, this must be the first line of the code segment here!
+; do not include other modules prior to the minimum DLL init code:
+; >>>>>   mov eax,1    ; init successful
+; >>>>>   ret 0ch      ; return
+;
+     call init_console
+; the return value must be TRUE = 1, otherwise:
+; Windows prints funny error messages.
+     mov eax,1
+; frees the parameters from the stack
+     ret 0ch
+
+    .include console.inc
+
+    PROC DLLPROC1
+      writeln('TESTDLL: procedure 1 is called');
+      ret
+    ENDP DLLPROC1
+
+    PROC DLLPROC2
+      writeln('TESTDLL: procedure 2 is called');
+      ret
+    ENDP DLLPROC2
+
+    PROC DLLPROC3
+      writeln('TESTDLL: procedure 3 is called');
+      ret
+    ENDP DLLPROC3
+
+
+ To create a Win32 DLL application, you have to select the model
+
+ .MODEL WIN32 DLL          ; or
+ .MODEL WIN32 CONSOLE DLL
+
+ and compile with the /DLL option.
+
+ Note that the console application / DLL is not supported by Win32s.
+ This "dos like" win32 image is only supported by Win95, Win98 and Win NT.
+
+ We can import the DLL into an application by the same means of the Win32
+ API import. We can use a procedure prototype, or directly the .invoke
+ directive (An automated import as Pass32 performs with Pass32 DLLs is not
+ supported yet) (DLLTEST.ASM):
+
+
+ .MODEL WIN32 CONSOLE
+ .include console.inc
+
+ ; a simple Win32 DLL is load and tested
+
+ .code
+
+ proc main
+    writeln('Test program load and executed')
+    .invoke .win32 'TESTDLL.Proc1'
+    .invoke .win32 'TESTDLL.Proc2'
+    .invoke .win32 'TESTDLL.Proc3'
+    readln
+   .invoke .win32 'Kernel32.ExitProcess'
+ endp main
+ end main
+
+ Compile both files and run the demo program:
+
+ Pass32 TESTDLL /DLL
+ Pass32 DLLTEST /W
+ DLLTEST
+
+
+
+
+ 3. Win32 Programming & RTL ==================================================
+
+ Pass32 provides a simple macro library to make Win32 programming easier.
+ Neverhteless, some basic rules for Win32 programming:
+
+ A Win32 function uses always the stack to transfer parameters. Unlike
+ fast assembler programming, which can use registers, you always have to
+ push data on the stack. There is a simple rule for the parameters:
+ You just have to use the reserved order of the standard C definition
+ (see Win32.hlp):
+
+ e.g.:
+
+ BOOL WriteFile(
+        HANDLE       hFile,          // handle of file to write to
+        LPCVOID      lpBuffer,       // address of data to write to file
+        DWORD        nNumberOfBytesToWrite,   // number of bytes to write
+        LPDWORD      lpNumberOfBytesWritten,  // address of number of bytes written
+        LPOVERLAPPED lpOverlapped    // addr. of structure needed for overlapped I/O
+                        );
+
+ is invoked by:
+
+ push offset lpOverlapped
+ push offset lpNumberOfBytesWritten
+ push nNumberOfBytesToWrite
+ push offset lpBuffer
+ push hFile
+ .invoke .win32 'Kernel32.WriteFile'
+
+ All values are 32 bit values. The prefix "LP" stands for "long" pointer,
+ which refers to a standard 32 bit pointer, thus the expected parameter is
+ the "offset" to the variable.
+
+ A function returns its result always in EAX, independent of the return type.
+
+ Note, Win32 API functions, that use strings can either use plain ascii
+ strings (win95/win98/winNt) or unicodestrings (winNt). These API functions
+ have a suffix 'A' for ascii and 'W' for unicode, example:
+ Write 'MessageBoxA' instead of 'MessageBox', otherwise you get an error:
+ Component or DLL not found...
+
+ -----------------------------------------------------------------------------
+
+ A tiny run-time-library....
+
+ CONSOLE.INC
+
+ The macro module CONSOLE.INC contains a collection of macros and functions
+ for reading, writing, cursor operations, color defining for a console
+ application.
+
+ WINSYS.INC
+
+ The module WINSYS.INC is comparable with the SYSTEM.INC module. It contains
+ functions for the command line, dynamic memory allocation, etc.
+
+ ---------------------------------------------------------------------------
+
+ COMPATIBILITY
+
+ Note, the standard Pass32 RTL is not compatible with the Win32 System:
+   - Win32 doesn't allow DOS calls - it handles file operation through
+     the Win32 API
+   - Win32 doesn't allow direct memory access like standard PM programs do
+
+ Compatible with Win32 are the following modules:
+
+   - STRING.INC = 32 bit string handling
+   - GAME.INC = joystick routines (you should better use joystick
+                functions of the Win32 API)
+
+
+ ---------------------------------------------------------------------------
+
+ Limits:
+
+ The number of DLLs is limited to 14. The maximum number of imported
+ functions is limited to 512.
+
+ TODO:
+
+ - Resources are not supported.
+ - Macro Library for standard API functions
+ - Win32 definitions
+
+ Help:
+
+ - Get win32.zip from ftp.borland.com/pub/delphi/techsupp/delphi2
+   that contains the whole Win32 API.
+ - Check at the Pass32 Homepage for Win32 links
+
+
+ email: dieterp@bigfoot.de
+ www  : Pass32 Home:
+        http://www.geocities.com/SiliconValley/Bay/3437/index.html
+
+        Personal Home:
+        http://www.geocities.com/SiliconValley/Bay/9159/
+
+
+ Dieter Pawelczak, Oct. 1999
