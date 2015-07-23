@@ -1,5 +1,5 @@
-//var
-//  x: int;
+var
+  x: int;
 //  b: bool;
 begin
 //  b := true;

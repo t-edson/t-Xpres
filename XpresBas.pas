@@ -191,7 +191,9 @@ begin
                      (lex.GetTokenAttribute = lex.tkEol)  or
                      (lex.GetTokenAttribute = lex.tkComment)
                      ) do
+  begin
     Next;
+  end;
   //actualiza estado
 //  tok := lex.GetToken;    //lee el token
 //  tokType := lex.GetTokenAttribute;  //lee atributo
@@ -209,9 +211,9 @@ var fFil: integer;
 begin
   if nlin = 0 then exit;  //protección
   if lex.GetEol then begin  //llegó al fin de línea
-    fFil := lex.GetY + 1;  //Pasa a siguiente fila.
+    fFil := lex.GetY;  //Pasa a siguiente fila.
     if fFil <= nlin then begin //se puede leer
-      lex.SetLine(curLines[fFil-1],fFil);  //prepara exploración
+      lex.SetLine(curLines[fFil],fFil);  //prepara exploración
       //actualiza estado
 //      tok := lex.GetToken;    //lee el token
 //      tokType := lex.GetTokenAttribute;  //lee atributo

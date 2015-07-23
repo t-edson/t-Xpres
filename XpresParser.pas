@@ -204,7 +204,7 @@ protected  //Eventos del compilador
   procedure CreateParam(ifun: integer; name: string; typ: ttype);
   function CapturaDelim: boolean;
   procedure CompileVarDeclar;
-  procedure CompileCurBlock;
+  procedure CompileCurBlock; virtual;
   procedure ClearVars;
   procedure ClearAllConst;
   procedure ClearAllFuncs;
@@ -262,12 +262,12 @@ var
   vars  : array of Tvar;  //lista de variables
   funcs : array of Tfunc; //lista de funciones
   cons  : array of Tvar;  //lista de constantes
-  nIntVar : integer;   //número de variables internas
-  nIntFun : integer;   //número de funciones internas
-  nIntCon : integer;   //número de constantes internas
+  nIntVar : integer;    //número de variables internas
+  nIntFun : integer;    //número de funciones internas
+  nIntCon : integer;    //número de constantes internas
 
   cIn    : TContexts;   //entrada de datos
-  p1, p2: TOperand; //Pasa los operandos de la operación actual
+  p1, p2 : TOperand;    //Pasa los operandos de la operación actual
   //referencias obligatorias
   tkEol     : TSynHighlighterAttributes;
   tkIdentif : TSynHighlighterAttributes;
@@ -648,7 +648,7 @@ El resultado puede ser:
  TFF_NONE   -> No se encuentra.
  TFF_PARTIAL-> Se encuentra solo el nombre.
  TFF_FULL   -> Se encuentra y coninciden sus parámetros, actualiza "idx".
-"i0", es el índice inicial desde donde debe buscar. Permite acelerar las búsquedas, cuando
+"idx0", es el índice inicial desde donde debe buscar. Permite acelerar las búsquedas, cuando
 ya se ha explorado antes.
 }
 var
@@ -660,7 +660,7 @@ begin
   Result := TFF_NONE;   //por defecto
   hayFunc := false;
   tmp := UpCase(funName);
-  for i:=idx0 to high(funcs) do begin  //no debe empezar 1n 0, porque allí está func[0]
+  for i:=idx0 to high(funcs) do begin  //no debe empezar en 0, porque allí está func[0]
     if Upcase(funcs[i].name)= tmp then begin
       //coincidencia, compara
       hayFunc := true;  //para indicar que encontró el nombre
@@ -985,11 +985,12 @@ begin
       tmp := cIn.tok;  //guarda nombre de función
       cIn.Next;    //Toma identificador
       CaptureParams;  //primero lee parámetros
+      if HayError then exit;
       //busca como función
       case FindFuncWithParams0(tmp, i, ifun) of  //busca desde ifun
       //TFF_NONE:      //No debería pasar esto
       TFF_PARTIAL:   //encontró la función, pero no coincidió con los parámetros
-         GenError('Error en parámetros de '+ tmp +'()');
+         GenError('Error en tipo de parámetros de '+ tmp +'()');
       TFF_FULL:     //encontró completamente
         begin   //encontró
           Result.ifun:=i;      //guarda referencia a la función
@@ -1155,7 +1156,6 @@ procedure TCompilerBase.CompileCurBlock;
 //Compila el bloque de código actual hasta encontrar un delimitador de bloque.
 begin
   cIn.SkipWhites;
-
   while not cIn.Eof and not EOBlock do begin
     //se espera una expresión o estructura
     if cIn.tokType = tkStruct then begin  //es una estructura

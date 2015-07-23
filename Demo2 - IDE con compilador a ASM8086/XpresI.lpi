@@ -47,12 +47,6 @@
               </Win32>
             </Options>
           </Linking>
-          <Other>
-            <CompilerMessages>
-              <MsgFileName Value=""/>
-            </CompilerMessages>
-            <CompilerPath Value="$(CompPath)"/>
-          </Other>
         </CompilerOptions>
       </Item2>
     </BuildModes>
@@ -76,7 +70,6 @@
       <Unit0>
         <Filename Value="XpresI.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="XpresI"/>
       </Unit0>
       <Unit1>
         <Filename Value="formprincipal.pas"/>
@@ -89,27 +82,23 @@
       <Unit2>
         <Filename Value="synhighlighterfacil.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="SynHighlighterFacil"/>
       </Unit2>
       <Unit3>
         <Filename Value="utileditsyn.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="utilEditSyn"/>
       </Unit3>
       <Unit4>
-        <Filename Value="parser.pas"/>
+        <Filename Value="Parser.pas"/>
         <IsPartOfProject Value="True"/>
         <UnitName Value="Parser"/>
       </Unit4>
       <Unit5>
         <Filename Value="globales.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="Globales"/>
       </Unit5>
       <Unit6>
         <Filename Value="XpresBas.pas"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="XpresBas"/>
       </Unit6>
       <Unit7>
         <Filename Value="formconfig.pas"/>
@@ -117,7 +106,6 @@
         <ComponentName Value="Config"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UnitName Value="FormConfig"/>
       </Unit7>
       <Unit8>
         <Filename Value="FrameCfgEdit.pas"/>
@@ -125,14 +113,12 @@
         <ComponentName Value="fraCfgEdit"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-        <UnitName Value="FrameCfgEdit"/>
       </Unit8>
       <Unit9>
         <Filename Value="FormOut.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="frmOut"/>
         <ResourceBaseClass Value="Form"/>
-        <UnitName Value="FormOut"/>
       </Unit9>
     </Units>
   </ProjectOptions>
@@ -144,7 +130,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir);.."/>
-      <OtherUnitFiles Value="..;..\..\_Librerias\SynFacilUtils 0.4b"/>
+      <OtherUnitFiles Value="..;..\..\_Librerias\SynFacilUtils 0.4b;..\..\_Librerias\MisUtils 0.3b"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Parsing>
@@ -167,12 +153,6 @@
         <UseExternalDbgSyms Value="True"/>
       </Debugging>
     </Linking>
-    <Other>
-      <CompilerMessages>
-        <MsgFileName Value=""/>
-      </CompilerMessages>
-      <CompilerPath Value="$(CompPath)"/>
-    </Other>
   </CompilerOptions>
   <Debugging>
     <Exceptions Count="3">

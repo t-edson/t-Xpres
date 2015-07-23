@@ -16,4 +16,4 @@ para implmentar el analizador sintáctico y generador de código.
 Como han habido cambios drásticos, se pierde la compatibilidad con la versión 0.6. Pero los conceptos
 básicos del framework se mantienen.
 
-La docuemntación referida al Framework, ha mejorado considerablemente.
+La documentación referida al Framework, ha mejorado considerablemente.

@@ -43,7 +43,6 @@
       <Unit0>
         <Filename Value="project1.lpr"/>
         <IsPartOfProject Value="True"/>
-        <UnitName Value="project1"/>
       </Unit0>
       <Unit1>
         <Filename Value="unit1.pas"/>
@@ -59,7 +58,6 @@
         <ComponentName Value="frmOut"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-        <UnitName Value="FormOut"/>
       </Unit2>
     </Units>
   </ProjectOptions>
@@ -83,9 +81,8 @@
     </Linking>
     <Other>
       <CompilerMessages>
-        <MsgFileName Value=""/>
+        <IgnoredMessages idx5057="True"/>
       </CompilerMessages>
-      <CompilerPath Value="$(CompPath)"/>
     </Other>
   </CompilerOptions>
   <Debugging>

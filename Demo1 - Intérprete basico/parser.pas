@@ -47,7 +47,7 @@ begin
 end;
 {Incluye el código del compilador. Aquí tendrá acceso a todas las variables públicas
  de XPresParser}
-{$I interprete.pas}
+{$I GenCod.pas}
 //Métodos OVERRIDE
 procedure TCompiler.CompilarArc;
 //Compila un programa en el contexto actual
@@ -108,10 +108,6 @@ procedure TCompiler.Compilar(NombArc: string; LinArc: Tstrings);
 begin
   //se pone en un "try" para capturar errores y para tener un punto salida de salida
   //único
-  if ejecProg then begin
-    GenError('Ya se está compialndo un programa actualmente.');
-    exit;  //sale directamente
-  end;
   try
     ejecProg := true;  //marca bandera
 
@@ -170,74 +166,7 @@ constructor TCompiler.Create;
 begin
   inherited Create;
   mem := TStringList.Create;  //crea lista para almacenar ensamblador
-
-  ///////////define la sintaxis del compilador
-  //crea y guarda referencia a los atributos
-{  tkEol      := xLex.tkEol;
-  tkIdentif  := xLex.tkIdentif;
-  tkKeyword  := xLex.tkKeyword;
-  tkNumber   := xLex.tkNumber;
-  tkString   := xLex.tkString;
-  //personalizados
-  tkOperator := xLex.NewTokType('Operador'); //personalizado
-  tkBoolean  := xLex.NewTokType('Boolean');  //personalizado
-  tkSysFunct := xLex.NewTokType('SysFunct'); //funciones del sistema
-  tkExpDelim := xLex.NewTokType('ExpDelim');//delimitador de expresión ";"
-  tkBlkDelim := xLex.NewTokType('BlkDelim'); //delimitador de bloque
-  tkType     := xLex.NewTokType('Types');    //personalizado
-  tkStruct   := xLex.NewTokType('Struct');   //personalizado
-  tkOthers   := xLex.NewTokType('Others');   //personalizado
-  //Configura atributos
-  tkKeyword.Style := [fsBold];     //en negrita
-  tkBlkDelim.Foreground:=clGreen;
-  tkBlkDelim.Style := [fsBold];     //en negrita
-  tkStruct.Foreground:=clGreen;
-  tkStruct.Style := [fsBold];     //en negrita
-  //inicia la configuración
-  xLex.ClearMethodTables;           //limpìa tabla de métodos
-  xLex.ClearSpecials;               //para empezar a definir tokens
-  //crea tokens por contenido
-  xLex.DefTokIdentif('[$A-Za-z_]', '[A-Za-z0-9_]*');
-  xLex.DefTokContent('[0-9]', '[0-9.]*', tkNumber);
-  //define palabras claves
-  xLex.AddIdentSpecList('THEN var type', tkKeyword);
-  xLex.AddIdentSpecList('program public private method const', tkKeyword);
-  xLex.AddIdentSpecList('class create destroy sub do begin', tkKeyword);
-  xLex.AddIdentSpecList('END ELSE ELSIF', tkBlkDelim);
-  xLex.AddIdentSpecList('true false', tkBoolean);
-  xLex.AddIdentSpecList('IF FOR', tkStruct);
-  xLex.AddIdentSpecList('and or xor not', tkOperator);
-  xLex.AddIdentSpecList('int float char string bool', tkType);
-  //símbolos especiales
-  xLex.AddSymbSpec('+',  tkOperator);
-  xLex.AddSymbSpec('-',  tkOperator);
-  xLex.AddSymbSpec('*',  tkOperator);
-  xLex.AddSymbSpec('/',  tkOperator);
-  xLex.AddSymbSpec('\',  tkOperator);
-  xLex.AddSymbSpec('%',  tkOperator);
-  xLex.AddSymbSpec('**', tkOperator);
-  xLex.AddSymbSpec('=',  tkOperator);
-  xLex.AddSymbSpec('>',  tkOperator);
-  xLex.AddSymbSpec('>=', tkOperator);
-  xLex.AddSymbSpec('<;', tkOperator);
-  xLex.AddSymbSpec('<=', tkOperator);
-  xLex.AddSymbSpec('<>', tkOperator);
-  xLex.AddSymbSpec('<=>',tkOperator);
-  xLex.AddSymbSpec(':=', tkOperator);
-  xLex.AddSymbSpec(';', tkExpDelim);
-  xLex.AddSymbSpec('(',  tkOthers);
-  xLex.AddSymbSpec(')',  tkOthers);
-  xLex.AddSymbSpec(':',  tkOthers);
-  xLex.AddSymbSpec(',',  tkOthers);
-  //crea tokens delimitados
-  xLex.DefTokDelim('''','''', tkString);
-  xLex.DefTokDelim('"','"', tkString);
-  xLex.DefTokDelim('//','', xLex.tkComment);
-  xLex.DefTokDelim('/\*','\*/', xLex.tkComment, tdMulLin);
-  //define bloques de sintaxis
-  xLex.AddBlock('{','}');
-  xLex.Rebuild;   //es necesario para terminar la definición
-}
+  //se puede definir la sintaxis aquí o dejarlo para StartSyntax()
   StartSyntax;   //Debe hacerse solo una vez al inicio
 end;
 

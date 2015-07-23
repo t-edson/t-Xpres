@@ -39,9 +39,9 @@ procedure Code(cod: string);
 begin
   cxp.mem.Add(cod);
 end;
-function GenError(msg: string): boolean;
+procedure GenError(msg: string);
 begin
-  Result := cxp.GenError(msg);
+  cxp.GenError(msg);
 end;
 function HayError: boolean;
 begin
@@ -49,7 +49,7 @@ begin
 end;
 {Incluye el código del compilador. Aquí tendrá acceso a todas las variables públicas
  de XPresParser}
-{$I interprete.pas}
+{$I GenCod.pas}
 //Métodos OVERRIDE
 procedure TCompiler.TipDefecString(var Op: TOperand; tokcad: string);
 //Devuelve el tipo de cadena encontrado en un token
@@ -127,7 +127,7 @@ begin
   //se pone en un "try" para capturar errores y para tener un punto salida de salida
   //único
   if ejecProg then begin
-    GenError('Ya se está compialndo un programa actualmente.');
+    GenError('Ya se está compilando un programa actualmente.');
     exit;  //sale directamente
   end;
   try
