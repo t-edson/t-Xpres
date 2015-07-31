@@ -184,15 +184,19 @@ begin
 //  tokType := lex.GetTokenAttribute;  //lee atributo
 end;
 procedure TContext.SkipWhites;
-//Coge los blancos iniciales y comentarios del contexto de entrada.
+//Coge los blancos iniciales, saltos de línea y comentarios del contexto de entrada.
 //Si no encuentra algun blanco al inicio, devuelve falso
+var
+  tok: String;
 begin
+  tok := lex.GetToken;    //lee el token
   while not Eof and ((lex.GetTokenAttribute = lex.tkSpace) or
                      (lex.GetTokenAttribute = lex.tkEol)  or
                      (lex.GetTokenAttribute = lex.tkComment)
                      ) do
   begin
     Next;
+tok := lex.GetToken;    //lee el token
   end;
   //actualiza estado
 //  tok := lex.GetToken;    //lee el token

@@ -18,10 +18,10 @@ con sintaxis coloreada y completado de código.
 
 Para el intérprete, se debe escribir definir el lenguaje e implementar el código de interpretación.
 Todo esto se debe definir en una nueva unidad. Se recomienda usar el nombre "Parser.pas". En esta unidad 
-se debe incluir a la unidad "XpresParser". Opcionalmente, para no hacer el código y para modularizar 
-mejor al intérprete, se puede incluir un archivo adicional {$I interprete.pas}
+se debe incluir a la unidad "XpresParser". Opcionalmente, para no hacer el código muy extenso y para 
+modularizar mejor al intérprete, se puede incluir un archivo adicional {$I GenCod.pas}
 
-El archivo "Interprete.pas", debe seguir una plantilla. Se puede usar el ejemplo "Demo1" como punto de 
+El archivo "GenCod.pas", debe seguir una plantilla. Se puede usar el ejemplo "Demo1" como punto de 
 partida.
 
 Básicamente lo que se hace es allí es agregar los operadores y operaciones del lenguaje.

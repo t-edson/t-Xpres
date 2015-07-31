@@ -27,7 +27,7 @@ interface
 uses
   Classes, SysUtils, fgl, Forms, LCLType, Dialogs, lclProc,
   SynEditHighlighter, SynFacilHighlighter, SynFacilBasic,
-  XpresBas, FormOut;
+  XpresBas;
 
 type
 
@@ -60,7 +60,8 @@ Tvar = record
   typ : Ttype;    //tipo de la variable
   amb : string;   //ámbito o alcance de la variable
   //direción física. Usado para implementar un compilador
-  adrr: integer;
+  adrr: word;
+  bank: word;   //banco o segmento. Usado solo en algunas arquitecturas
   //Campos usados para implementar el intérprete sin máquina virtual
   //valores de la variable.
   valInt  : Int64;    //valor en caso de que sea un entero
@@ -148,8 +149,10 @@ TType = class
   size : smallint;    //tamaño en bytes del tipo
   idx  : smallint;    //ubicación dentro de la matriz de tipos
   amb  : TFaSynBlock; //ámbito de validez del tipo
-  OnDefine: TProcDefineVar;   {Evento. Es llamado cada vez que se encuentra la
-                               declaración de una variable (de este tipo). }
+  OnGlobalDef: TProcDefineVar; {Evento. Es llamado cada vez que se encuentra la
+                                declaración de una variable (de este tipo) en el ámbito global.}
+  OnLocalDef: TProcDefineVar;  {Evento. Es llamado cada vez que se encuentra la
+                                declaración de una variable (de este tipo) en un ámbito local.}
   OnLoad  : TProcLoadOperand; {Evento. Es llamado cuando se pide cargar un operando
                                (de este tipo) en registro o pila. Por lo general, se
                                hace como parte de la evaluación de una expresión. }
@@ -187,6 +190,9 @@ end;
 { TCompiler }
 
 {Clase base para crear al objeto compilador}
+
+{ TCompilerBase }
+
 TCompilerBase = class
 protected  //Eventos del compilador
   {Notar que estos eventos no se definen para usar métofdos de objetos, sino que
@@ -202,8 +208,8 @@ protected  //Eventos del compilador
   function CreateSysFunction(funName: string; typ: ttype; proc: TProcExecFunction
     ): integer;
   procedure CreateParam(ifun: integer; name: string; typ: ttype);
-  function CapturaDelim: boolean;
-  procedure CompileVarDeclar;
+  function CaptureDelExpres: boolean;
+  procedure CompileVarDeclar; virtual;
   procedure CompileCurBlock; virtual;
   procedure ClearVars;
   procedure ClearAllConst;
@@ -215,24 +221,25 @@ protected  //Eventos del compilador
   procedure TipDefecNumber(var Op: TOperand; toknum: string);
   procedure TipDefecString(var Op: TOperand; tokcad: string); virtual;
   function FindDuplicFunction: boolean;
+  function EOBlock: boolean;
+  function EOExpres: boolean;
+  procedure GetExpression(const prec: Integer; isParam: boolean=false);
+  procedure GetBoolExpression;
+  procedure CreateVariable(const varName: string; typ: ttype);
+  procedure CreateVariable(varName, varType: string);
+  function FindVar(const varName: string; out idx: integer): boolean;
+  function FindCons(const conName: string; out idx: integer): boolean;
+  function FindFunc(const funName: string; out idx: integer): boolean;
+  function FindPredefName(name: string): TIdentifType;
 private
   procedure CaptureParams;
   procedure ClearParamsFunc(ifun: integer);
   procedure CreateFunction(funName, varType: string);
   function CreateFunction(funName: string; typ: ttype; proc: TProcExecFunction
     ): integer;
-  procedure CreateVariable(varName, varType: string);
-  function EOBlock: boolean;
-  function EOExpres: boolean;
   procedure Evaluar(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
-  function FindCons(const conName: string; out idx: integer): boolean;
-  function FindFunc(const funName: string; out idx: integer): boolean;
   function FindFuncWithParams0(const funName: string; var idx: integer;
     idx0: integer=1): TFindFuncResult;
-  function FindPredefName(name: string): TIdentifType;
-  function FindVar(const varName: string; out idx: integer): boolean;
-  procedure GetBoolExpression;
-  procedure GetExpression(const prec: Integer; isParam: boolean=false);
   function GetExpressionCore(const prec: Integer): TOperand;
   function GetOperand: TOperand;
   function GetOperandP(pre: integer): TOperand;
@@ -262,6 +269,7 @@ var
   vars  : array of Tvar;  //lista de variables
   funcs : array of Tfunc; //lista de funciones
   cons  : array of Tvar;  //lista de constantes
+  typs  : TTypes;       //lista de tipos (EL nombre "types" ya está reservado)
   nIntVar : integer;    //número de variables internas
   nIntFun : integer;    //número de funciones internas
   nIntCon : integer;    //número de constantes internas
@@ -281,18 +289,10 @@ var
   tkExpDelim: TSynHighlighterAttributes;
   tkBlkDelim: TSynHighlighterAttributes;
   tkType    : TSynHighlighterAttributes;
-  tkStruct  : TSynHighlighterAttributes;
   tkOthers  : TSynHighlighterAttributes;
 
 implementation
-
 uses Graphics;
-
-var
-  types  : TTypes;      //lista de tipos
-//    oper: string;      //indica el operador actual
-  //tipos de tokens
-
 var  //variables privadas del compilador
 
   nullOper : TOperator; //Operador nulo. Usado como valor cero.
@@ -504,8 +504,8 @@ var r: TType;
   i: Integer;
 begin
   //verifica nombre
-  for i:=0 to types.Count-1 do begin
-    if types[i].name = nom0 then begin
+  for i:=0 to typs.Count-1 do begin
+    if typs[i].name = nom0 then begin
       GenError('Identificador de tipo duplicado.');
       exit;
     end;
@@ -515,15 +515,15 @@ begin
   r.name:=nom0;
   r.cat:=cat0;
   r.size:=siz0;
-  r.idx:=types.Count;  //toma ubicación
+  r.idx:=typs.Count;  //toma ubicación
 //  r.amb:=;  //debe leer el bloque actual
   //agrega
-  types.Add(r);
+  typs.Add(r);
   Result:=r;   //devuelve índice al tipo
 end;
 procedure TCompilerBase.ClearTypes;  //Limpia los tipos
 begin
-  types.Clear;
+  typs.Clear;
 end;
 procedure TCompilerBase.ClearVars;
 //Limpia todas las variables creadas por el usuario.
@@ -596,7 +596,7 @@ var t: ttype;
 begin
   //Verifica el tipo
   hay := false;
-  for t in types do begin
+  for t in typs do begin
     if t.name=varType then begin
        hay:=true; break;
     end;
@@ -607,7 +607,7 @@ begin
   end;
   CreateFunction(funName, t, nil);
   //Ya encontró tipo, llama a evento
-//  if t.OnDefine<>nil then t.OnDefine(funName, '');
+//  if t.OnGlobalDef<>nil then t.OnGlobalDef(funName, '');
 end;
 procedure TCompilerBase.ClearParamsFunc(ifun: integer);  inline;
 //Elimina los parámetros de una función
@@ -740,7 +740,7 @@ begin
   Result := cIn.tokType = tkExpDelim;
 end;
 { Rutinas del compilador }
-function TCompilerBase.CapturaDelim: boolean;
+function TCompilerBase.CaptureDelExpres: boolean;
 //Verifica si sigue un delimitador de expresión. Si encuentra devuelve false.
 begin
   cIn.SkipWhites;
@@ -784,21 +784,21 @@ begin
 
     Op.valFloat := f;  //debe devolver un extended
     menor := 1000;
-    for i:=0 to types.Count-1 do begin
+    for i:=0 to typs.Count-1 do begin
       { TODO : Se debería tener una lista adicional TFloatTypes, para acelerar la
       búsqueda}
-      if (types[i].cat = t_float) and (types[i].size>=Op.size) then begin
+      if (typs[i].cat = t_float) and (typs[i].size>=Op.size) then begin
         //guarda el menor
-        if types[i].size < menor then  begin
+        if typs[i].size < menor then  begin
            imen := i;   //guarda referencia
-           menor := types[i].size;
+           menor := typs[i].size;
         end;
       end;
     end;
     if menor = 1000 then  //no hubo tipo
       Op.typ := nil
     else  //encontró
-      Op.typ:=types[imen];
+      Op.typ:=typs[imen];
 
   end else begin     //es entero
     Op.catTyp := t_integer;   //es entero
@@ -835,29 +835,29 @@ begin
     Op.valInt := n;   //copia valor de constante entera
     //busca si hay tipo numérico que soporte esta constante
 {      Op.typ:=nil;
-    for i:=0 to types.Count-1 do begin
+    for i:=0 to typs.Count-1 do begin
       { TODO : Se debería tener una lista adicional  TIntegerTypes, para acelerar la
       búsqueda}
-      if (types[i].cat = t_integer) and (types[i].size=Op.size) then
-        Op.typ:=types[i];  //encontró
+      if (typs[i].cat = t_integer) and (typs[i].size=Op.size) then
+        Op.typ:=typs[i];  //encontró
     end;}
     //busca el tipo numérico más pequeño que pueda albergar a este número
     menor := 1000;
-    for i:=0 to types.Count-1 do begin
+    for i:=0 to typs.Count-1 do begin
       { TODO : Se debería tener una lista adicional  TIntegerTypes, para acelerar la
       búsqueda}
-      if (types[i].cat = t_integer) and (types[i].size>=Op.size) then begin
+      if (typs[i].cat = t_integer) and (typs[i].size>=Op.size) then begin
         //guarda el menor
-        if types[i].size < menor then  begin
+        if typs[i].size < menor then  begin
            imen := i;   //guarda referencia
-           menor := types[i].size;
+           menor := typs[i].size;
         end;
       end;
     end;
     if menor = 1000 then  //no hubo tipo
       Op.typ := nil
     else  //encontró
-      Op.typ:=types[imen];
+      Op.typ:=typs[imen];
   end;
 end;
 procedure TCompilerBase.TipDefecString(var Op: TOperand; tokcad: string);
@@ -873,22 +873,22 @@ begin
   //////////// Verifica si hay tipos string definidos ////////////
   Op.typ:=nil;
   //Busca primero tipo string (longitud variable)
-  for i:=0 to types.Count-1 do begin
+  for i:=0 to typs.Count-1 do begin
     { TODO : Se debería tener una lista adicional  TStringTypes, para acelerar la
     búsqueda}
-    x := types[i];
-    if (types[i].cat = t_string) and (types[i].size=-1) then begin  //busca un char
-      Op.typ:=types[i];  //encontró
+    x := typs[i];
+    if (typs[i].cat = t_string) and (typs[i].size=-1) then begin  //busca un char
+      Op.typ:=typs[i];  //encontró
       break;
     end;
   end;
   if Op.typ=nil then begin
     //no hubo "string", busca al menos "char", para generar ARRAY OF char
-    for i:=0 to types.Count-1 do begin
+    for i:=0 to typs.Count-1 do begin
       { TODO : Se debería tener una lista adicional  TStringTypes, para acelerar la
       búsqueda}
-      if (types[i].cat = t_string) and (types[i].size=1) then begin  //busca un char
-        Op.typ:=types[i];  //encontró
+      if (typs[i].cat = t_string) and (typs[i].size=1) then begin  //busca un char
+        Op.typ:=typs[i];  //encontró
         break;
       end;
     end;
@@ -905,11 +905,11 @@ begin
   Op.valBool:= (tokcad[1] in ['t','T']);
   //verifica si hay tipo boolean definido
   Op.typ:=nil;
-  for i:=0 to types.Count-1 do begin
+  for i:=0 to typs.Count-1 do begin
     { TODO : Se debería tener una lista adicional  TBooleanTypes, para acelerar la
     búsqueda}
-    if (types[i].cat = t_boolean) then begin  //basta con que haya uno
-      Op.typ:=types[i];  //encontró
+    if (typs[i].cat = t_boolean) then begin  //basta con que haya uno
+      Op.typ:=typs[i];  //encontró
       break;
     end;
   end;
@@ -1067,17 +1067,34 @@ begin
     GenError('Se esperaba operando');
   end;
 end;
+procedure TCompilerBase.CreateVariable(const varName: string; typ: ttype);
+var
+  r : Tvar;
+  n: Integer;
+begin
+  //verifica nombre
+  if FindPredefName(varName) <> idtNone then begin
+    GenError('Identificador duplicado: "' + varName + '".');
+    exit;
+  end;
+  //registra variable en la tabla
+  r.nom:=varName;
+  r.typ := typ;   //fija  referencia a tipo
+  n := high(vars)+1;
+  setlength(vars, n+1);
+  vars[n] := r;
+  //Ya encontró tipo, llama a evento
+  if typ.OnGlobalDef<>nil then typ.OnGlobalDef(varName, '');
+end;
 procedure TCompilerBase.CreateVariable(varName, varType: string);
-//Se debe reservar espacio para las variables indicadas. Los tipos siempre
-//aparecen en minúscula.
+{Agrega una variable a la tabla de variables.
+ Los tipos siempre aparecen en minúscula.}
 var t: ttype;
   hay: Boolean;
-  n: Integer;
-  r : Tvar;
 begin
   //Verifica el tipo
   hay := false;
-  for t in types do begin
+  for t in typs do begin
     if t.name=varType then begin
        hay:=true; break;
     end;
@@ -1086,22 +1103,13 @@ begin
     GenError('Tipo "' + varType + '" no definido.');
     exit;
   end;
-  //verifica nombre
-  if FindPredefName(varName) <> idtNone then begin
-    GenError('Identificador duplicado: "' + varName + '".');
-    exit;
-  end;
-  //registra variable en la tabla
-  r.nom:=varName;
-  r.typ := t;
-  n := high(vars)+1;
-  setlength(vars, n+1);
-  vars[n] := r;
-  //Ya encontró tipo, llama a evento
-  if t.OnDefine<>nil then t.OnDefine(varName, '');
+  CreateVariable(varName, t);
+  //puede salir con error
 end;
 procedure TCompilerBase.CompileVarDeclar;
-//Compila la declaración de variables.
+{Compila la declaración de variables. Usa una sintaxis, sencilla, similar a la de
+ Pascal. Lo normal sería que se sobreescriba este método para adecuarlo al lenguaje
+ que se desee implementar. }
 var
   varType: String;
   varName: String;
@@ -1149,61 +1157,20 @@ begin
     GenError('Se esperaba ":" o ",".');
     exit;
   end;
-  if not CapturaDelim then exit;
+  if not CaptureDelExpres then exit;
   cIn.SkipWhites;
 end;
 procedure TCompilerBase.CompileCurBlock;
-//Compila el bloque de código actual hasta encontrar un delimitador de bloque.
+{Compila el bloque de código actual hasta encontrar un delimitador de bloque, o fin
+de archivo. Este procesamiento es muy básico y solo se remite a procesar expresiones,
+separdas por el delimitador de expresión. En una implementación formal, debería
+sobreescribirse este método, con una implementación más completa.}
 begin
   cIn.SkipWhites;
   while not cIn.Eof and not EOBlock do begin
     //se espera una expresión o estructura
-    if cIn.tokType = tkStruct then begin  //es una estructura
-      if cIn.tokL = 'if' then begin  //condicional
-        cIn.Next;  //toma IF
-        GetBoolExpression; //evalua expresión
-        if PErr.HayError then exit;
-        if cIn.tokL<> 'then' then begin
-          GenError('Se esperaba "then".');
-          exit;
-        end;
-        cIn.Next;  //toma el THEN
-        //cuerpo del if
-        CompileCurBlock;  //procesa bloque
-//        Result := res;  //toma resultado
-        if PErr.HayError then exit;
-        while cIn.tokL = 'elsif' do begin
-          cIn.Next;  //toma ELSIF
-          GetBoolExpression; //evalua expresión
-          if PErr.HayError then exit;
-          if cIn.tokL<> 'then' then begin
-            GenError('Se esperaba "then".');
-            exit;
-          end;
-          cIn.Next;  //toma el THEN
-          //cuerpo del if
-          CompileCurBlock;  //evalua expresión
-//          Result := res;  //toma resultado
-          if PErr.HayError then exit;
-        end;
-        if cIn.tokL = 'else' then begin
-          cIn.Next;  //toma ELSE
-          CompileCurBlock;  //evalua expresión
-//          Result := res;  //toma resultado
-          if PErr.HayError then exit;
-        end;
-        if cIn.tokL<> 'end' then begin
-          GenError('Se esperaba "end".');
-          exit;
-        end;
-      end else begin
-        GenError('Error de diseño. Estructura no implementada.');
-        exit;
-      end;
-    end else begin  //debe ser una expresión
-      GetExpression(0);
-      if perr.HayError then exit;   //aborta
-    end;
+    GetExpression(0);
+    if perr.HayError then exit;   //aborta
     //se espera delimitador
     if cIn.Eof then break;  //sale por fin de archivo
     //busca delimitador
@@ -1385,7 +1352,7 @@ begin
   if ExprLevel = 0 then debugln('');
 end;
 procedure TCompilerBase.GetBoolExpression;
-//Simplifica la evaluación de expresiones booleanas, validadno el tipo
+//Simplifica la evaluación de expresiones booleanas, validando el tipo
 begin
   GetExpression(0);  //evalua expresión
   if PErr.HayError then exit;
@@ -1393,6 +1360,7 @@ begin
     GenError('Se esperaba expresión booleana');
   end;
 end;
+
 {function GetNullExpression(): TOperand;
 //Simplifica la evaluación de expresiones sin dar error cuando encuentra algún delimitador
 begin
@@ -1405,7 +1373,7 @@ constructor TCompilerBase.Create;
 begin
   PErr.IniError;   //inicia motor de errores
   //Inicia lista de tipos
-  types := TTypes.Create(true);
+  typs := TTypes.Create(true);
   //Inicia variables, funciones y constantes
   ClearAllVars;
   ClearAllFuncs;
@@ -1425,12 +1393,11 @@ begin
   cIn.Destroy; //Limpia lista de Contextos
   xLex.Free;
   nullOper.Free;
-  types.Free;
+  typs.Free;
   inherited Destroy;
 end;
 
 { TOperand }
-
 function TOperand.VarName: string; inline;
 begin
   Result := vars[ivar].nom;

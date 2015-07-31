@@ -54,19 +54,6 @@ procedure TCompiler.CompilarArc;
 begin
 //  CompilarAct;
   Perr.Clear;
-  if cIn.tokL = 'program' then begin
-    cIn.Next;  //pasa al nombre
-    cIn.SkipWhites;
-    if cIn.Eof then begin
-      GenError('Se esperaba nombre de programa.');
-      exit;
-    end;
-    cIn.Next;  //Toma el nombre y pasa al siguiente
-    if not CapturaDelim then exit;
-//  end else begin
-//    GenError('Se esperaba: "program ... "');
-//    exit;
-  end;
   if cIn.Eof then begin
     GenError('Se esperaba "begin", "var", "type" o "const".');
     exit;

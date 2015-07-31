@@ -6,7 +6,7 @@ unit Parser;
 
 interface
 uses
-  Classes, SysUtils, LCLType, Dialogs, lclProc, Graphics,
+  Classes, SysUtils, LCLType, Dialogs, lclProc, Graphics, SynEditHighlighter,
   SynFacilBasic,
   XPresParser, FormOut;
 
@@ -16,6 +16,7 @@ type
 
   TCompiler = class(TCompilerBase)
   private
+    tkStruct   : TSynHighlighterAttributes;
     procedure CompilarArc;
     procedure TipDefecString(var Op: TOperand; tokcad: string); override;
   public
@@ -72,19 +73,6 @@ procedure TCompiler.CompilarArc;
 begin
 //  CompilarAct;
   Perr.Clear;
-  if cIn.tokL = 'program' then begin
-    cIn.Next;  //pasa al nombre
-    cIn.SkipWhites;
-    if cIn.Eof then begin
-      GenError('Se esperaba nombre de programa.');
-      exit;
-    end;
-    cIn.Next;  //Toma el nombre y pasa al siguiente
-    if not CapturaDelim then exit;
-//  end else begin
-//    GenError('Se esperaba: "program ... "');
-//    exit;
-  end;
   if cIn.Eof then begin
     GenError('Se esperaba "begin", "var", "type" o "const".');
     exit;

@@ -9,7 +9,7 @@
         <Filename Value="project1.lpr"/>
         <IsPartOfProject Value="True"/>
         <CursorPos Y="21"/>
-        <UsageCount Value="154"/>
+        <UsageCount Value="155"/>
       </Unit0>
       <Unit1>
         <Filename Value="unit1.pas"/>
@@ -18,10 +18,10 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="Unit1"/>
-        <TopLine Value="18"/>
-        <CursorPos X="11" Y="31"/>
-        <UsageCount Value="154"/>
+        <CursorPos X="5" Y="16"/>
+        <UsageCount Value="155"/>
         <Loaded Value="True"/>
+        <LoadedDesigner Value="True"/>
       </Unit1>
       <Unit2>
         <Filename Value="formout.pas"/>
@@ -31,7 +31,7 @@
         <ResourceBaseClass Value="Form"/>
         <TopLine Value="5"/>
         <CursorPos X="10" Y="16"/>
-        <UsageCount Value="154"/>
+        <UsageCount Value="155"/>
       </Unit2>
       <Unit3>
         <Filename Value="XPresParser.pas"/>
@@ -112,10 +112,10 @@
       <Unit15>
         <Filename Value="GenCod.pas"/>
         <UnitName Value="GenCod"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
-        <CursorPos X="5" Y="272"/>
-        <FoldState Value=" T5Y0G TMlE21091 T0iNP35 T3iE0511714 THiS23 T6lA02O"/>
+        <TopLine Value="139"/>
+        <CursorPos X="21" Y="173"/>
+        <FoldState Value=" T0iOP35 T3j203614 TMlF21091 T6lB02L"/>
         <UsageCount Value="61"/>
         <Loaded Value="True"/>
       </Unit15>
@@ -154,15 +154,15 @@
       <Unit22>
         <Filename Value="parser.pas"/>
         <UnitName Value="Parser"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="155"/>
-        <CursorPos X="5" Y="185"/>
+        <TopLine Value="22"/>
+        <CursorPos X="24" Y="57"/>
         <UsageCount Value="51"/>
         <Loaded Value="True"/>
       </Unit22>
       <Unit23>
         <Filename Value="..\XpresParser.pas"/>
-        <UnitName Value="XPresParser"/>
         <EditorIndex Value="-1"/>
         <TopLine Value="229"/>
         <CursorPos X="3" Y="244"/>
@@ -188,11 +188,31 @@
         <UsageCount Value="10"/>
       </Unit25>
     </Units>
-    <JumpHistory Count="1">
+    <JumpHistory Count="6" HistoryIndex="5">
       <Position1>
         <Filename Value="parser.pas"/>
         <Caret Line="116" Column="9" TopLine="103"/>
       </Position1>
+      <Position2>
+        <Filename Value="GenCod.pas"/>
+        <Caret Line="272" Column="5"/>
+      </Position2>
+      <Position3>
+        <Filename Value="parser.pas"/>
+        <Caret Line="185" Column="5" TopLine="155"/>
+      </Position3>
+      <Position4>
+        <Filename Value="parser.pas"/>
+        <Caret Line="65" Column="12" TopLine="49"/>
+      </Position4>
+      <Position5>
+        <Filename Value="GenCod.pas"/>
+        <Caret Line="251" Column="26" TopLine="31"/>
+      </Position5>
+      <Position6>
+        <Filename Value="unit1.pas"/>
+        <Caret Line="35" Column="24" TopLine="20"/>
+      </Position6>
     </JumpHistory>
   </ProjectSession>
 </CONFIG>
