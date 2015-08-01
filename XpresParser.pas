@@ -32,10 +32,23 @@ uses
 type
 
 //Categoría de Operando
-CatOperan = (
-  coConst,     //mono-operando constante
-  coVariab,  //variable
-  coExpres     //expresión
+TCatOperan = (
+  coConst =%00,  //Constante. Inlcuyendo expresiones de constantes evaluadas.
+  coVariab=%01,  //Variable. Variable única.
+  coExpres=%10   //Expresión. Algo que requiere cálculo (incluyendo a una función).
+);
+{Categoría de operación. Se construye para poder representar dos valores de TCatOperan
+ en una solo valor byte (juntando sus bits), para facilitar el uso de un CASE ... OF}
+TCatOperation =(
+  coConst_Const=  %0000,
+  coConst_Variab= %0001,
+  coConst_Expres= %0010,
+  coVariab_Const= %0100,
+  coVariab_Variab=%0101,
+  coVariab_Expres=%0110,
+  coExpres_Const= %1000,
+  coExpres_Variab=%1001,
+  coExpres_Expres=%1010
 );
 
 //categorías básicas de tipo de datos
@@ -54,14 +67,16 @@ TIdentifType = (idtNone, idtVar, idtFunc, idtCons);
 TType = class;
 TOperator = class;
 
+TVarAddr = word;
+TVarBank = byte;
 //registro para almacenar información de las variables
-Tvar = record
+TVar = record
   nom : string;   //nombre de la variable
   typ : Ttype;    //tipo de la variable
   amb : string;   //ámbito o alcance de la variable
   //direción física. Usado para implementar un compilador
-  adrr: word;
-  bank: word;   //banco o segmento. Usado solo en algunas arquitecturas
+  addr: TVarAddr;
+  bank: TVarBank;   //banco o segmento. Usado solo en algunas arquitecturas
   //Campos usados para implementar el intérprete sin máquina virtual
   //valores de la variable.
   valInt  : Int64;    //valor en caso de que sea un entero
@@ -74,22 +89,29 @@ end;
 { TOperand }
 //Operando
 TOperand = object
-private
-//    cons: Tvar;        //valor en caso de que sea una constante
 public
-  catTyp: TCatType;  //Categoría de Tipo de dato { TODO : No debría ser nevesario }
-  typ   : TType;     //Referencia al tipo de dato
-  size  : integer;   //Tamaño del operando en bytes
-  catOp : CatOperan; //Categoría de operando
+  catOp: TCatOperan; //Categoría de operando
+  typ  : TType;     //Referencia al tipo de dato
   txt  : string;    //Texto del operando o expresión, tal como aparece en la fuente
   ifun : integer;   //índice a funciones, en caso de que sea función
   ivar : integer;   //índice a variables, en caso de que sea variable
-  function VarName: string; inline; //nombre de la variable, cuando sea de categ. coVariab
+  {---------------------------------------------------------
+  Estos campos describen al operando, independientemente de que se le encuentree
+  un tipo, válido. Si se le encuentra un tipo válido, se tendrá la referencia al tipo
+  en "typ", y allí se tendrán los campos que describirán cómo se debe tratar realmente
+  al operando. No tienen por qué coincidir con los campos equivalentes de "typ"}
+  catTyp: TCatType;  //Categoría de Tipo de dato.
+  size  : integer;   //Tamaño del operando en bytes.
+  {---------------------------------------------------------}
   procedure Load; inline;  //carga el operador en registro o pila
   procedure Push; inline;  //pone el operador en la pila
   procedure Pop; inline;   //saca el operador en la pila
   function FindOperator(const oper: string): TOperator; //devuelve el objeto operador
   function GetOperator: Toperator;
+  //Funciones para facilitar el acceso a campos de la variable, cuando sea variable
+  function VarName: string; inline; //nombre de la variable, cuando sea de categ. coVariab
+  function addr: TVarAddr; inline;  //dirección de la variable
+  function bank: TVarBank; inline;  //banco o segmento
 public
   //Campos para alamcenar los valores, en caso de que el operando sea una constante
   //Debe tener tantas variables como tipos básicos de variable haya en "TCatType"
@@ -266,9 +288,9 @@ var
    para que puedan ser accedidas fácilmente desde el archivo "interprte.pas"}
   res   : TOperand;    //resultado de la evaluación de la última expresión.
 
-  vars  : array of Tvar;  //lista de variables
+  vars  : array of TVar;  //lista de variables
   funcs : array of Tfunc; //lista de funciones
-  cons  : array of Tvar;  //lista de constantes
+  cons  : array of TVar;  //lista de constantes
   typs  : TTypes;       //lista de tipos (EL nombre "types" ya está reservado)
   nIntVar : integer;    //número de variables internas
   nIntFun : integer;    //número de funciones internas
@@ -1069,7 +1091,7 @@ begin
 end;
 procedure TCompilerBase.CreateVariable(const varName: string; typ: ttype);
 var
-  r : Tvar;
+  r : TVar;
   n: Integer;
 begin
   //verifica nombre
@@ -1402,6 +1424,15 @@ function TOperand.VarName: string; inline;
 begin
   Result := vars[ivar].nom;
 end;
+function TOperand.addr: TVarAddr;
+begin
+  Result := vars[ivar].addr;
+end;
+function TOperand.bank: TVarBank;
+begin
+  Result := vars[ivar].bank;
+end;
+
 procedure TOperand.Load; inline;
 begin
   //llama al evento de carga
