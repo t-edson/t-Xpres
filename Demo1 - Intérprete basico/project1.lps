@@ -112,10 +112,11 @@
       <Unit15>
         <Filename Value="GenCod.pas"/>
         <UnitName Value="GenCod"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
-        <TopLine Value="139"/>
-        <CursorPos X="21" Y="173"/>
-        <FoldState Value=" T0iOP35 T3j203614 TMlF21091 T6lB02L"/>
+        <TopLine Value="102"/>
+        <CursorPos X="3" Y="156"/>
+        <FoldState Value=" T0iOP35 T3j20352112 TMlF21091 T6lB02^"/>
         <UsageCount Value="61"/>
         <Loaded Value="True"/>
       </Unit15>
@@ -154,10 +155,8 @@
       <Unit22>
         <Filename Value="parser.pas"/>
         <UnitName Value="Parser"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="22"/>
-        <CursorPos X="24" Y="57"/>
+        <CursorPos X="19" Y="31"/>
         <UsageCount Value="51"/>
         <Loaded Value="True"/>
       </Unit22>
@@ -188,7 +187,7 @@
         <UsageCount Value="10"/>
       </Unit25>
     </Units>
-    <JumpHistory Count="6" HistoryIndex="5">
+    <JumpHistory Count="9" HistoryIndex="7">
       <Position1>
         <Filename Value="parser.pas"/>
         <Caret Line="116" Column="9" TopLine="103"/>
@@ -213,6 +212,18 @@
         <Filename Value="unit1.pas"/>
         <Caret Line="35" Column="24" TopLine="20"/>
       </Position6>
+      <Position7>
+        <Filename Value="GenCod.pas"/>
+        <Caret Line="32" Column="24" TopLine="17"/>
+      </Position7>
+      <Position8>
+        <Filename Value="GenCod.pas"/>
+        <Caret Line="134" Column="3" TopLine="89"/>
+      </Position8>
+      <Position9>
+        <Filename Value="GenCod.pas"/>
+        <Caret Line="156" Column="41" TopLine="141"/>
+      </Position9>
     </JumpHistory>
   </ProjectSession>
 </CONFIG>

@@ -122,7 +122,6 @@ public
   valStr  : string;    //valor  en caso de que sea una cadena
 //Métodos para facilitar la implementación del intérprete
 public
-  function expres: string;  //devuelve una cadena que expresa al operando
   //Permite para obtener valores del operando, independeintemente del tipo de operando.
   function GetValBool: boolean;
   function GetValInt: int64;
@@ -858,8 +857,6 @@ begin
     //busca si hay tipo numérico que soporte esta constante
 {      Op.typ:=nil;
     for i:=0 to typs.Count-1 do begin
-      { TODO : Se debería tener una lista adicional  TIntegerTypes, para acelerar la
-      búsqueda}
       if (typs[i].cat = t_integer) and (typs[i].size=Op.size) then
         Op.typ:=typs[i];  //encontró
     end;}
@@ -977,7 +974,6 @@ Debe devolver el tipo del operando y también el valor (obligatorio para el caso
 de intérpretes y opcional para compiladores)}
 var
   i: Integer;
-  hayFunc: Boolean;
   ivar: Integer;
   ifun: Integer;
   tmp: String;
@@ -1469,20 +1465,6 @@ end;
 virtuales) si es que se implementa una suerte de Máquina Virtual integrada.
 La versión que se implementa aquí, es para un compilador, que hace evaluación
 de expresiones cuando los operandos son de tipo Cosntante.}
-function TOperand.expres: string;
-//Devuelve una cadena con un texto que representa el valor del operador. Depende de los
-//estados de los oepradores que se haya definido. Se usa para generar texto de ayuda o código
-//intermedio.
-begin
-{  case estOp of
-//  NO_STORED:
-  STORED_LIT: Result := typ.name + '(' + txt + ')';
-  STORED_VAR: Result := typ.name + '(vars[' + IntToStr(ivar) + '])';
-  STORED_ACU: Result := typ.name + '(A)';
-  STORED_ACUB: Result := typ.name + '(B)';
-  else Result := '???'
-  end;}
-end;
 function TOperand.GetValBool: boolean;
 begin
   case catOp of

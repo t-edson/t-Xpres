@@ -1,4 +1,4 @@
-t-Xpres 0.7b
+t-Xpres 0.6.5
 ============
 ATENCIÓN: Este trabajo está aún en fase ALFA. por lo tanto no es del todo funcional.
 
