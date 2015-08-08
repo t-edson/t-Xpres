@@ -5,7 +5,7 @@ unit Parser;
 
 interface
 uses
-  Classes, SysUtils, LCLType, Dialogs, lclProc, Graphics,
+  Classes, SysUtils, LCLType, Dialogs, lclProc, Graphics, SynEditHighlighter,
   SynFacilBasic,
   XPresParser, FormOut;
 
@@ -15,11 +15,11 @@ type
 
   TCompiler = class(TCompilerBase)
   private
+    tkExpDelim : TSynHighlighterAttributes;
     procedure CompilarArc;
   public
     mem   : TStringList;   //Para almacenar el código de salida del compilador
     procedure ShowOperand(const Op: TOperand);
-    procedure ShowResult;
     procedure StartSyntax;
     procedure Compilar(NombArc: string; LinArc: Tstrings);
     constructor Create; override;
@@ -106,17 +106,12 @@ begin
     ExprLevel := 0;  //inicia
     //compila el archivo abierto
 
-  //  con := PosAct;   //Guarda posición y referencia a contenido actual
     cIn.NewContextFromFile(NombArc,LinArc);   //Crea nuevo contenido
     if PErr.HayError then exit;
     CompilarArc;     //puede dar error
 
     cIn.QuitaContexEnt;   //es necesario por dejar limpio
     if PErr.HayError then exit;   //sale
-  //  PosAct := con;   //recupera el contenido actual
-
-  //  PPro.GenArchivo(ArcSal);
-    ShowResult;  //muestra el resultado
   finally
     ejecProg := false;
     //tareas de finalización
@@ -138,15 +133,6 @@ begin
   t_boolean: if Op.GetValBool then frmOut.puts(tmp + 'TRUE')
              else frmOut.puts(tmp + 'FALSE');
   end;
-end;
-procedure TCompiler.ShowResult;
-//muestra el resultado de la última exprersión evaluada
-begin
-{  case res.estOp of
-  NO_STORED : frmOut.puts('Resultado no almacen.');
-  else  //se supone que está en un estado válido
-    ShowOperand(res);
-  end;}
 end;
 
 constructor TCompiler.Create;

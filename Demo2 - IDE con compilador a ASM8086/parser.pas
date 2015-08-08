@@ -17,6 +17,7 @@ type
   TCompiler = class(TCompilerBase)
   private
     tkStruct   : TSynHighlighterAttributes;
+    tkExpDelim : TSynHighlighterAttributes;
     procedure CompilarArc;
     procedure TipDefecString(var Op: TOperand; tokcad: string); override;
   public

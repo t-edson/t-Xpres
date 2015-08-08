@@ -5,10 +5,9 @@
   x DW 0
 .CODE
   ;expres
-  mov al, '5'
-  push ax
-  pop dx
-  mov ah, 02h
-  int 21h
+  mov x, 3
   ;fin expres
-END
+  ;expres
+  mov ax,5
+  mov ax, 3
+  push ax

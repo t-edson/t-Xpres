@@ -1,7 +1,22 @@
-{Unidad con funciones básicas del Analizador sintáctico(como el analizador de
+{
+XpresParser 0.6.6
+CAMBIOS EN ESTA VERSIÓN
+=======================
+* Se aumenta la visibilidad de algunos métodos de la clase TCOmpilerBase.
+* Se crea el campo "catOperation", que ahora permite dividir mejor las combinaciones
+de TCatOperan, ayudando a escribir el generador de código.
+* Se crea el método TCompilerBase.SkipWhites(), para facilitar el poder personalizarlo
+de acuerdo a necesidad del lenguaje.
+
+DESCRIPCIÓN
+===========
+Unidad con funciones básicas del Analizador sintáctico(como el analizador de
 expresiones aritméticas).
 Se define la clase base "TCompilerBase", de donde debe derivarse el objeto
-compilador.
+compilador a usar. La clase hace un análisis léxico sencillo en un lenguaje similar
+al Pascal. Para personalizar al lenguaje, la clase ofrece la posibilidad de
+sobreescribir algunos métodos críticos, o inclusive se puede reescribir la clase, si
+las consideraciones de implementación lo requieren.
 El diseño de esta unidad es un poco especial.
 "TCompilerBase", usa variables estáticas definidas en esta unidad, para facilitar el
 acceso a estas variables, desde fuera de la unidad (sin necesidad de referirse al
@@ -12,15 +27,17 @@ vez.
 como un conjunto de métodos estáticos), para facilitar el poder sobreescribir
 algunas rutinas y poder personalizar mejor a la unidad.
 
- Aquí también se incluye el archivo en donde se implementará un intérprete/compilador.
- Las variables importantes de este módulo son:
+Aquí también se incluye el archivo en donde se implementará un intérprete/compilador.
 
- xLex -> es el analizador léxico y resaltador de sintaxis.
- PErr -> es el objeto que administra los errores.
+Las variables pública más importantes de este módulo son:
+
  vars[]  -> almacena a las variables declaradas
- types[] -> almacena a los tipos declarados
+ typs[]  -> almacena a los tipos declarados
  funcs[] -> almacena a las funciones declaradas
  cons[]  -> almacena a las constantes declaradas
+
+Para mayor información sobre el uso del framework Xpres, consultar la documentación
+técnica.
 }
 unit XPresParser;
 interface
@@ -103,6 +120,10 @@ public
   catTyp: TCatType;  //Categoría de Tipo de dato.
   size  : integer;   //Tamaño del operando en bytes.
   {---------------------------------------------------------}
+{  estOp: integer;   Estado del operando. Usado para la generec. de código. No se define un
+                    tipo específico, para dar libertad a la implementación a usarlo de la mejor
+                    forma. La necesidad de este campo es debatible, pero se mantiene por
+                    compatibilidad.}
   procedure Load; inline;  //carga el operador en registro o pila
   procedure Push; inline;  //pone el operador en la pila
   procedure Pop; inline;   //saca el operador en la pila
@@ -242,8 +263,9 @@ protected  //Eventos del compilador
   procedure TipDefecNumber(var Op: TOperand; toknum: string);
   procedure TipDefecString(var Op: TOperand; tokcad: string); virtual;
   function FindDuplicFunction: boolean;
-  function EOBlock: boolean;
   function EOExpres: boolean;
+  function EOBlock: boolean;
+  procedure SkipWhites; virtual;  //rutina para saltar blancos
   procedure GetExpression(const prec: Integer; isParam: boolean=false);
   procedure GetBoolExpression;
   procedure CreateVariable(const varName: string; typ: ttype);
@@ -252,18 +274,18 @@ protected  //Eventos del compilador
   function FindCons(const conName: string; out idx: integer): boolean;
   function FindFunc(const funName: string; out idx: integer): boolean;
   function FindPredefName(name: string): TIdentifType;
+  function GetOperand: TOperand; virtual;
+  function GetOperandP(pre: integer): TOperand;
+  procedure ClearParamsFunc(ifun: integer); virtual;
+  procedure CaptureParams; virtual;
+  function FindFuncWithParams0(const funName: string; var idx: integer;
+    idx0: integer=1): TFindFuncResult;
 private
-  procedure CaptureParams;
-  procedure ClearParamsFunc(ifun: integer);
   procedure CreateFunction(funName, varType: string);
   function CreateFunction(funName: string; typ: ttype; proc: TProcExecFunction
     ): integer;
   procedure Evaluar(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
-  function FindFuncWithParams0(const funName: string; var idx: integer;
-    idx0: integer=1): TFindFuncResult;
   function GetExpressionCore(const prec: Integer): TOperand;
-  function GetOperand: TOperand;
-  function GetOperandP(pre: integer): TOperand;
   function SameParamsFunctions(iFun1, iFun2: integer): boolean;
 public
   PErr  : TPError;     //Objeto de Error
@@ -285,7 +307,6 @@ end;
 var
   {Variables globales. Realmente deberían ser campos de TCompilerBase. Se ponen aquí,
    para que puedan ser accedidas fácilmente desde el archivo "interprte.pas"}
-  res   : TOperand;    //resultado de la evaluación de la última expresión.
 
   vars  : array of TVar;  //lista de variables
   funcs : array of Tfunc; //lista de funciones
@@ -297,6 +318,8 @@ var
 
   cIn    : TContexts;   //entrada de datos
   p1, p2 : TOperand;    //Pasa los operandos de la operación actual
+  res    : TOperand;    //resultado de la evaluación de la última expresión.
+  catOperation: TCatOperation;  //combinación de categorías de los operandos
   //referencias obligatorias
   tkEol     : TSynHighlighterAttributes;
   tkIdentif : TSynHighlighterAttributes;
@@ -307,7 +330,7 @@ var
   tkBoolean : TSynHighlighterAttributes;
   tkSysFunct: TSynHighlighterAttributes;
   //referencias adicionales
-  tkExpDelim: TSynHighlighterAttributes;
+//  tkExpDelim: TSynHighlighterAttributes;
   tkBlkDelim: TSynHighlighterAttributes;
   tkType    : TSynHighlighterAttributes;
   tkOthers  : TSynHighlighterAttributes;
@@ -315,16 +338,8 @@ var
 implementation
 uses Graphics;
 var  //variables privadas del compilador
-
   nullOper : TOperator; //Operador nulo. Usado como valor cero.
 
-
-
-  {Parte del código de XpresParser, que se espera que se mantenga fija aún con
-diversas implementaciones.
-En principio no se debería incluir código que use SkipWhites() o SkipWhitesEOL(),
-porque usar una u otra función excluiría a lso casos en que se requiera a la otra
-función}
 //////////////// implementación de métodos  //////////////////
 { TOperator }
 
@@ -367,7 +382,6 @@ begin
 end;
 
 { TType }
-
 function TType.CreateOperator(txt0: string; jer0: byte; name0: string): TOperator;
 {Permite crear un nuevo ooperador soportado por este tipo de datos. Si hubo error,
 devuelve NIL. En caso normal devuelve una referencia al operador creado}
@@ -415,7 +429,6 @@ begin
 end;
 
 {TCompilerBase}
-
 function TCompilerBase.HayError: boolean;
 begin
   Result := PErr.HayError;
@@ -425,7 +438,7 @@ procedure TCompilerBase.GenError(msg: string);
 del contexto actual.
 Se declara como función para poder usarla directamente en el exit() de una función}
 begin
-  if cIn = nil then
+  if (cIn = nil) or (cIn.curCon = nil) then
     Perr.GenError(msg,'',1)
   else
     Perr.GenError(msg, cIn.curCon);
@@ -750,22 +763,33 @@ begin
    else Result := 'Desconocido';
    end;
 end;
+function TCompilerBase.EOExpres: boolean; inline;
+//Indica si se ha llegado al final de una expresión.
+begin
+  Result := cIn.tok = ';';  //en este caso de ejemplo, usamos putno y coma
+  {En la práctica, puede ser conveniente definir un tipo de token como "tkExpDelim", para
+   mejorar el tiempo de respuesta del procesamiento, de modo que la condición sería:
+     Result := cIn.tokType = tkExpDelim;
+  }
+end;
 function TCompilerBase.EOBlock: boolean; inline;
 //Indica si se ha llegado el final de un bloque
 begin
   Result := cIn.tokType = tkBlkDelim;
 end;
-function TCompilerBase.EOExpres: boolean; inline;
-//Indica si se ha llegado al final de una expresión
+procedure TCompilerBase.SkipWhites;
+{Se crea como rutina aparte, para facilitar el poder cambiar el comportamiento y
+adaptarlo al modo de trabajo del lenguaje.}
 begin
-  Result := cIn.tokType = tkExpDelim;
+  cIn.SkipWhites;
 end;
+
 { Rutinas del compilador }
 function TCompilerBase.CaptureDelExpres: boolean;
 //Verifica si sigue un delimitador de expresión. Si encuentra devuelve false.
 begin
-  cIn.SkipWhites;
-  if cIn.tokType=tkExpDelim then begin //encontró
+  SkipWhites;
+  if EOExpres then begin //encontró
     cIn.Next;   //pasa al siguiente
     exit(true);
   end else if cIn.tokL = 'end' then begin   //es un error
@@ -778,7 +802,7 @@ begin
 
 end;
 procedure TCompilerBase.TipDefecNumber(var Op: TOperand; toknum: string);
-//Devuelve el tipo de número entero o fltante más sencillo que le corresponde a un token
+//Devuelve el tipo de número entero o flotante más sencillo que le corresponde a un token
 //que representa a una constante numérica.
 //Su forma de trabajo es buscar el tipo numérico más pequeño que permita alojar a la
 //constante numérica indicada.
@@ -936,7 +960,7 @@ end;
 procedure TCompilerBase.CaptureParams;
 //Lee los parámetros de una función en la función interna funcs[0]
 begin
-  cIn.SkipWhites;
+  SkipWhites;
   ClearParamsFunc(0);   //inicia parámetros
   if EOBlock or EOExpres then begin
     //no tiene parámetros
@@ -953,7 +977,7 @@ begin
       CreateParam(0,'', res.typ);
       if cIn.tok = ',' then begin
         cIn.Next;   //toma separador
-        cIn.SkipWhites;
+        SkipWhites;
       end else begin
         //no sigue separador de parámetros,
         //debe terminar la lista de parámetros
@@ -979,7 +1003,7 @@ var
   tmp: String;
 begin
   PErr.Clear;
-  cIn.SkipWhites;
+  SkipWhites;
   if cIn.tokType = tkNumber then begin  //constantes numéricas
     Result.catOp:=coConst;       //constante es Mono Operando
     Result.txt:= cIn.tok;     //toma el texto
@@ -1029,6 +1053,7 @@ begin
     tmp := cIn.tok;  //guarda nombre de función
     cIn.Next;    //Toma identificador
     CaptureParams;  //primero lee parámetros en func[0]
+    if HayError then exit;
     //buscamos una declaración que coincida.
     case FindFuncWithParams0(tmp, i) of
     TFF_NONE:      //no encontró ni la función
@@ -1138,7 +1163,7 @@ begin
   setlength(varNames,0);  //inicia arreglo
   //procesa variables res,b,c : int;
   repeat
-    cIn.SkipWhites;
+    SkipWhites;
     //ahora debe haber un identificador de variable
     if cIn.tokType <> tkIdentif then begin
       GenError('Se esperaba identificador de variable.');
@@ -1147,7 +1172,7 @@ begin
     //hay un identificador
     varName := cIn.tok;
     cIn.Next;  //lo toma
-    cIn.SkipWhites;
+    SkipWhites;
     //sgrega nombre de variable
     n := high(varNames)+1;
     setlength(varNames,n+1);  //hace espacio
@@ -1159,7 +1184,7 @@ begin
   if cIn.tok = ':' then begin
     //debe venir el tipo de la variable
     cIn.Next;  //lo toma
-    cIn.SkipWhites;
+    SkipWhites;
     if (cIn.tokType <> tkType) then begin
       GenError('Se esperaba identificador de tipo.');
       exit;
@@ -1176,7 +1201,7 @@ begin
     exit;
   end;
   if not CaptureDelExpres then exit;
-  cIn.SkipWhites;
+  SkipWhites;
 end;
 procedure TCompilerBase.CompileCurBlock;
 {Compila el bloque de código actual hasta encontrar un delimitador de bloque, o fin
@@ -1184,7 +1209,7 @@ de archivo. Este procesamiento es muy básico y solo se remite a procesar expres
 separdas por el delimitador de expresión. En una implementación formal, debería
 sobreescribirse este método, con una implementación más completa.}
 begin
-  cIn.SkipWhites;
+  SkipWhites;
   while not cIn.Eof and not EOBlock do begin
     //se espera una expresión o estructura
     GetExpression(0);
@@ -1192,11 +1217,11 @@ begin
     //se espera delimitador
     if cIn.Eof then break;  //sale por fin de archivo
     //busca delimitador
-    cIn.SkipWhites;
-    if cIn.tokType=tkExpDelim then begin //encontró delimitador de expresión
+    SkipWhites;
+    if EOExpres then begin //encontró delimitador de expresión
       cIn.Next;   //lo toma
-      cIn.SkipWhites;  //quita espacios
-    end else if cIn.tokType = tkBlkDelim then begin  //hay delimitador de bloque
+      SkipWhites;  //quita espacios
+    end else if EOBlock then begin  //hay delimitador de bloque
       exit;  //no lo toma
     end else begin  //hay otra cosa
       exit;  //debe ser un error
@@ -1227,6 +1252,7 @@ begin
    {Llama al evento asociado con p1 y p2 como operandos. Debe devolver el resultado
    en "res"}
    p1 := Op1; p2 := Op2;  { TODO : Debe optimizarse }
+   catOperation := TCatOperation((Ord(Op1.catOp) << 2) or ord(Op2.catOp)); //junta categorías de operandos
    o.proc;      //Ejecuta la operación
    //El resultado debe estar en "res"
    //Completa campos de "res", si es necesario
@@ -1247,7 +1273,7 @@ begin
   if pErr.HayError then exit;
   //verifica si termina la expresion
   pos := cIn.PosAct;    //Guarda por si lo necesita
-  cIn.SkipWhites;
+  SkipWhites;
   opr := Op1.GetOperator;
   if opr = nil then begin  //no sigue operador
     Result:=Op1;
@@ -1272,8 +1298,10 @@ begin
   end;
 end;
 function TCompilerBase.GetExpressionCore(const prec: Integer): TOperand; //inline;
-//Generador de Algoritmos de Evaluacion de expresiones.
-//Esta es probablemente la función más importante del compilador
+{Analizador de expresiones. Esta es probablemente la función más importante del
+ compilador. Procesa una expresión en el contexto de entrada llama a los eventos
+ configurados para que la expresión se evalúe (intérpretes) o se compile (compiladores).
+ Devuelve un operando con información sobre el resultado de la expresión.}
 var
   Op1, Op2  : TOperand;   //Operandos
   opr1: TOperator;  //Operadores
@@ -1285,12 +1313,11 @@ begin
   Op1 := GetOperand; if pErr.HayError then exit;
   debugln(space(ExprLevel)+' Op1='+Op1.txt);
   //verifica si termina la expresion
-  cIn.SkipWhites;
+  SkipWhites;
   opr1 := Op1.GetOperator;
   if opr1 = nil then begin  //no sigue operador
     //Expresión de un solo operando. Lo carga por si se necesita
-    Op1.Load;   //carga el operador para cumplir
-    Op1 := res; //para indicar la categoría del operador
+    Op1.Load;   //carga el operador para cumplir. Este evento no debería ser necesario.
     Result:=Op1;
     exit;  //termina ejecucion
   end;
@@ -1341,7 +1368,7 @@ begin
     Evaluar(Op1, opr1, Op2);    //evalua resultado en "res"
     Op1 := res;
     if PErr.HayError then exit;
-    cIn.SkipWhites;
+    SkipWhites;
     opr1 := Op1.GetOperator;   {lo toma ahora con el tipo de la evaluación Op1 (opr1) Op2
                                 porque puede que Op1 (opr1) Op2, haya cambiado de tipo}
   end;  //hasta que ya no siga un operador
@@ -1364,6 +1391,7 @@ begin
   debugln(space(ExprLevel)+'>Inic.expr');
   if OnExprStart<>nil then OnExprStart(ExprLevel);  //llama a evento
   res := GetExpressionCore(prec);
+  if PErr.HayError then exit;
   if OnExprEnd<>nil then OnExprEnd(ExprLevel, isParam);    //llama al evento de salida
   debugln(space(ExprLevel)+'>Fin.expr');
   Dec(ExprLevel);
@@ -1455,7 +1483,6 @@ function TOperand.GetOperator: Toperator;
 //Lee del contexto de entrada y toma un operador. Si no encuentra un operador, devuelve NIL.
 //Si el operador encontrado no se aplica al operando, devuelve nullOper.
 begin
-//  cIn.SkipWhites;  No se debe usar "SkipWhites" aquí, porque el lenguaje podría requerir "SkipWhitesNOEOL"
   if cIn.tokType <> tkOperator then exit(nil);
   //hay un operador
   Result := typ.FindOperator(cIn.tok);

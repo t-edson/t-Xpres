@@ -1,5 +1,5 @@
 {
-XpresBas 0.5b
+XpresBas 0.7b
 =============
 Rutinas básicas del framework
 Por Tito Hinostroza.
