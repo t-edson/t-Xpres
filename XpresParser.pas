@@ -1,12 +1,16 @@
 {
-XpresParser 0.6.6
+XpresParser 0.6.7b
 CAMBIOS EN ESTA VERSIÓN
 =======================
-* Se aumenta la visibilidad de algunos métodos de la clase TCOmpilerBase.
-* Se crea el campo "catOperation", que ahora permite dividir mejor las combinaciones
-de TCatOperan, ayudando a escribir el generador de código.
-* Se crea el método TCompilerBase.SkipWhites(), para facilitar el poder personalizarlo
-de acuerdo a necesidad del lenguaje.
+* Se quita la verificación de la palabra reservada 'end' en CaptureDelExpres(), para
+hacer a la librería más general, en cuanto al lenguaje.
+* Se agrega el método TContext.CurLine() para devolver la línea actual del lexer.
+* Se agrega el evento TContexts.OnNewLine, para detectar cuando se va a explorar una
+línea de código.
+* Se crean los métodos TOperand.HByte y TOperand.LByte.
+* Se quita la referencia a "tkBlkDelim", y "tkOthers" para hacer a lal librería más general
+en cuanto al lenguaje.
+* Se elimina el método CompileCurBlock(), para hacer a la librería mas´general.
 
 DESCRIPCIÓN
 ===========
@@ -72,7 +76,7 @@ TCatOperation =(
 TCatType=(
   t_integer,  //números enteros
   t_uinteger, //enteros sin signo
-  t_float,    //es de coma flotante
+  t_float,    //de coma flotante
   t_string,   //cadena de caracteres
   t_boolean,  //booleano
   t_enum      //enumerado
@@ -137,10 +141,12 @@ public
   //Campos para alamcenar los valores, en caso de que el operando sea una constante
   //Debe tener tantas variables como tipos básicos de variable haya en "TCatType"
   valInt  : Int64;    //valor en caso de que sea un entero
-  valUInt : Int64;    //valor en caso de que sea un entero sin signo
+//  valUInt : Int64 absolute $0040;    //valor en caso de que sea un entero sin signo
   valFloat: extended; //Valor en caso de que sea un flotante
   valBool  : Boolean;  //valor  en caso de que sea un booleano
   valStr  : string;    //valor  en caso de que sea una cadena
+  function HByte: byte; inline;  //devuelve byte alto de valor entero
+  function LByte: byte; inline;  //devuelve byte bajo de valor entero
 //Métodos para facilitar la implementación del intérprete
 public
   //Permite para obtener valores del operando, independeintemente del tipo de operando.
@@ -153,7 +159,7 @@ TProcLoadOperand = procedure(const Op: TOperand);
 
 TProcDefineVar = procedure(const varName, varInitVal: string);
 TProcExecOperat = procedure;
-TProcExecFunction = procedure;
+TProcExecFunction = procedure(ifun: integer);  //con índice de función
 
 //"Tipos de datos"
 
@@ -247,12 +253,14 @@ protected  //Eventos del compilador
   ExprLevel: Integer;  //Nivel de anidamiento de la rutina de evaluación de expresiones
   procedure ClearTypes;
   function CreateType(nom0: string; cat0: TCatType; siz0: smallint): TType;
+  procedure CreateFunction(funName, varType: string);
+  function CreateFunction(funName: string; typ: ttype; proc: TProcExecFunction
+    ): integer;
   function CreateSysFunction(funName: string; typ: ttype; proc: TProcExecFunction
     ): integer;
   procedure CreateParam(ifun: integer; name: string; typ: ttype);
   function CaptureDelExpres: boolean;
   procedure CompileVarDeclar; virtual;
-  procedure CompileCurBlock; virtual;
   procedure ClearVars;
   procedure ClearAllConst;
   procedure ClearAllFuncs;
@@ -260,7 +268,7 @@ protected  //Eventos del compilador
   procedure ClearFuncs;
   function CategName(cat: TCatType): string;
   procedure TipDefecBoolean(var Op: TOperand; tokcad: string);
-  procedure TipDefecNumber(var Op: TOperand; toknum: string);
+  procedure TipDefecNumber(var Op: TOperand; toknum: string); virtual;
   procedure TipDefecString(var Op: TOperand; tokcad: string); virtual;
   function FindDuplicFunction: boolean;
   function EOExpres: boolean;
@@ -281,9 +289,6 @@ protected  //Eventos del compilador
   function FindFuncWithParams0(const funName: string; var idx: integer;
     idx0: integer=1): TFindFuncResult;
 private
-  procedure CreateFunction(funName, varType: string);
-  function CreateFunction(funName: string; typ: ttype; proc: TProcExecFunction
-    ): integer;
   procedure Evaluar(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
   function GetExpressionCore(const prec: Integer): TOperand;
   function SameParamsFunctions(iFun1, iFun2: integer): boolean;
@@ -330,10 +335,12 @@ var
   tkBoolean : TSynHighlighterAttributes;
   tkSysFunct: TSynHighlighterAttributes;
   //referencias adicionales
+  {Estas referencias no deberían declararse aquí,sino que deben ser propias de cada
+  implementación}
 //  tkExpDelim: TSynHighlighterAttributes;
-  tkBlkDelim: TSynHighlighterAttributes;
+//  tkBlkDelim: TSynHighlighterAttributes;
   tkType    : TSynHighlighterAttributes;
-  tkOthers  : TSynHighlighterAttributes;
+//  tkOthers  : TSynHighlighterAttributes;
 
 implementation
 uses Graphics;
@@ -616,13 +623,6 @@ begin
   funcs[n] := r;
   Result := n;
 end;
-function TCompilerBase.CreateSysFunction(funName: string; typ: ttype; proc: TProcExecFunction): integer;
-//Crea una función del sistema o interna. Estas funciones estan siempre disponibles.
-//Las funciones internas deben crearse todas al inicio.
-begin
-  Result := CreateFunction(funName, typ, proc);
-  Inc(nIntFun);  //leva la cuenta
-end;
 procedure TCompilerBase.CreateFunction(funName, varType: string);
 //Define una nueva función en memoria.
 var t: ttype;
@@ -642,6 +642,13 @@ begin
   CreateFunction(funName, t, nil);
   //Ya encontró tipo, llama a evento
 //  if t.OnGlobalDef<>nil then t.OnGlobalDef(funName, '');
+end;
+function TCompilerBase.CreateSysFunction(funName: string; typ: ttype; proc: TProcExecFunction): integer;
+//Crea una función del sistema o interna. Estas funciones estan siempre disponibles.
+//Las funciones internas deben crearse todas al inicio.
+begin
+  Result := CreateFunction(funName, typ, proc);
+  Inc(nIntFun);  //leva la cuenta
 end;
 procedure TCompilerBase.ClearParamsFunc(ifun: integer);  inline;
 //Elimina los parámetros de una función
@@ -775,7 +782,11 @@ end;
 function TCompilerBase.EOBlock: boolean; inline;
 //Indica si se ha llegado el final de un bloque
 begin
-  Result := cIn.tokType = tkBlkDelim;
+  Result := false;
+  {No está implementado aquí, pero en la práctica puede ser conveniente definir un tipo de token
+   como "tkBlkDelim", para mejorar el tiempo de respuesta del procesamiento, de modo que la
+   condición sería:
+  Result := cIn.tokType = tkBlkDelim;}
 end;
 procedure TCompilerBase.SkipWhites;
 {Se crea como rutina aparte, para facilitar el poder cambiar el comportamiento y
@@ -792,9 +803,6 @@ begin
   if EOExpres then begin //encontró
     cIn.Next;   //pasa al siguiente
     exit(true);
-  end else if cIn.tokL = 'end' then begin   //es un error
-    //detect apero no lo toma
-    exit(true);  //sale con error
   end else begin   //es un error
     GenError('Se esperaba ";"');
     exit(false);  //sale con error
@@ -993,7 +1001,7 @@ begin
   end;
 end;
 function TCompilerBase.GetOperand: TOperand;
-{Parte de la funcion GAEE que genera codigo para leer un operando.
+{Parte de la funcion analizadora de expresiones que genera codigo para leer un operando.
 Debe devolver el tipo del operando y también el valor (obligatorio para el caso
 de intérpretes y opcional para compiladores)}
 var
@@ -1040,7 +1048,7 @@ begin
           Result.txt:= cIn.tok;    //toma el texto
     //      Result.catTyp:= funcs[i].typ.cat;  //no debería ser necesario
           Result.typ:=funcs[i].typ;
-          funcs[i].proc;  //llama al código de la función
+          funcs[i].proc(i);  //llama al código de la función
           exit;
         end;
       end;
@@ -1067,7 +1075,7 @@ begin
         Result.txt:= cIn.tok;    //toma el texto
   //      Result.catTyp:= funcs[i].typ.cat;  //no debería ser necesario
         Result.typ:=funcs[i].typ;
-        funcs[i].proc;  //llama al código de la función
+        funcs[i].proc(i);  //llama al código de la función
         exit;
       end;
     end;
@@ -1081,7 +1089,7 @@ begin
        exit;
      end;
     cIn.Next;    //Pasa al siguiente
-  end else if (cIn.tokType = tkOthers) and (cIn.tok = '(') then begin  //"("
+  end else if cIn.tok = '(' then begin  //"("
     cIn.Next;
     GetExpression(0);
     Result := res;
@@ -1202,31 +1210,6 @@ begin
   end;
   if not CaptureDelExpres then exit;
   SkipWhites;
-end;
-procedure TCompilerBase.CompileCurBlock;
-{Compila el bloque de código actual hasta encontrar un delimitador de bloque, o fin
-de archivo. Este procesamiento es muy básico y solo se remite a procesar expresiones,
-separdas por el delimitador de expresión. En una implementación formal, debería
-sobreescribirse este método, con una implementación más completa.}
-begin
-  SkipWhites;
-  while not cIn.Eof and not EOBlock do begin
-    //se espera una expresión o estructura
-    GetExpression(0);
-    if perr.HayError then exit;   //aborta
-    //se espera delimitador
-    if cIn.Eof then break;  //sale por fin de archivo
-    //busca delimitador
-    SkipWhites;
-    if EOExpres then begin //encontró delimitador de expresión
-      cIn.Next;   //lo toma
-      SkipWhites;  //quita espacios
-    end else if EOBlock then begin  //hay delimitador de bloque
-      exit;  //no lo toma
-    end else begin  //hay otra cosa
-      exit;  //debe ser un error
-    end;
-  end;
 end;
 procedure TCompilerBase.Evaluar(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
 {Ejecuta una operación con dos operandos y un operador. "opr" es el operador de Op1.
@@ -1456,7 +1439,14 @@ function TOperand.bank: TVarBank;
 begin
   Result := vars[ivar].bank;
 end;
-
+function TOperand.HByte: byte; inline;
+begin
+  Result := HI(word(valInt));
+end;
+function TOperand.LByte: byte; inline;
+begin
+  Result := LO(word(valInt));
+end;
 procedure TOperand.Load; inline;
 begin
   //llama al evento de carga

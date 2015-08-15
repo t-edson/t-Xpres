@@ -85,7 +85,8 @@ type
     procedure SkipWhites;
     procedure SkipWhitesNoEOL;
 
-    procedure Next;   //Pasa al siguiente token
+    function Next: boolean;     //Pasa al siguiente token
+    function CurLine: string;   //Retorna la línea actual
     function ReadSource: string;         //Lee el contenido del contexto
     //Control de la posición actual
     procedure SetStartPos;       //Posiciona al inicio del contexto
@@ -117,6 +118,7 @@ type
     MsjError : string;
     tok      : string;       //token actual
     tokType  : TSynHighlighterAttributes;  //tipo de token actual
+    OnNewLine: procedure(lin: string) of object;
     function tokL: string;   //token actual en minúscula
     property PosAct: TPosCont read LeePosContAct write FijPosContAct;
     property curCon: TContext read cEnt;
@@ -186,17 +188,15 @@ end;
 procedure TContext.SkipWhites;
 //Coge los blancos iniciales, saltos de línea y comentarios del contexto de entrada.
 //Si no encuentra algun blanco al inicio, devuelve falso
-var
-  tok: String;
 begin
-  tok := lex.GetToken;    //lee el token
+//  tok := lex.GetToken;    //lee el token
   while not Eof and ((lex.GetTokenAttribute = lex.tkSpace) or
                      (lex.GetTokenAttribute = lex.tkEol)  or
                      (lex.GetTokenAttribute = lex.tkComment)
                      ) do
   begin
     Next;
-tok := lex.GetToken;    //lee el token
+//tok := lex.GetToken;    //lee el token
   end;
   //actualiza estado
 //  tok := lex.GetToken;    //lee el token
@@ -210,7 +210,8 @@ function TContext.getCol: integer;
 begin
   Result:=lex.GetX;
 end;
-procedure TContext.Next;
+function TContext.Next: boolean;
+//Pasa al siguiente token. Si hay cambio de líne edvuelve TRUE
 var fFil: integer;
 begin
   if nlin = 0 then exit;  //protección
@@ -222,12 +223,26 @@ begin
 //      tok := lex.GetToken;    //lee el token
 //      tokType := lex.GetTokenAttribute;  //lee atributo
     end;
+    exit(true);   //hubo cambio de línea
   end else begin //está en medio de la línea
     lex.Next;        //pasa al siguiente token
     //actualiza estado
 //    tok := lex.GetToken;    //lee el token
 //    tokType := lex.GetTokenAttribute;  //lee atributo
+    exit(false);
   end;
+end;
+
+function TContext.CurLine: string;
+{Devuelve la línea actual en que se encuentra el lexer}
+var
+  fFil: Integer;
+begin
+  fFil := lex.GetY;
+  if fFil <= nlin then  //se puede leer
+    Result := curLines[fFil-1]
+  else
+    Result := '';
 end;
 procedure TContext.SetStartPos;
 //Mueve la posición al inicio del contexto.
@@ -406,29 +421,45 @@ procedure TContexts.ClearAll;  //Limpia todos los contextos
 begin
   ctxList.Clear;     //elimina todos los Contextos de entrada
 end;
-
 function TContexts.Eof: Boolean;
 begin
   Result := cEnt.Eof;
 end;
 
 procedure TContexts.SkipWhites;
+{Salta los blancos incluidos los saltos de línea}
 begin
-  cEnt.SkipWhites;
+  while not cEnt.Eof and ((lex.GetTokenAttribute = lex.tkSpace) or
+                     (lex.GetTokenAttribute = lex.tkEol)  or
+                     (lex.GetTokenAttribute = lex.tkComment) ) do
+  begin
+      if cEnt.Next then begin   //hubo cambio de línea
+        if OnNewLine<>nil then OnNewLine(cEnt.CurLine);
+      end;
+  end;
   //actualiza token actual
   tok := lex.GetToken;    //lee el token
   tokType := lex.GetTokenAttribute;  //lee atributo
 end;
 procedure TContexts.SkipWhitesNoEOL;
+{Salta los blancos sin incluir los saltos de línea}
 begin
-  cEnt.SkipWhitesNoEOL;
+  while not cEnt.Eof and ((lex.GetTokenAttribute = lex.tkSpace) or
+                     (lex.GetTokenAttribute = lex.tkComment) ) do
+  begin
+      if cEnt.Next then begin   //hubo cambio de línea
+        if OnNewLine<>nil then OnNewLine(cEnt.CurLine);
+      end;
+  end;
   //actualiza token actual
   tok := lex.GetToken;    //lee el token
   tokType := lex.GetTokenAttribute;  //lee atributo
 end;
 procedure TContexts.Next;
 begin
-  cEnt.Next;
+  if cEnt.Next then begin   //hubo cambio de línea
+    if OnNewLine<>nil then OnNewLine(cEnt.CurLine);
+  end;
   //actualiza token actual
   tok := lex.GetToken;    //lee el token
   tokType := lex.GetTokenAttribute;  //lee atributo

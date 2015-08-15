@@ -9,7 +9,7 @@
         <Filename Value="XpresI.lpr"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="-1"/>
-        <CursorPos X="11" Y="14"/>
+        <CursorPos X="32" Y="12"/>
         <UsageCount Value="200"/>
       </Unit0>
       <Unit1>
@@ -41,11 +41,13 @@
       <Unit4>
         <Filename Value="Parser.pas"/>
         <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
-        <CursorPos X="13" Y="19"/>
+        <TopLine Value="92"/>
+        <CursorPos Y="110"/>
         <UsageCount Value="200"/>
         <Bookmarks Count="1">
-          <Item0 Y="151" ID="1"/>
+          <Item0 Y="163" ID="1"/>
         </Bookmarks>
         <Loaded Value="True"/>
       </Unit4>
@@ -140,10 +142,9 @@
       <Unit17>
         <Filename Value="..\XpresParser.pas"/>
         <UnitName Value="XPresParser"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="314"/>
-        <CursorPos X="31" Y="333"/>
+        <TopLine Value="265"/>
+        <CursorPos X="29" Y="275"/>
         <UsageCount Value="76"/>
         <Bookmarks Count="1">
           <Item0 X="2" Y="967" ID="2"/>
@@ -165,8 +166,8 @@
       <Unit20>
         <Filename Value="GenCod.pas"/>
         <EditorIndex Value="3"/>
-        <TopLine Value="110"/>
-        <CursorPos X="19" Y="125"/>
+        <TopLine Value="333"/>
+        <CursorPos X="34" Y="352"/>
         <UsageCount Value="85"/>
         <Loaded Value="True"/>
       </Unit20>
@@ -196,7 +197,7 @@
         <UsageCount Value="2"/>
       </Unit24>
     </Units>
-    <JumpHistory Count="11" HistoryIndex="10">
+    <JumpHistory Count="20" HistoryIndex="19">
       <Position1>
         <Filename Value="GenCod.pas"/>
         <Caret Line="421" Column="21" TopLine="398"/>
@@ -226,20 +227,56 @@
         <Caret Line="194" Column="8" TopLine="175"/>
       </Position7>
       <Position8>
-        <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="217" TopLine="260"/>
+        <Filename Value="Parser.pas"/>
+        <Caret Line="23" Column="9"/>
       </Position8>
       <Position9>
         <Filename Value="Parser.pas"/>
-        <Caret Line="23" Column="9"/>
       </Position9>
       <Position10>
         <Filename Value="Parser.pas"/>
+        <Caret Line="19" Column="22"/>
       </Position10>
       <Position11>
-        <Filename Value="Parser.pas"/>
-        <Caret Line="19" Column="22"/>
+        <Filename Value="GenCod.pas"/>
+        <Caret Line="125" Column="19" TopLine="110"/>
       </Position11>
+      <Position12>
+        <Filename Value="GenCod.pas"/>
+        <Caret Line="419" Column="8" TopLine="399"/>
+      </Position12>
+      <Position13>
+        <Filename Value="..\XpresParser.pas"/>
+        <Caret Line="258" Column="80" TopLine="243"/>
+      </Position13>
+      <Position14>
+        <Filename Value="GenCod.pas"/>
+        <Caret Line="419" Column="55" TopLine="399"/>
+      </Position14>
+      <Position15>
+        <Filename Value="Parser.pas"/>
+        <Caret Line="12"/>
+      </Position15>
+      <Position16>
+        <Filename Value="Parser.pas"/>
+        <Caret Line="192" Column="13" TopLine="178"/>
+      </Position16>
+      <Position17>
+        <Filename Value="Parser.pas"/>
+        <Caret Line="21" Column="16" TopLine="4"/>
+      </Position17>
+      <Position18>
+        <Filename Value="Parser.pas"/>
+        <Caret Line="196" Column="11" TopLine="182"/>
+      </Position18>
+      <Position19>
+        <Filename Value="Parser.pas"/>
+        <Caret Line="98" Column="14" TopLine="79"/>
+      </Position19>
+      <Position20>
+        <Filename Value="..\XpresParser.pas"/>
+        <Caret Line="1221" Column="29" TopLine="1212"/>
+      </Position20>
     </JumpHistory>
   </ProjectSession>
 </CONFIG>

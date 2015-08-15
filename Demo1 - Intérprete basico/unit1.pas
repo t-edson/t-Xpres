@@ -1,8 +1,12 @@
 unit Unit1;
+{
+Ejemplo sencillo de intérprete que trabaja en una sintaxis parecida a la de Pascal.
+Usa la librería Xpres, para la implementación.
+
+Por Tito Hinostroza  14/0/2015
+}
 {$mode objfpc}{$H+}
-
 interface
-
 uses
   Classes, SysUtils, FileUtil, SynEdit, Forms, Controls, Graphics, Dialogs,
   StdCtrls, Parser, FormOut;

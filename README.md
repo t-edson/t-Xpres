@@ -1,4 +1,4 @@
-t-Xpres 0.6.6
+t-Xpres 0.6.7
 =============
 ATENCIÓN: Este trabajo está aún en fase BETA.
 

@@ -18,6 +18,8 @@ type
   private
     tkStruct   : TSynHighlighterAttributes;
     tkExpDelim : TSynHighlighterAttributes;
+    tkBlkDelim : TSynHighlighterAttributes;
+    tkOthers   : TSynHighlighterAttributes;
     procedure CompilarArc;
     procedure TipDefecString(var Op: TOperand; tokcad: string); override;
   public
@@ -93,8 +95,18 @@ begin
     Cod_StartProgram;
     cIn.Next;   //coge "begin"
     //codifica el contenido
-    CompileCurBlock;   //compila el cuerpo
-    if Perr.HayError then exit;
+    SkipWhites;
+    while not cIn.Eof and (cIn.tokL<>'end') do begin
+      //se espera una expresión o estructura
+      GetExpression(0);
+      if perr.HayError then exit;   //aborta
+      //busca delimitador
+      SkipWhites;
+      if EOExpres then begin //encontró delimitador de expresión
+        cIn.Next;   //lo toma
+        SkipWhites;  //quita espacios
+      end;
+    end;
     if cIn.Eof then begin
       GenError('Inesperado fin de archivo. Se esperaba "end".');
       exit;       //sale

@@ -1,5 +1,4 @@
 {}
-//{$DEFINE mode_inter}  //mode_inter->Modo intérprete  mode_comp->Modo compilador
 unit Parser;
 {$mode objfpc}{$H+}
 
@@ -16,6 +15,8 @@ type
   TCompiler = class(TCompilerBase)
   private
     tkExpDelim : TSynHighlighterAttributes;
+    tkBlkDelim : TSynHighlighterAttributes;
+    tkOthers   : TSynHighlighterAttributes;
     procedure CompilarArc;
   public
     mem   : TStringList;   //Para almacenar el código de salida del compilador
@@ -73,7 +74,18 @@ begin
     Cod_StartProgram;
     cIn.Next;   //coge "begin"
     //codifica el contenido
-    CompileCurBlock;   //compila el cuerpo
+    SkipWhites;
+    while not cIn.Eof and (cIn.tokL<>'end') do begin
+      //se espera una expresión o estructura
+      GetExpression(0);
+      if perr.HayError then exit;   //aborta
+      //busca delimitador
+      SkipWhites;
+      if EOExpres then begin //encontró delimitador de expresión
+        cIn.Next;   //lo toma
+        SkipWhites;  //quita espacios
+      end;
+    end;
     if Perr.HayError then exit;
     if cIn.Eof then begin
       GenError('Inesperado fin de archivo. Se esperaba "end".');

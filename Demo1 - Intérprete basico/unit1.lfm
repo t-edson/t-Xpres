@@ -7,7 +7,7 @@ object Form1: TForm1
   ClientHeight = 277
   ClientWidth = 346
   OnCreate = FormCreate
-  LCLVersion = '1.4.0.4'
+  LCLVersion = '1.4.2.0'
   inline edXpr: TSynEdit
     Left = 0
     Height = 246
