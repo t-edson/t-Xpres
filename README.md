@@ -30,11 +30,11 @@ Los generadores de código pueden desarrollarse para generar código intermedio,
 
 El framework se ha definido para un lenguaje especial al que se le ha llamado también Xpres, pero en teoría podría implementarse cualquier otro similar que se ajuste al modo de trabajo de los analizadores léxico y sintáctico; y de las librerías. 
 
-En los ejemplos se incluye un caso minimalista con intérprete y un ejemplo de compilador para el intel 8086 en 16 bits.
+En los ejemplos se incluye un caso minimalista con intérprete y un ejemplo de compilador elemental para el intel 8086 en 16 bits.
 
 Xpres, aún está en fase de desarrollo. El estado del framework, es todavía incipiente, pero permite realizar implementaciones básicas. 
 
-El ejemplo de compilador incluye también una IDE sencilla para el lenguaje Xpres, que incluye un interprete sencillo que solo permite manejar variables, expresiones numéricas y de cadena.
+El ejemplo de compilador incluye también una IDE sencilla. Solo permite manejar variables, expresiones numéricas y de cadena.
 
 El intérprete mostrará siempre el valor de la última expresión evaluada.
  
