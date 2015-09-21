@@ -11,6 +11,7 @@ El framework, incluye las siguientes dependencias:
 
 * Paquete SynEdit. Que viene incluido en Lazarus. Se requiere para poder usar la librería SynfacilSyn. No significa que debe usarse el componente SynEdit, sino que  el resaltador SynfacilSyn, usa clases definidas en este paquete.
 * Librería SynFacilSyn https://github.com/t-edson/SynFacilSyn.  Necesaria porque se usará al resaltador de sintaxis SynfacilSyn, como analizador léxico. Xpres no implementa un analizador léxico propio.
+* Librería MisUtils https://github.com/t-edson/MisUtils. Usada para permitir la traducción de los mensajes de error.
 
 Xpres está diseñado para trabajar con el paquete SynEdit de Lazarus. Esto implica que para implementar un intérprete/compilador, se debe usar el paquete SynEdit, siempre. La arquitectura planteada no implica el uso de SynEdit como editor, pero si se requiere de algunas clases definidas en el paquete SynEdit, para el analizador léxico.
 
