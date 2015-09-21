@@ -1,10 +1,12 @@
 {
-XpresBas 0.7b
-=============
-Rutinas básicas del framework
+XpresBas
+========
 Por Tito Hinostroza.
+
+Rutinas básicas del framework
 Aquí están definidas las rutinas de manejo de error y los contextos de entrada
 de Xpres.
+Para ver los cambios en esta versión, revisar el archivo cambios.txt.
  }
 
 unit XpresBas;

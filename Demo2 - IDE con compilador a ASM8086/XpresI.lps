@@ -4,7 +4,7 @@
     <PathDelim Value="\"/>
     <Version Value="9"/>
     <BuildModes Active="Debug"/>
-    <Units Count="25">
+    <Units Count="26">
       <Unit0>
         <Filename Value="XpresI.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -41,10 +41,9 @@
       <Unit4>
         <Filename Value="Parser.pas"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
         <TopLine Value="92"/>
-        <CursorPos Y="110"/>
+        <CursorPos X="9" Y="117"/>
         <UsageCount Value="200"/>
         <Bookmarks Count="1">
           <Item0 Y="163" ID="1"/>
@@ -144,7 +143,7 @@
         <UnitName Value="XPresParser"/>
         <EditorIndex Value="1"/>
         <TopLine Value="265"/>
-        <CursorPos X="29" Y="275"/>
+        <CursorPos X="16" Y="275"/>
         <UsageCount Value="76"/>
         <Bookmarks Count="1">
           <Item0 X="2" Y="967" ID="2"/>
@@ -165,7 +164,7 @@
       </Unit19>
       <Unit20>
         <Filename Value="GenCod.pas"/>
-        <EditorIndex Value="3"/>
+        <EditorIndex Value="4"/>
         <TopLine Value="333"/>
         <CursorPos X="34" Y="352"/>
         <UsageCount Value="85"/>
@@ -196,8 +195,17 @@
         <CursorPos X="3" Y="460"/>
         <UsageCount Value="2"/>
       </Unit24>
+      <Unit25>
+        <Filename Value="..\..\SynFacilUtils 0.4\SynFacilUtils.pas"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="2"/>
+        <CursorPos X="5" Y="18"/>
+        <UsageCount Value="10"/>
+        <Loaded Value="True"/>
+      </Unit25>
     </Units>
-    <JumpHistory Count="20" HistoryIndex="19">
+    <JumpHistory Count="21" HistoryIndex="20">
       <Position1>
         <Filename Value="GenCod.pas"/>
         <Caret Line="421" Column="21" TopLine="398"/>
@@ -277,6 +285,9 @@
         <Filename Value="..\XpresParser.pas"/>
         <Caret Line="1221" Column="29" TopLine="1212"/>
       </Position20>
+      <Position21>
+        <Filename Value="..\..\SynFacilUtils 0.4\SynFacilUtils.pas"/>
+      </Position21>
     </JumpHistory>
   </ProjectSession>
 </CONFIG>

@@ -1,19 +1,8 @@
 {
-XpresParser 0.6.7b
-CAMBIOS EN ESTA VERSIÓN
-=======================
-* Se quita la verificación de la palabra reservada 'end' en CaptureDelExpres(), para
-hacer a la librería más general, en cuanto al lenguaje.
-* Se agrega el método TContext.CurLine() para devolver la línea actual del lexer.
-* Se agrega el evento TContexts.OnNewLine, para detectar cuando se va a explorar una
-línea de código.
-* Se crean los métodos TOperand.HByte y TOperand.LByte.
-* Se quita la referencia a "tkBlkDelim", y "tkOthers" para hacer a lal librería más general
-en cuanto al lenguaje.
-* Se elimina el método CompileCurBlock(), para hacer a la librería mas´general.
-
-DESCRIPCIÓN
+XpresParser
 ===========
+Por Tito Hinostroza.
+
 Unidad con funciones básicas del Analizador sintáctico(como el analizador de
 expresiones aritméticas).
 Se define la clase base "TCompilerBase", de donde debe derivarse el objeto
@@ -42,15 +31,17 @@ Las variables pública más importantes de este módulo son:
 
 Para mayor información sobre el uso del framework Xpres, consultar la documentación
 técnica.
+Para ver los cambios en esta versión, revisar el archivo cambios.txt.
 }
 unit XPresParser;
 interface
 uses
   Classes, SysUtils, fgl, Forms, LCLType, Dialogs, lclProc,
   SynEditHighlighter, SynFacilHighlighter, SynFacilBasic,
-  XpresBas;
+  XpresBas, MisUtils;
 
 type
+
 
 //Categoría de Operando
 TCatOperan = (
@@ -82,11 +73,29 @@ TCatType=(
   t_enum      //enumerado
 );
 
-//tipo de identificador
-TIdentifType = (idtNone, idtVar, idtFunc, idtCons);
+{Espacio para almacenar a los posibles valores de una constante.
+Debe tener campos para los tipos básicos de variable haya en "TCatType" y para valores
+estructurados}
+TConsValue = record
+  ValInt  : Int64;    //Para alojar a los valores t_integer y t_uinteger
+  ValFloat: extended; //Para alojar a los valores t_float
+  ValBool : boolean;  //Para alojar a los valores t_boolean
+  ValStr  : string;   //Para alojar a los valores t_string
+end;
 
 TType = class;
 TOperator = class;
+
+TxpCon = record
+  name : string;   //nombre de la variable
+  typ  : Ttype;    //tipo de la variable
+  //valores de la constante
+  val : TConsValue;
+end;
+
+//tipo de identificador
+TIdentifType = (idtNone, idtVar, idtFunc, idtCons);
+
 
 TVarAddr = word;
 TVarBank = byte;
@@ -137,19 +146,27 @@ public
   function VarName: string; inline; //nombre de la variable, cuando sea de categ. coVariab
   function addr: TVarAddr; inline;  //dirección de la variable
   function bank: TVarBank; inline;  //banco o segmento
+private
+  Val  : TConsValue;
+  procedure SetvalBool(AValue: boolean);
+  procedure SetvalFloat(AValue: extended);
+  procedure SetvalInt(AValue: Int64);
+  procedure SetvalStr(AValue: string);
 public
-  //Campos para alamcenar los valores, en caso de que el operando sea una constante
-  //Debe tener tantas variables como tipos básicos de variable haya en "TCatType"
-  valInt  : Int64;    //valor en caso de que sea un entero
-//  valUInt : Int64 absolute $0040;    //valor en caso de que sea un entero sin signo
-  valFloat: extended; //Valor en caso de que sea un flotante
-  valBool  : Boolean;  //valor  en caso de que sea un booleano
-  valStr  : string;    //valor  en caso de que sea una cadena
+  //Campos de acceso a los valores constantes
+  property valInt  : Int64 read val.ValInt write SetvalInt;
+  property valFloat: extended read val.ValFloat write SetvalFloat;
+  property valBool : boolean read val.ValBool write SetvalBool;
+  property valStr  : string read val.ValStr write SetvalStr;
+  //funciones de ayuda para adaptar los tipos numéricos
+  function aWord: word; inline;  //devuelve el valor en Word
   function HByte: byte; inline;  //devuelve byte alto de valor entero
   function LByte: byte; inline;  //devuelve byte bajo de valor entero
-//Métodos para facilitar la implementación del intérprete
-public
-  //Permite para obtener valores del operando, independeintemente del tipo de operando.
+  //campos para validar el rango de los valores
+  function CanBeWord: boolean;   //indica si cae en el rango de un WORD
+  function CanBeByte: boolean;   //indica si cae en el rango de un BYTE
+  //Métodos para facilitar la implementación de intérpretes. Se puede obviar en compiladores
+  //Permite obtener valores del operando, independiéntemente de la categoría de operando.
   function GetValBool: boolean;
   function GetValInt: int64;
   function GetValFloat: extended;
@@ -298,8 +315,11 @@ public
   //variables públicas del compilador
   ejecProg: boolean;   //Indica que se está ejecutando un programa o compilando
   DetEjec: boolean;   //para detener la ejecución (en intérpretes)
+
+  typs  : TTypes;       //lista de tipos (EL nombre "types" ya está reservado)
   function HayError: boolean;
   procedure GenError(msg: string);
+  procedure GenError(msg: String; const Args: array of const);
   function ArcError: string;
   function nLinError: integer;
   function nColError: integer;
@@ -315,8 +335,7 @@ var
 
   vars  : array of TVar;  //lista de variables
   funcs : array of Tfunc; //lista de funciones
-  cons  : array of TVar;  //lista de constantes
-  typs  : TTypes;       //lista de tipos (EL nombre "types" ya está reservado)
+  cons  : array of TxpCon;  //lista de constantes
   nIntVar : integer;    //número de variables internas
   nIntFun : integer;    //número de funciones internas
   nIntCon : integer;    //número de constantes internas
@@ -442,13 +461,20 @@ begin
 end;
 procedure TCompilerBase.GenError(msg: string);
 {Función de acceso rápido para Perr.GenError(). Pasa como posición a la posición
-del contexto actual.
-Se declara como función para poder usarla directamente en el exit() de una función}
+del contexto actual. Realiza la traducción del mensaje también.}
 begin
   if (cIn = nil) or (cIn.curCon = nil) then
-    Perr.GenError(msg,'',1)
+    Perr.GenError(dic(msg),'',1)
   else
-    Perr.GenError(msg, cIn.curCon);
+    Perr.GenError(dic(msg), cIn.curCon);
+end;
+procedure TCompilerBase.GenError(msg: String; const Args: array of const);
+{Versión con parámetros de GenError.}
+begin
+  if (cIn = nil) or (cIn.curCon = nil) then
+    Perr.GenError(dic(msg, Args),'',1)
+  else
+    Perr.GenError(dic(msg, Args), cIn.curCon);
 end;
 function TCompilerBase.ArcError: string;
 begin
@@ -511,7 +537,7 @@ begin
   Result := false;
   tmp := upCase(conName);
   for i:=0 to high(cons) do begin
-    if Upcase(cons[i].nom)=tmp then begin
+    if Upcase(cons[i].name)=tmp then begin
       idx := i;
       exit(true);
     end;
@@ -1439,6 +1465,34 @@ function TOperand.bank: TVarBank;
 begin
   Result := vars[ivar].bank;
 end;
+
+procedure TOperand.SetvalBool(AValue: boolean);
+begin
+  val.ValBool:=AValue;
+end;
+
+procedure TOperand.SetvalFloat(AValue: extended);
+begin
+//  if FvalFloat=AValue then Exit;
+  val.ValFloat:=AValue;
+end;
+
+procedure TOperand.SetvalInt(AValue: Int64);
+begin
+//  if FvalInt=AValue then Exit;
+  val.ValInt:=AValue;
+end;
+
+procedure TOperand.SetvalStr(AValue: string);
+begin
+  val.ValStr:=AValue;
+end;
+
+function TOperand.aWord: word;
+begin
+  Result := word(valInt);
+end;
+
 function TOperand.HByte: byte; inline;
 begin
   Result := HI(word(valInt));
@@ -1447,6 +1501,18 @@ function TOperand.LByte: byte; inline;
 begin
   Result := LO(word(valInt));
 end;
+
+function TOperand.CanBeWord: boolean;
+{Indica si el valor constante que contiene, puede ser convertido a un WORD sin pérdida}
+begin
+  Result := (valInt>=0) and (valInt<=$ffff);
+end;
+function TOperand.CanBeByte: boolean;
+{Indica si el valor constante que contiene, puede ser convertido a un BYTE sin pérdida}
+begin
+  Result := (valInt>=0) and (valInt<=$ff);
+end;
+
 procedure TOperand.Load; inline;
 begin
   //llama al evento de carga
@@ -1478,10 +1544,7 @@ begin
   Result := typ.FindOperator(cIn.tok);
   cIn.Next;   //toma el token
 end;
-{Los métodos siguientes pueden depender de algunas variables (como registros
-virtuales) si es que se implementa una suerte de Máquina Virtual integrada.
-La versión que se implementa aquí, es para un compilador, que hace evaluación
-de expresiones cuando los operandos son de tipo Cosntante.}
+{Métodos de ayuda para implementar intérpretes}
 function TOperand.GetValBool: boolean;
 begin
   case catOp of

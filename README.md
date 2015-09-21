@@ -1,6 +1,5 @@
-t-Xpres 0.6.7
+t-Xpres 0.6.8
 =============
-ATENCIÓN: Este trabajo está aún en fase BETA.
 
 Sencillo marco de trabajo (framework) para implementar compiladores o intérpretes para  lenguajes imperativos y tipados. Como parte del proyecto, se define un nuevo lenguaje, al que también se le llama Xpres.
 
