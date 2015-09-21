@@ -9,8 +9,8 @@ Para implementar un inérprete sencillo se requieren mínimamente las siguientes u
 * XpresBas.pas
 * XPresParser.pas
 
-Si se van a mostrar mensajes de salida se puede incluir el formulario FormOut, o un formualrio parecido 
-para mostrar los mensajes generados con las instrucción de salida como puts(). 
+Si se van a mostrar mensajes de salida se puede incluir un formulario como FormOut (ver proyecto ejemplo), o un 
+formulario parecido  para mostrar los mensajes generados con las instrucción de salida como puts(). 
 
 Si se va a usar un editor con SynEdit, para editar el lenguaje a interpretar, es recomendable usar la 
 unidad SynFacilUtils, que es una librería que aliviará enórmemente, el trabajo de implementar un editor
