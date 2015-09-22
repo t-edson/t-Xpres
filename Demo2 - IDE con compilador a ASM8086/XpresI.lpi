@@ -66,7 +66,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="10">
+    <Units Count="7">
       <Unit0>
         <Filename Value="XpresI.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -80,45 +80,33 @@
         <UnitName Value="FormPrincipal"/>
       </Unit1>
       <Unit2>
-        <Filename Value="synhighlighterfacil.pas"/>
+        <Filename Value="Parser.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit2>
       <Unit3>
-        <Filename Value="utileditsyn.pas"/>
+        <Filename Value="globales.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit3>
       <Unit4>
-        <Filename Value="Parser.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit4>
-      <Unit5>
-        <Filename Value="globales.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit5>
-      <Unit6>
-        <Filename Value="XpresBas.pas"/>
-        <IsPartOfProject Value="True"/>
-      </Unit6>
-      <Unit7>
         <Filename Value="formconfig.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="Config"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
-      </Unit7>
-      <Unit8>
+      </Unit4>
+      <Unit5>
         <Filename Value="FrameCfgEdit.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="fraCfgEdit"/>
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Frame"/>
-      </Unit8>
-      <Unit9>
+      </Unit5>
+      <Unit6>
         <Filename Value="FormOut.pas"/>
         <IsPartOfProject Value="True"/>
         <ComponentName Value="frmOut"/>
         <ResourceBaseClass Value="Form"/>
-      </Unit9>
+      </Unit6>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -129,7 +117,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir);.."/>
-      <OtherUnitFiles Value="..;..\..\SynFacilUtils 0.4;..\..\MisUtils 0.3"/>
+      <OtherUnitFiles Value="..;..\..\SynFacilUtils 0.5;..\..\MisUtils 0.3"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Parsing>

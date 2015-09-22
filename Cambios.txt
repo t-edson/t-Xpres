@@ -1,10 +1,6 @@
-XPres 0.6.8
+XPres 0.6.9
 ===========
 
-* Se crea el typo TConsValue, para servir de contenedor de los valores de constantes.
-* Se crea el tipo TxpCon, para constantes, usando TConsValue.
-* Se crea un campo de tipo TConsValue, en TOPerand, y se eliminan los campos individuales, 
-que almacenaban los valores constantes.
-* Se modifican los métodos de acceso a valores constantes.
-* Se agrega la dependencia de MisUtils, para manejo de idiomas.
-* Se sobrecarga el método GenError(), para permitir incluri variables string.
+* Se crea la unidad XpresTypes y se traslada las definiciones referidas a los tipos, los operadores y las operaciones.
+* Para lograr la modularidad, se tuvo que cambiar la definición de TProcLoadOperand para que se pueda declarar sin 
+usar el tipo TOperand.

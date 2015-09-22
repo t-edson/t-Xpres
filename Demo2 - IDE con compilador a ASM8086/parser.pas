@@ -8,7 +8,7 @@ interface
 uses
   Classes, SysUtils, LCLType, Dialogs, lclProc, Graphics, SynEditHighlighter,
   SynFacilBasic,
-  XPresParser, FormOut;
+  XpresTypes, XPresParser, FormOut;
 
 type
 
