@@ -52,7 +52,6 @@ end;
 //tipo de identificador
 TIdentifType = (idtNone, idtVar, idtFunc, idtCons);
 
-
 TVarAddr = word;
 TVarBank = byte;
 //registro para almacenar información de las variables

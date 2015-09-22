@@ -22,9 +22,10 @@ Hay que notar que de SynFacilSyn, solo se está usando su capacidad de lexer, m�
 La librería Xpres, incluye a los siguientes archivos:
 
 * "XpresBas.pas". Unidad con rutinas básicas del framework. Incluye el métodos para el manejo del texto fuente y el procesamiento de errores. Por lo general no debería modificarse. Funciona como una capa que se coloca sobre el analizador léxico o "lexer".
+* "XpresTypes.pas". Unidad con las definiciones referidas a los tipos-operadores-operaciones. Es también una unidad básica del framework.
 * "XpresParser.pas". Unidad con rutinas principales del framework. Incluyen el analizador sintáctivo o "parser". Incluye el analizador de expresiones y de las estructuras del lenguaje. No debería cambiar si el lenguaje sigue la línea del lenguaje Xpres.
 
-Para la implementación de un Intérpretes o Generadores de código. Se debe crear una unidad que incluya a "XpresParser.pas" y ahí definir a  una clase (p. ej. TCompiler o TInterpreter) que descienda de la clase TCompilerBase.
+Para la implementación de un Intérpretes o Generadores de código. Se debe crear una unidad que incluya a "XpresParser.pas" y "XpresTypes.pas" y ahí definir a  una clase (p. ej. TCompiler o TInterpreter) que descienda de la clase TCompilerBase.
 
 Los generadores de código pueden desarrollarse para generar código intermedio, como el bytecode de Java, o cualquier otro. Este proyecto no incluye ninguna máquina virtual.
 
@@ -32,7 +33,7 @@ El framework se ha definido para un lenguaje especial al que se le ha llamado ta
 
 En los ejemplos se incluye un caso minimalista con intérprete y un ejemplo de compilador elemental para el intel 8086 en 16 bits.
 
-Xpres, aún está en fase de desarrollo. El estado del framework, es todavía incipiente, pero permite realizar implementaciones básicas. 
+Xpres, aún está en fase de desarrollo, pero permite realizar implementaciones básicas. 
 
 El ejemplo de compilador incluye también una IDE sencilla. Solo permite manejar variables, expresiones numéricas y de cadena.
 
