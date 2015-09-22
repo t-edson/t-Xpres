@@ -8,13 +8,13 @@ type
   Tregister = record
     used    : boolean;  //indica si está usado
     typ     : Ttype;    //tipo de dato
-    catOp   : CatOperan;  //categoría de operando
+    catOp   : TCatOperan;  //categoría de operando
     //valores de la variable.
 {    valFloat: extended; //Valor en caso de que sea un flotante
-    valInt  : Int64;    //valor en caso de que sea un entero
-    valUInt : Int64;    //valor en caso de que sea un entero sin signo
+    valInt  : Int64;     //valor en caso de que sea un entero
+    valUInt : Int64;     //valor en caso de que sea un entero sin signo
     valBool  : Boolean;  //valor  en caso de que sea un booleano
-    valStr  : string;     //valor  en caso de que sea una cadena}
+    valStr  : string;    //valor  en caso de que sea una cadena}
   end;
 
 var
@@ -127,12 +127,15 @@ procedure int_procDefine(const varName, varInitVal: string);
 begin
   Code('  ' + varname + ' DW 0');
 end;
-procedure int_procLoad(const Op: TOperand);
+procedure int_procLoad(const OpPtr: pointer);
+var
+  Op: ^TOperand;
 begin
+  Op := OpPtr;
   //carga el operando en res
-  case Op.catOp of
-  coConst : Code('  mov ax,'+Op.txt);
-  coVariab: Code('  mov ax,'+Op.VarName);
+  case Op^.catOp of
+  coConst : Code('  mov ax,'+Op^.txt);
+  coVariab: Code('  mov ax,'+Op^.VarName);
   coExpres: ;  //ya está en registro
   end;
   res.typ := tipInt;  //indica que devuelve un entero
@@ -140,9 +143,12 @@ begin
                           exprwsión, auqnue si fuera una constante, ...   }
   a.used:=true;  //marac registro como usado
 end;
-procedure int_OnPush(const Op: TOperand);
+procedure int_OnPush(const OpPtr: pointer);
+var
+  Op: ^TOperand;
 begin
-  case Op.catOp of
+  Op := OpPtr;
+  case Op^.catOp of
   coConst : begin
     code('  mov ax, ' + p2.txt);  //carga literal
     code('  push ax');
@@ -245,12 +251,14 @@ begin
 //  LoadAcumInt(p1.GetValInt mod p2.GetValInt,'%');
 end;
 ////////////operaciones con string
-procedure str_procLoad(const  Op: TOperand);
+procedure str_procLoad(const OpPtr: pointer);
 var
   nomStr: String;
   nomLab: String;
+  Op: ^TOperand;
 begin
-  case Op.catOp of
+  Op := OpPtr;
+  case Op^.catOp of
   coConst : begin
     //genera nombre de variable cadena y etiqueta
     nomStr := 'cad' + IntToStr(ncc);
@@ -258,7 +266,7 @@ begin
     inc(ncc);
     //codifica
     code('  jmp ' + nomLab);   //deja expacio para cadena
-    code('  ' + nomStr + ' DB "' + Op.valStr + '"');
+    code('  ' + nomStr + ' DB "' + Op^.valStr + '"');
     code(nomLab+':');
     code('  mov dx, OFFSET '+nomStr);
   end;
@@ -285,22 +293,28 @@ procedure chr_procDefine(const varName, varInitVal: string);
 begin
   Code('  ' + varname + ' DB 0');
 end;
-procedure chr_procLoad(const Op: TOperand);
+procedure chr_procLoad(const OpPtr: pointer);
+var
+  Op: ^TOperand;
 begin
+  Op := OpPtr;
   //carga el operando en res
-  case Op.catOp of
-  coConst : Code('  mov al, '''+Op.valStr+ '''');
+  case Op^.catOp of
+  coConst : Code('  mov al, '''+Op^.valStr+ '''');
   coExpres: ;  //ya está en registro
-  coVariab: Code('  mov al,'+Op.VarName);
+  coVariab: Code('  mov al,'+Op^.VarName);
   end;
   res.typ := tipChr;  //indica que devuelve un entero
   res.catOp := coExpres;  {Un operando cargado, se considerará siempre como una
                           exprwsión, auqnue si fuera una constante, ...   }
   a.used:=true;  //marac registro como usado
 end;
-procedure chr_OnPush(const Op: TOperand);
+procedure chr_OnPush(const OpPtr: pointer);
+var
+  Op: ^TOperand;
 begin
-  case Op.catOp of
+  Op := OpPtr;
+  case Op^.catOp of
   coConst : begin
     code('  mov al, ''' + p2.valStr + '''');  //carga literal
     code('  push ax');
@@ -332,7 +346,7 @@ begin
   end;
 end;
 /////////////funciones del sistema
-procedure fun_putchar;
+procedure fun_putchar(ifun: integer);
 begin
   //Esta es una fucnión INLINE
   code('  pop dx');  //necesita el byte en DL. El valor se empujó con 16 bits.
@@ -340,7 +354,7 @@ begin
   code('  int 21h');
   //Esta función no devuelve un valor, por eso no nos preocupamos del tipo.
 end;
-procedure fun_puts;
+procedure fun_puts(ifun: integer);
 //envia un texto a consola
 begin
   if HayError then exit;
@@ -349,7 +363,7 @@ begin
   code('  int 21h');
   //Esta función no devuelve un valor, por eso no nos preocupamos del tipo.
 end;
-procedure fun_putsI;
+procedure fun_putsI(ifun: integer);
 //envia un texto a consola
 begin
   if HayError then exit;
@@ -375,12 +389,12 @@ begin
   ClearTypes;
   tipInt  :=CreateType('int',t_integer,2);   //de 2 bytes
   tipInt.OnLoad:=@int_procLoad;
-  tipInt.OnDefine:=@int_procDefine;
+  tipInt.OnGlobalDef:=@int_procDefine;
   tipInt.OnPush:=@int_OnPush;
   //debe crearse siempre el tipo char o string para manejar cadenas
   tipChr := CreateType('char',t_string,1);   //de 1 byte
   tipChr.OnLoad:=@chr_procLoad;
-  tipChr.OnDefine:=@chr_procDefine;
+  tipChr.OnGlobalDef:=@chr_procDefine;
   tipChr.OnPush:=@chr_OnPush;
 //  tipStr:=CreateType('char',t_string,1);   //de 1 byte
   tipStr:=CreateType('string',t_string,-1);   //de longitud variable
