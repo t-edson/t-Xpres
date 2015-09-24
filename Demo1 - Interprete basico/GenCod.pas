@@ -189,7 +189,7 @@ procedure TCompiler.StartSyntax;
 //Se ejecuta solo una vez al inicio
 var
   opr: TOperator;
-  f: integer;  //índice para funciones
+  f: TxpFun;
 begin
   ///////////define la sintaxis del compilador
   //crea y guarda referencia a los atributos
@@ -268,9 +268,9 @@ begin
 
   //////// Funciones básicas ////////////
   f := CreateSysFunction('puts', tipInt, @fun_puts);
-  CreateParam(f,'',tipStr);
+  f.CreateParam('',tipStr);
   f := CreateSysFunction('puts', tipInt, @fun_putsI);
-  CreateParam(f,'',tipInt);
+  f.CreateParam('',tipInt);
   if FindDuplicFunction then exit;  //error
 end;
 

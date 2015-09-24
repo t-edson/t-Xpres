@@ -346,7 +346,7 @@ begin
   end;
 end;
 /////////////funciones del sistema
-procedure fun_putchar(ifun: integer);
+procedure fun_putchar(fun :TxpFun);
 begin
   //Esta es una fucnión INLINE
   code('  pop dx');  //necesita el byte en DL. El valor se empujó con 16 bits.
@@ -354,7 +354,7 @@ begin
   code('  int 21h');
   //Esta función no devuelve un valor, por eso no nos preocupamos del tipo.
 end;
-procedure fun_puts(ifun: integer);
+procedure fun_puts(fun :TxpFun);
 //envia un texto a consola
 begin
   if HayError then exit;
@@ -363,7 +363,7 @@ begin
   code('  int 21h');
   //Esta función no devuelve un valor, por eso no nos preocupamos del tipo.
 end;
-procedure fun_putsI(ifun: integer);
+procedure fun_putsI(fun :TxpFun);
 //envia un texto a consola
 begin
   if HayError then exit;
@@ -378,7 +378,7 @@ procedure TCompiler.StartSyntax;
 //Se ejecuta solo una vez al inicio
 var
   opr: TOperator;
-  f: integer;  //índice para funciones
+  f: TxpFun;  //índice para funciones
 begin
 
   //Define métodos a usar
@@ -431,11 +431,11 @@ begin
 
 //////// Funciones básicas ////////////
   f := CreateSysFunction('putchar', tipInt, @fun_putchar);
-  CreateParam(f,'',tipChr);
+  f.CreateParam('',tipChr);
   f := CreateSysFunction('puts', tipInt, @fun_puts);
-  CreateParam(f,'',tipStr);
+  f.CreateParam('',tipStr);
   f := CreateSysFunction('puts', tipInt, @fun_putsI);
-  CreateParam(f,'',tipInt);
+  f.CreateParam('',tipInt);
   //Inicia contadores
   ncc := 0;
 end;

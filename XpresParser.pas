@@ -116,10 +116,10 @@ protected  //Eventos del compilador
   function CreateType(nom0: string; cat0: TCatType; siz0: smallint): TType;
   procedure CreateFunction(funName, varType: string);
   function CreateFunction(funName: string; typ: ttype; proc: TProcExecFunction
-    ): integer;
+    ): TxpFun;
   function CreateSysFunction(funName: string; typ: ttype; proc: TProcExecFunction
-    ): integer;
-  procedure CreateParam(ifun: integer; name: string; typ: ttype);
+    ): TxpFun;
+  procedure CreateParam(fun: TxpFun; parName: string; typStr: string);
   function CaptureDelExpres: boolean;
   procedure CompileVarDeclar; virtual;
   procedure ClearVars;
@@ -374,7 +374,7 @@ begin
   cons.Clear;
 end;
 
-function TCompilerBase.CreateFunction(funName: string; typ: ttype; proc: TProcExecFunction): integer;
+function TCompilerBase.CreateFunction(funName: string; typ: ttype; proc: TProcExecFunction): TxpFun;
 //Crea una nueva función y devuelve un índice a la función.
 var
   r : TxpFun;
@@ -399,7 +399,7 @@ begin
   r.ClearParams;
   //agrega
   funcs.Add(r);
-  Result := funcs.Count-1;
+  Result := r;
 end;
 procedure TCompilerBase.CreateFunction(funName, varType: string);
 //Define una nueva función en memoria.
@@ -421,22 +421,34 @@ begin
   //Ya encontró tipo, llama a evento
 //  if t.OnGlobalDef<>nil then t.OnGlobalDef(funName, '');
 end;
-function TCompilerBase.CreateSysFunction(funName: string; typ: ttype; proc: TProcExecFunction): integer;
+function TCompilerBase.CreateSysFunction(funName: string; typ: ttype; proc: TProcExecFunction): TxpFun;
 //Crea una función del sistema o interna. Estas funciones estan siempre disponibles.
 //Las funciones internas deben crearse todas al inicio.
 begin
   Result := CreateFunction(funName, typ, proc);
   Inc(nIntFun);  //leva la cuenta
 end;
-procedure TCompilerBase.CreateParam(ifun: integer; name: string; typ: ttype);
+procedure TCompilerBase.CreateParam(fun: TxpFun; parName: string; typStr: string
+  );
 //Crea un parámetro para una función
 var
-  n: Integer;
+  hay: Boolean;
+  typStrL: String;
+  t : TType;
 begin
+  //busca tipo
+  typStrL := LowerCase(typStr);
+  for t in typs do begin
+    if t.name = typStrL then begin
+       hay:=true; break;
+    end;
+  end;
+  if not hay then begin
+    GenError('Undefined type "%s"', [typStr]);
+    exit;
+  end;
   //agrega
-  n := high(funcs[ifun].pars)+1;
-  setlength(funcs[ifun].pars, n+1);
-  funcs[ifun].pars[n] := typ;  //agrega referencia
+  fun.CreateParam(parName, t);
 end;
 function TCompilerBase.FindFuncWithParams0(const funName: string; var idx: integer;
   idx0 : integer = 0): TFindFuncResult;
