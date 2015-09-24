@@ -1,5 +1,5 @@
-t-Xpres 0.6.9
-=============
+t-Xpres 0.7b
+============
 
 Sencillo marco de trabajo (framework) para implementar compiladores o intérpretes para  lenguajes imperativos y tipados. Como parte del proyecto, se define un nuevo lenguaje, al que también se le llama Xpres.
 

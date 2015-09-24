@@ -38,38 +38,9 @@ interface
 uses
   Classes, SysUtils, fgl, Forms, LCLType, Dialogs, lclProc,
   SynEditHighlighter, SynFacilHighlighter, SynFacilBasic,
-  XpresBas, XpresTypes, MisUtils;
+  XpresBas, XpresTypes, XpresElements, MisUtils;
 
 type
-
-TxpCon = record
-  name : string;   //nombre de la variable
-  typ  : Ttype;    //tipo de la variable
-  //valores de la constante
-  val : TConsValue;
-end;
-
-//tipo de identificador
-TIdentifType = (idtNone, idtVar, idtFunc, idtCons);
-
-TVarAddr = word;
-TVarBank = byte;
-//registro para almacenar información de las variables
-TVar = record
-  nom : string;   //nombre de la variable
-  typ : Ttype;    //tipo de la variable
-  amb : string;   //ámbito o alcance de la variable
-  //direción física. Usado para implementar un compilador
-  addr: TVarAddr;
-  bank: TVarBank;   //banco o segmento. Usado solo en algunas arquitecturas
-  //Campos usados para implementar el intérprete sin máquina virtual
-  //valores de la variable.
-  valInt  : Int64;    //valor en caso de que sea un entero
-  valUInt : Int64;    //valor en caso de que sea un entero sin signo
-  valFloat: extended; //Valor en caso de que sea un flotante
-  valBool  : Boolean;  //valor  en caso de que sea un booleano
-  valStr  : string;    //valor  en caso de que sea una cadena
-end;
 
 { TOperand }
 //Operando
@@ -79,7 +50,7 @@ public
   typ  : TType;     //Referencia al tipo de dato
   txt  : string;    //Texto del operando o expresión, tal como aparece en la fuente
   ifun : integer;   //índice a funciones, en caso de que sea función
-  ivar : integer;   //índice a variables, en caso de que sea variable
+  rVar : TxpVar;    //referencia a la variable, en caso de que sea variable
   {---------------------------------------------------------
   Estos campos describen al operando, independientemente de que se le encuentree
   un tipo, válido. Si se le encuentra un tipo válido, se tendrá la referencia al tipo
@@ -122,34 +93,13 @@ public
   function CanBeByte: boolean;   //indica si cae en el rango de un BYTE
   //Métodos para facilitar la implementación de intérpretes. Se puede obviar en compiladores
   //Permite obtener valores del operando, independiéntemente de la categoría de operando.
-  function GetValBool: boolean;
-  function GetValInt: int64;
-  function GetValFloat: extended;
-  function GetValStr: string;
+  function ReadBool: boolean;
+  function ReadInt: int64;
+  function ReadFloat: extended;
+  function ReadStr: string;
 end;
-
-TProcExecFunction = procedure(ifun: integer);  //con índice de función
-
-
-TFindFuncResult = (TFF_NONE, TFF_PARTIAL, TFF_FULL);
-
-//registro para almacenar información de las funciones
-Tfunc = record
-  name: string;   //nombre de la función
-  typ : Ttype;    //tipo que devuelve
-  pars: array of Ttype;  //parámetros de entrada
-  amb : string;   //ámbito o alcance de la función
-  //direción física. Usado para implementar un compilador
-  adrr: integer;  //dirección física
-  //Campos usados para implementar el intérprete sin máquina virtual
-  proc: TProcExecFunction;  //referencia a la función que implementa
-  posF: TPoint;    //posición donde empieza la función en el código
-end;
-
-{ TCompiler }
 
 {Clase base para crear al objeto compilador}
-
 { TCompilerBase }
 
 TCompilerBase = class
@@ -195,14 +145,12 @@ protected  //Eventos del compilador
   function FindPredefName(name: string): TIdentifType;
   function GetOperand: TOperand; virtual;
   function GetOperandP(pre: integer): TOperand;
-  procedure ClearParamsFunc(ifun: integer); virtual;
   procedure CaptureParams; virtual;
   function FindFuncWithParams0(const funName: string; var idx: integer;
-    idx0: integer=1): TFindFuncResult;
+    idx0: integer=0): TFindFuncResult;
 private
   procedure Evaluar(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
   function GetExpressionCore(const prec: Integer): TOperand;
-  function SameParamsFunctions(iFun1, iFun2: integer): boolean;
 public
   PErr  : TPError;     //Objeto de Error
   xLex  : TSynFacilSyn; //resaltador - lexer
@@ -211,6 +159,10 @@ public
   DetEjec: boolean;   //para detener la ejecución (en intérpretes)
 
   typs  : TTypes;       //lista de tipos (EL nombre "types" ya está reservado)
+  func0 : TxpFun;      //función interna para almacenar parámetros
+  cons  : TxpCons;  //lista de constantes
+  vars  : TxpVars;  //lista de variables
+  funcs : TxpFuns; //lista de funciones
   function HayError: boolean;
   procedure GenError(msg: string);
   procedure GenError(msg: String; const Args: array of const);
@@ -227,9 +179,6 @@ var
   {Variables globales. Realmente deberían ser campos de TCompilerBase. Se ponen aquí,
    para que puedan ser accedidas fácilmente desde el archivo "interprte.pas"}
 
-  vars  : array of TVar;  //lista de variables
-  funcs : array of Tfunc; //lista de funciones
-  cons  : array of TxpCon;  //lista de constantes
   nIntVar : integer;    //número de variables internas
   nIntFun : integer;    //número de funciones internas
   nIntCon : integer;    //número de constantes internas
@@ -308,7 +257,7 @@ var
 begin
   Result := false;
   tmp := upCase(varName);
-  for i:=0 to high(vars) do begin
+  for i:=0 to vars.Count-1 do begin
     if Upcase(vars[i].nom)=tmp then begin
       idx := i;
       exit(true);
@@ -324,7 +273,7 @@ var
 begin
   Result := false;
   tmp := upCase(funName);
-  for i:=0 to high(funcs) do begin
+  for i:=0 to funcs.Count-1 do begin
     if Upcase(funcs[i].name)=tmp then begin
       idx := i;
       exit(true);
@@ -340,7 +289,7 @@ var
 begin
   Result := false;
   tmp := upCase(conName);
-  for i:=0 to high(cons) do begin
+  for i:=0 to cons.Count-1 do begin
     if Upcase(cons[i].name)=tmp then begin
       idx := i;
       exit(true);
@@ -399,36 +348,36 @@ end;
 procedure TCompilerBase.ClearVars;
 //Limpia todas las variables creadas por el usuario.
 begin
-  setlength(vars, nIntVar);  //deja las del sistema
+  vars.Count:=nIntVar;  //deja las del sistema
 end;
 procedure TCompilerBase.ClearAllVars;
 //Elimina todas las variables, incluyendo las predefinidas.
 begin
   nIntVar := 0;
-  setlength(vars,0);
+  vars.Clear;
 end;
 procedure TCompilerBase.ClearFuncs;
 //Limpia todas las funciones creadas por el usuario.
 begin
-  setlength(funcs,nIntFun);  //deja las del sistema
+  funcs.Count := nIntFun;  //deja las del sistema
 end;
 procedure TCompilerBase.ClearAllFuncs;
 //Elimina todas las funciones, incluyendo las predefinidas.
 begin
   nIntFun := 0;
-  setlength(funcs,0);
+  funcs.Clear;
 end;
 procedure TCompilerBase.ClearAllConst;
 //Elimina todas las funciones, incluyendo las predefinidas.
 begin
   nIntCon := 0;
-  setlength(cons,0);
+  cons.Clear;
 end;
 
 function TCompilerBase.CreateFunction(funName: string; typ: ttype; proc: TProcExecFunction): integer;
 //Crea una nueva función y devuelve un índice a la función.
 var
-  r : Tfunc;
+  r : TxpFun;
   i, n: Integer;
 begin
   //verifica si existe como variable
@@ -443,15 +392,14 @@ begin
   end;
   //puede existir como función, no importa (sobrecarga)
   //registra la función en la tabla
+  r := TxpFun.Create;
   r.name:= funName;
   r.typ := typ;
   r.proc:= proc;
-  setlength(r.pars,0);  //inicia arreglo
+  r.ClearParams;
   //agrega
-  n := high(funcs)+1;
-  setlength(funcs, n+1);
-  funcs[n] := r;
-  Result := n;
+  funcs.Add(r);
+  Result := funcs.Count-1;
 end;
 procedure TCompilerBase.CreateFunction(funName, varType: string);
 //Define una nueva función en memoria.
@@ -480,11 +428,6 @@ begin
   Result := CreateFunction(funName, typ, proc);
   Inc(nIntFun);  //leva la cuenta
 end;
-procedure TCompilerBase.ClearParamsFunc(ifun: integer);  inline;
-//Elimina los parámetros de una función
-begin
-  setlength(funcs[ifun].pars,0);
-end;
 procedure TCompilerBase.CreateParam(ifun: integer; name: string; typ: ttype);
 //Crea un parámetro para una función
 var
@@ -495,25 +438,8 @@ begin
   setlength(funcs[ifun].pars, n+1);
   funcs[ifun].pars[n] := typ;  //agrega referencia
 end;
-function TCompilerBase.SameParamsFunctions(iFun1, iFun2: integer): boolean;
-//Compara los parámetros de dos funciones. Si tienen el mismo número de
-//parámetros y el mismo tipo, devuelve TRUE.
-var
-  i: Integer;
-begin
-  Result:=true;  //se asume que son iguales
-  if High(funcs[iFun1].pars) <> High(funcs[iFun2].pars) then
-    exit(false);   //distinto número de parámetros
-  //hay igual número de parámetros, verifica
-  for i := 0 to High(funcs[iFun1].pars) do begin
-    if funcs[iFun1].pars[i] <> funcs[iFun2].pars[i] then begin
-      exit(false);
-    end;
-  end;
-  //si llegó hasta aquí, hay coincidencia, sale con TRUE
-end;
 function TCompilerBase.FindFuncWithParams0(const funName: string; var idx: integer;
-  idx0 : integer = 1): TFindFuncResult;
+  idx0 : integer = 0): TFindFuncResult;
 {Busca una función que coincida con el nombre "funName" y con los parámetros de funcs[0]
 El resultado puede ser:
  TFF_NONE   -> No se encuentra.
@@ -531,11 +457,11 @@ begin
   Result := TFF_NONE;   //por defecto
   hayFunc := false;
   tmp := UpCase(funName);
-  for i:=idx0 to high(funcs) do begin  //no debe empezar en 0, porque allí está func[0]
+  for i:=idx0 to funcs.Count-1 do begin  //no debe empezar en 0, porque allí está func[0]
     if Upcase(funcs[i].name)= tmp then begin
       //coincidencia, compara
       hayFunc := true;  //para indicar que encontró el nombre
-      if SameParamsFunctions(i,0) then begin
+      if funcs[i].SameParams(func0) then begin
         idx := i;    //devuelve ubicación
         Result := TFF_FULL; //encontró
         exit;
@@ -570,13 +496,13 @@ var
   tmp: String;
 begin
   Result := false;
-  n := high(funcs);  //última función
+  n := funcs.Count-1;  //última función
   ufun := funcs[n].name;
   //busca sobrecargadas en las funciones anteriores
   for i:=0 to n-1 do begin
     if funcs[i].name = ufun then begin
       //hay una sobrecargada, verifica tipos de parámetros
-      if not SameParamsFunctions(i,n) then break;
+      if not funcs[i].SameParams(funcs[n]) then break;
       //Tiene igual cantidad de parámetros y del mismo tipo. Genera Error
       tmp := '';
       for j := 0 to High(funcs[i].pars) do begin
@@ -799,7 +725,7 @@ procedure TCompilerBase.CaptureParams;
 //Lee los parámetros de una función en la función interna funcs[0]
 begin
   SkipWhites;
-  ClearParamsFunc(0);   //inicia parámetros
+  func0.ClearParams;
   if EOBlock or EOExpres then begin
     //no tiene parámetros
   end else begin
@@ -812,7 +738,7 @@ begin
       GetExpression(0, true);  //captura parámetro
       if perr.HayError then exit;   //aborta
       //guarda tipo de parámetro
-      CreateParam(0,'', res.typ);
+      func0.CreateParam('',res.typ);
       if cIn.tok = ',' then begin
         cIn.Next;   //toma separador
         SkipWhites;
@@ -855,7 +781,7 @@ begin
   end else if cIn.tokType = tkIdentif then begin  //puede ser variable, constante, función
     if FindVar(cIn.tok, ivar) then begin
       //es una variable
-      Result.ivar:=ivar;   //guarda referencia a la variable
+      Result.rvar:=vars[ivar];   //guarda referencia a la variable
       Result.catOp:=coVariab;    //variable
       Result.catTyp:= vars[ivar].typ.cat;  //categoría
       Result.typ:=vars[ivar].typ;
@@ -878,7 +804,7 @@ begin
           Result.txt:= cIn.tok;    //toma el texto
     //      Result.catTyp:= funcs[i].typ.cat;  //no debería ser necesario
           Result.typ:=funcs[i].typ;
-          funcs[i].proc(i);  //llama al código de la función
+          funcs[i].proc(funcs[i]);  //llama al código de la función
           exit;
         end;
       end;
@@ -905,7 +831,7 @@ begin
         Result.txt:= cIn.tok;    //toma el texto
   //      Result.catTyp:= funcs[i].typ.cat;  //no debería ser necesario
         Result.typ:=funcs[i].typ;
-        funcs[i].proc(i);  //llama al código de la función
+        funcs[i].proc(funcs[i]);  //llama al código de la función
         exit;
       end;
     end;
@@ -950,7 +876,7 @@ begin
 end;
 procedure TCompilerBase.CreateVariable(const varName: string; typ: ttype);
 var
-  r : TVar;
+  r : TxpVar;
   n: Integer;
 begin
   //verifica nombre
@@ -959,11 +885,10 @@ begin
     exit;
   end;
   //registra variable en la tabla
+  r := TxpVar.Create;
   r.nom:=varName;
   r.typ := typ;   //fija  referencia a tipo
-  n := high(vars)+1;
-  setlength(vars, n+1);
-  vars[n] := r;
+  vars.Add(r);
   //Ya encontró tipo, llama a evento
   if typ.OnGlobalDef<>nil then typ.OnGlobalDef(varName, '');
 end;
@@ -1233,13 +1158,16 @@ begin
   PErr.IniError;   //inicia motor de errores
   //Inicia lista de tipos
   typs := TTypes.Create(true);
+  cons := TxpCons.Create(true);
+  vars := TxpVars.Create(true);
+  funcs := TxpFuns.Create(true);
   //Inicia variables, funciones y constantes
   ClearAllVars;
   ClearAllFuncs;
   ClearAllConst;
   //inicia la sintaxis
   xLex := TSynFacilSyn.Create(nil);   //crea lexer
-  CreateSysFunction('', nil, nil);  //crea la función 0, para uso interno
+  func0 := TxpFun.Create;  //crea la función 0, para uso interno
 
   if HayError then PErr.Show;
   cIn := TContexts.Create(xLex); //Crea lista de Contextos
@@ -1248,7 +1176,11 @@ end;
 destructor TCompilerBase.Destroy;
 begin
   cIn.Destroy; //Limpia lista de Contextos
+  func0.Destroy;
   xLex.Free;
+  funcs.Destroy;
+  vars.Destroy;
+  cons.Destroy;
   typs.Free;
   inherited Destroy;
 end;
@@ -1256,15 +1188,15 @@ end;
 { TOperand }
 function TOperand.VarName: string; inline;
 begin
-  Result := vars[ivar].nom;
+  Result := rvar.nom;
 end;
 function TOperand.addr: TVarAddr;
 begin
-  Result := vars[ivar].addr;
+  Result := rvar.addr;
 end;
 function TOperand.bank: TVarBank;
 begin
-  Result := vars[ivar].bank;
+  Result := rvar.bank;
 end;
 
 procedure TOperand.SetvalBool(AValue: boolean);
@@ -1346,35 +1278,35 @@ begin
   cIn.Next;   //toma el token
 end;
 {Métodos de ayuda para implementar intérpretes}
-function TOperand.GetValBool: boolean;
+function TOperand.ReadBool: boolean;
 begin
   case catOp of
   coConst   : Result := valBool;
-  coVariab: Result := vars[ivar].valBool;
+  coVariab: Result := rvar.valBool;
   coExpres  : Result := valBool;   //por norma, lo leemos de aquí.
   end;
 end;
-function TOperand.GetValInt: int64;
+function TOperand.ReadInt: int64;
 begin
   case catOp of
   coConst   : Result := valInt;
-  coVariab: Result := vars[ivar].valInt;
+  coVariab: Result := rvar.valInt;
   coExpres  : Result := valInt;   //por norma, lo leemos de aquí.
   end;
 end;
-function TOperand.GetValFloat: extended;
+function TOperand.ReadFloat: extended;
 begin
   case catOp of
   coConst   : Result := valFloat;
-  coVariab: Result := vars[ivar].valFloat;
+  coVariab: Result := rvar.valFloat;
   coExpres  : Result := valFloat;   //por norma, lo leemos de aquí.
   end;
 end;
-function TOperand.GetValStr: string;
+function TOperand.ReadStr: string;
 begin
   case catOp of
   coConst   : Result := valStr;
-  coVariab: Result := vars[ivar].valStr;
+  coVariab: Result := rvar.valStr;
   coExpres  : Result := valStr;   //por norma, lo leemos de aquí.
   end;
 end;

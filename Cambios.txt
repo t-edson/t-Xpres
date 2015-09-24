@@ -1,6 +1,10 @@
-XPres 0.6.9
-===========
+XPres 0.7
+=========
 
-* Se crea la unidad XpresTypes y se traslada las definiciones referidas a los tipos, los operadores y las operaciones.
-* Para lograr la modularidad, se tuvo que cambiar la definición de TProcLoadOperand para que se pueda declarar sin 
-usar el tipo TOperand.
+* Se cambia el nombre de los métodos TOperand.GetVal<XXX> por TOperand.Read<XXX>, para evitar 
+confusión con métodos "Getter".
+* Se convierte al registro TxpCon en clase y se almacena en lista dinámica.
+* Se cambia de nombre a TVar por TxpVar y se convierte en clase.
+* Se cambia de nombre a TFun por TxpFun y se convierte en clase.
+* Se mueven métodos de TCompilerBase a TxpFun.
+* Se crea la función func0, en lugar de usar el índice 0 de la tabla funcs[].

@@ -71,8 +71,8 @@ begin
   end;
   stack[sp].typ := res.typ;
   case res.Typ.cat of
-  t_string:  stack[sp].valStr  := res.GetValStr;
-  t_integer: stack[sp].valInt  := res.GetValInt;
+  t_string:  stack[sp].valStr  := res.ReadStr;
+  t_integer: stack[sp].valInt  := res.ReadInt;
   end;
   Inc(sp);
 end;
@@ -124,7 +124,7 @@ begin
   Op := OpPtr;
   //carga el operando en res
   res.typ := tipInt;
-  res.valInt := Op^.GetValInt;
+  res.valInt := Op^.ReadInt;
 end;
 procedure int_asig_int;
 begin
@@ -132,14 +132,14 @@ begin
     GenError('Solo se puede asignar a variable.'); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
-  vars[p1.ivar].valInt:=p2.GetValInt;
+  p1.rVar.valInt:=p2.ReadInt;
 //  res.used:=false;  //No hay obligación de que la asignación devuelva un valor.
 //  Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
 
 procedure int_suma_int;
 begin
-  LoadResInt(p1.GetValInt+p2.GetValInt);
+  LoadResInt(p1.ReadInt+p2.ReadInt);
 end;
 ////////////operaciones con string
 procedure str_procLoad(const OpPtr: pointer);
@@ -149,7 +149,7 @@ begin
   Op := OpPtr;
   //carga el operando en res
   res.typ := tipStr;
-  res.valStr := Op^.GetValStr;
+  res.valStr := Op^.ReadStr;
 end;
 procedure str_asig_str;
 begin
@@ -157,18 +157,18 @@ begin
     GenError('Solo se puede asignar a variable.'); exit;
   end;
   //aquí se puede mover directamente res memoria sin usar el registro res
-  vars[p1.ivar].valStr:=p2.GetValStr;
+  p1.rVar.valStr:=p2.ReadStr;
 //  res.used:=false;  //No hay obligación de que la expresión devuelva un valor.
 //  Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
 
 procedure str_concat_str;
 begin
-  LoadResStr(p1.GetValStr+p2.GetValStr);
+  LoadResStr(p1.ReadStr+p2.ReadStr);
 end;
 
 //funciones básicas
-procedure fun_puts(ifun: integer);
+procedure fun_puts(fun :TxpFun);
 //envia un texto a consola
 begin
   PopResult;  //saca parámetro 1
@@ -176,7 +176,7 @@ begin
   frmOut.puts(stack[sp].valStr);  //sabemos que debe ser String
   //el tipo devuelto lo fijará el framework, al tipo definido
 end;
-procedure fun_putsI(ifun: integer);
+procedure fun_putsI(fun :TxpFun);
 //envia un texto a consola
 begin
   PopResult;  //saca parámetro 1

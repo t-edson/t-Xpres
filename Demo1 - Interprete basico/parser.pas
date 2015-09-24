@@ -6,7 +6,7 @@ interface
 uses
   Classes, SysUtils, LCLType, Dialogs, lclProc, Graphics, SynEditHighlighter,
   SynFacilBasic,
-  XpresTypes, XPresParser, FormOut;
+  XpresTypes, XPresParser, XpresElements, FormOut;
 
 type
 
@@ -139,10 +139,10 @@ var
 begin
   tmp := 'Result ' + CategName(Op.typ.cat) + '(' + Op.typ.name + ') = ';
   case Op.Typ.cat of
-  t_integer: frmOut.puts(tmp + IntToStr(Op.GetValInt));
-  t_float :  frmOut.puts(tmp + FloatToStr(Op.GetValFloat));
-  t_string:  frmOut.puts(tmp + Op.GetValStr);
-  t_boolean: if Op.GetValBool then frmOut.puts(tmp + 'TRUE')
+  t_integer: frmOut.puts(tmp + IntToStr(Op.ReadInt));
+  t_float :  frmOut.puts(tmp + FloatToStr(Op.ReadFloat));
+  t_string:  frmOut.puts(tmp + Op.ReadStr);
+  t_boolean: if Op.ReadBool then frmOut.puts(tmp + 'TRUE')
              else frmOut.puts(tmp + 'FALSE');
   end;
 end;
