@@ -117,7 +117,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir);.."/>
-      <OtherUnitFiles Value="..;..\..\SynFacilUtils 0.5;..\..\MisUtils 0.3"/>
+      <OtherUnitFiles Value="..;..\..\SynFacilUtils 0.7;..\..\MisUtils 0.3"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Parsing>

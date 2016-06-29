@@ -308,20 +308,20 @@ procedure TfrmPrincipal.VerificarError;
 begin
     If not cxp.HayError Then exit;  //verificación
     //Selecciona posición de error en el Editor
-    If cxp.ArcError <> '' Then begin
+    If cxp.ErrorFile <> '' Then begin
         //Se ha identificado el archivo con el error
         If e.NomArc = '' Then begin
             //Tenemos el editor libre para mostrar el archivo
-            e.LoadFile(cxp.ArcError);
+            e.LoadFile(cxp.ErrorFile);
             //Ubicamos número de línea, si hay
-            MarcarError(cxp.nLinError,cxp.nColError);
+            MarcarError(cxp.ErrorLine, cxp.ErrorCol);
             {If MostrarError Then }cxp.ShowError;
         end Else begin
             //Hay un archivo cargado
-            If cxp.ArcError = e.NomArc Then begin
+            If cxp.ErrorFile = e.NomArc Then begin
                 //El error está en el mismo archivo, lo mostramos
-                If cxp.nLinError <> 0 Then begin
-                   MarcarError(cxp.nLinError,cxp.nColError);
+                If cxp.ErrorLine <> 0 Then begin
+                   MarcarError(cxp.ErrorLine,cxp.ErrorCol);
                    edXpr.Invalidate;
                 end;
                 {If MostrarError Then }cxp.ShowError;

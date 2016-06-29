@@ -1,0 +1,8 @@
+var
+  x: int;
+begin
+  x := x + 1;
+  putchar('5');
+end;
+
+
