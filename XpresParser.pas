@@ -99,16 +99,15 @@ public
   function ReadStr: string;
 end;
 
-{Clase base para crear al objeto compilador}
 { TCompilerBase }
-
+{Clase base para crear al objeto compilador}
 TCompilerBase = class
 protected  //Eventos del compilador
-  {Notar que estos eventos no se definen para usar métofdos de objetos, sino que
+  {Notar que estos eventos no se definen para usar métodos de objetos, sino que
   por comodidad para impementar el intérprete (y espero que por velocidad), usan
   simples procedimientos aislados}
-  OnExprStart: procedure(const exprLevel: integer);     {Se genera al iniciar la
-                                                     evaluación de una expresión.}
+  OnExprStart: procedure(const exprLevel: integer);  {Se genera al iniciar la
+                                                      evaluación de una expresión.}
   OnExprEnd  : procedure(const exprLevel: integer; isParam: boolean);  {Se genera
                                              el terminar de evaluar una expresión}
   ExprLevel: Integer;  //Nivel de anidamiento de la rutina de evaluación de expresiones
@@ -152,25 +151,26 @@ private
   procedure Evaluar(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
   function GetExpressionCore(const prec: Integer): TOperand;
 public
-  PErr  : TPError;     //Objeto de Error
   xLex  : TSynFacilSyn; //resaltador - lexer
   //variables públicas del compilador
   ejecProg: boolean;   //Indica que se está ejecutando un programa o compilando
   DetEjec: boolean;   //para detener la ejecución (en intérpretes)
 
-  typs  : TTypes;       //lista de tipos (EL nombre "types" ya está reservado)
+  typs  : TTypes;       //lista de tipos (El nombre "types" ya está reservado)
   func0 : TxpFun;      //función interna para almacenar parámetros
   cons  : TxpCons;  //lista de constantes
   vars  : TxpVars;  //lista de variables
-  funcs : TxpFuns; //lista de funciones
+  funcs : TxpFuns;  //lista de funciones
+public  //Manejo de errores
+  PErr  : TPError;     //Objeto de Error
   function HayError: boolean;
   procedure GenError(msg: string);
   procedure GenError(msg: String; const Args: array of const);
-  function ArcError: string;
-  function nLinError: integer;
-  function nColError: integer;
+  function ErrorFile: string;
+  function ErrorLine: integer;
+  function ErrorCol: integer;
   procedure ShowError;
-public
+public  //Inicialización
   constructor Create; virtual;
   destructor Destroy; override;
 end;
@@ -229,15 +229,15 @@ begin
   else
     Perr.GenError(dic(msg, Args), cIn.curCon);
 end;
-function TCompilerBase.ArcError: string;
+function TCompilerBase.ErrorFile: string;
 begin
   Result:= Perr.ArcError;
 end;
-function TCompilerBase.nLinError: integer;
+function TCompilerBase.ErrorLine: integer;
 begin
   Result := Perr.nLinError;
 end;
-function TCompilerBase.nColError: integer;
+function TCompilerBase.ErrorCol: integer;
 begin
   Result := Perr.nColError;
 end;
@@ -378,7 +378,7 @@ function TCompilerBase.CreateFunction(funName: string; typ: ttype; proc: TProcEx
 //Crea una nueva función y devuelve un índice a la función.
 var
   r : TxpFun;
-  i, n: Integer;
+  i: Integer;
 begin
   //verifica si existe como variable
   if FindVar(funName, i) then begin
@@ -683,7 +683,6 @@ procedure TCompilerBase.TipDefecString(var Op: TOperand; tokcad: string);
 //Devuelve el tipo de cadena encontrado en un token
 var
   i: Integer;
-  x: TType;
 begin
   Op.catTyp := t_string;   //es cadena
   Op.size:=length(tokcad);
@@ -695,7 +694,7 @@ begin
   for i:=0 to typs.Count-1 do begin
     { TODO : Se debería tener una lista adicional  TStringTypes, para acelerar la
     búsqueda}
-    x := typs[i];
+    //x := typs[i];
     if (typs[i].cat = t_string) and (typs[i].size=-1) then begin  //busca un char
       Op.typ:=typs[i];  //encontró
       break;
@@ -889,7 +888,6 @@ end;
 procedure TCompilerBase.CreateVariable(const varName: string; typ: ttype);
 var
   r : TxpVar;
-  n: Integer;
 begin
   //verifica nombre
   if FindPredefName(varName) <> idtNone then begin

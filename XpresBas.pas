@@ -76,11 +76,11 @@ type
                              no se especifica algún TStringList externo. Se crea siempre}
     curLines : TStrings;    //Referencia al StringList actual, el que se explora.
     lex      : TSynFacilSyn;  //analizador léxico
-//    tok      : string;        //token actual
-//    tokType  : TSynHighlighterAttributes;  //tipo de token actual
     //posición del cursor actual
     property row: integer read getRow;
     property col: integer read getCol;
+    function Token: string;  inline;  //Token actual
+    function TokenType: TSynHighlighterAttributes; inline;  //Tipo de token actual
     //Métodos de lectura
     Function IniCont:Boolean;
     Function Eof:Boolean;
@@ -89,7 +89,7 @@ type
 
     function Next: boolean;     //Pasa al siguiente token
     function CurLine: string;   //Retorna la línea actual
-    function ReadSource: string;         //Lee el contenido del contexto
+    function ReadSource: string;    //Lee el contenido del contexto en un string
     //Control de la posición actual
     procedure SetStartPos;       //Posiciona al inicio del contexto
     procedure SaveLexerState;    //Guarda el estado actual del lexer
@@ -211,6 +211,16 @@ end;
 function TContext.getCol: integer;
 begin
   Result:=lex.GetX;
+end;
+function TContext.Token: string;
+{Devuelve el token actual}
+begin
+  Result := lex.GetToken;
+end;
+function TContext.TokenType: TSynHighlighterAttributes;
+{Devuelve el tipo de token actual}
+begin
+  Result := TSynHighlighterAttributes(UIntPtr(lex.GetTokenKind));
 end;
 function TContext.Next: boolean;
 //Pasa al siguiente token. Si hay cambio de líne edvuelve TRUE
