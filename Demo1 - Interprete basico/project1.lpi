@@ -69,7 +69,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir);.."/>
-      <OtherUnitFiles Value="..;..\..\SynFacilUtils 0.4;..\..\MisUtils 0.3"/>
+      <OtherUnitFiles Value="..;..\..\SynFacilUtils 0.8;..\..\MisUtils 0.4"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Linking>

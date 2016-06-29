@@ -34,9 +34,9 @@ procedure TForm1.Button1Click(Sender: TObject);
 begin
   cxp.Compilar('', edXpr.Lines);
   if cxp.HayError then begin
-    If cxp.nLinError <> 0 Then begin
-      edXpr.CaretX:=cxp.nColError;
-      edXpr.CaretY:=cxp.nLinError;
+    If cxp.ErrorLine <> 0 Then begin
+      edXpr.CaretX:=cxp.ErrorCol;
+      edXpr.CaretY:=cxp.ErrorLine;
       edXpr.Invalidate;
     end;
     cxp.ShowError;
