@@ -1,0 +1,74 @@
+XPres 0.8
+=========
+Se cambia el nombre de algunos de los métodos de TCompilerBase, referidos a manejo de errores.
+Se crean los métodos Token, TokenType y Block en TContext.
+Se crea un nuevo proyecto ejemplo: "Demo4 - Parser".
+
+XPres 0.7
+=========
+* Se cambia el nombre de los métodos TOperand.GetVal<XXX> por TOperand.Read<XXX>, para evitar 
+confusión con métodos "Getter".
+* Se convierte al registro TxpCon en clase y se almacena en lista dinámica.
+* Se cambia de nombre a TVar por TxpVar y se convierte en clase.
+* Se cambia de nombre a TFun por TxpFun y se convierte en clase.
+* Se mueven métodos de TCompilerBase a TxpFun.
+* Se crea la función func0, en lugar de usar el índice 0 de la tabla funcs[].
+* Se crea la unidad XpresElements y se mueven las definiciones de constantes, variables y funciones.
+* Se modifican CreateFunction() y CreateSysFunction() para que devuelvan referencias a TxpFun, 
+en lugar de índices. 
+
+XPres 0.6.9
+===========
+* Se crea la unidad XpresTypes y se traslada las definiciones referidas a los tipos, los operadores y las operaciones.
+* Para lograr la modularidad, se tuvo que cambiar la definición de TProcLoadOperand para que se pueda declarar sin 
+usar el tipo TOperand.
+
+XPres 0.6.8
+===========
+* Se crea el typo TConsValue, para servir de contenedor de los valores de constantes.
+* Se crea el tipo TxpCon, para constantes, usando TConsValue.
+* Se crea un campo de tipo TConsValue, en TOPerand, y se eliminan los campos individuales, 
+que almacenaban los valores constantes.
+* Se modifican los métodos de acceso a valores constantes.
+* Se agrega la dependencia de MisUtils, para manejo de idiomas.
+* Se sobrecarga el método GenError(), para permitir incluri variables string.
+
+Xpress 0.6.5
+===========
+
+* Se adecúa la librería Xpres para que pueda usar la versión 0.4b de la librería "SynFacilUtils".
+* Se cambia complétamente la estructura de los archivos de la librería. Ahora Se usan los archivos 
+"XpresBas.pas" y "XpresParser.pas" y se debe crear una unidad adicional que incluya a "XpresParser.pas"
+para implmentar el analizador sintáctico y generador de código.
+* Se encapsula en clases, gran parte del código que se encontraba definido directamente en la unidad 
+"XpresParser.pas".
+* Se cambia la forma en que se debe crear el generador de código. Se elimina las constantes de tipo 
+"STORED_???" y se mueve quita la declaración obligatoria de los métodos de TOperand. .
+* Se quita el campo "estOp" de "TOperand". 
+* Se corrigen varias rutinas de "XpresParser.pas" para mejorar el manejo de los contextos.
+* Diversos cambios más.
+
+Como han habido cambios drásticos, se pierde la compatibilidad con la versión 0.6. Pero los conceptos
+básicos del framework se mantienen.
+
+La documentación referida al Framework, ha mejorado considerablemente.
+
+Xpress 0.5b
+===========
+
+* Se cambia de nombre a "TokActL" por "tokL" en "TContexts" para hacerlo más consistente con la propiedad "tok".
+* Se cambia de nombre a "NuevoContexEntArc" por "NewContextFromFile" en "TContexts".
+* Se cambia de nombre a "NuevoContexEntTxt" por "NewContextFromTxt" en "TContexts".
+
+* Se cambia de nombre "mosError" por "Show" en la clase "TPError".
+* Se cambia de nombre "Limpiar" por "Clear" en la clase "TPError".
+* Se crea la función GenError() como un acceso rápido a pErr.GenError().
+* Se separa parte del código (rutinas básicas que menos probabilidad tienen de cambiar) en un archivo aparte
+llamado "XpresParser.inc".
+
+Xpress 0.4b
+===========
+
+* Se deriva el lexer de TSynComplet, en lugar de TSynFacilSyn, para poder acceder a propiedades protegidas de TsynFacilSyn.
+* Se incluye compilación condicional, para poder diferenciar bloques en mod intérprete y modo compialdor.
+* Se cambia le nombre de varios método de "XPresBas", a la terminología inglesa.

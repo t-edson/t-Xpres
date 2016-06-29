@@ -14,7 +14,7 @@ unit XpresBas;
 interface
 uses Classes, SysUtils, fgl,
   Forms, LCLType,  //Para mostrar mensajes con Application.MessageBox()
-  SynEditHighlighter, SynFacilHighlighter;
+  SynEditHighlighter, SynFacilHighlighter, SynFacilBasic;
 
 
 type
@@ -81,6 +81,7 @@ type
     property col: integer read getCol;
     function Token: string;  inline;  //Token actual
     function TokenType: TSynHighlighterAttributes; inline;  //Tipo de token actual
+    function Block: TFaSynBlock; inline;
     //Métodos de lectura
     Function IniCont:Boolean;
     Function Eof:Boolean;
@@ -222,6 +223,11 @@ function TContext.TokenType: TSynHighlighterAttributes;
 begin
   Result := TSynHighlighterAttributes(UIntPtr(lex.GetTokenKind));
 end;
+function TContext.Block: TFaSynBlock;
+begin
+  Result := lex.TopCodeFoldBlock;
+end;
+
 function TContext.Next: boolean;
 //Pasa al siguiente token. Si hay cambio de líne edvuelve TRUE
 var fFil: integer;
