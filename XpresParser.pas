@@ -33,7 +33,7 @@ Para mayor información sobre el uso del framework Xpres, consultar la documenta
 técnica.
 Para ver los cambios en esta versión, revisar el archivo cambios.txt.
 }
-unit XPresParser;
+unit XpresParser;
 interface
 uses
   Classes, SysUtils, fgl, Forms, LCLType, Dialogs, lclProc,
