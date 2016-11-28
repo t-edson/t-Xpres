@@ -160,7 +160,6 @@
       </Unit22>
       <Unit23>
         <Filename Value="..\XpresParser.pas"/>
-        <UnitName Value="XPresParser"/>
         <EditorIndex Value="3"/>
         <TopLine Value="873"/>
         <CursorPos Y="891"/>
@@ -196,8 +195,7 @@
         <Filename Value="..\XpresElements.pas"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
-        <TopLine Value="51"/>
-        <CursorPos X="3" Y="98"/>
+        <CursorPos X="13" Y="48"/>
         <FoldState Value=" TMa21 T3iR04]8LiX0]76iZ[740igU41w"/>
         <UsageCount Value="22"/>
         <Loaded Value="True"/>
