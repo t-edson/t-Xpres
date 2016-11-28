@@ -1,7 +1,7 @@
 t-Xpres 0.8
 ===========
 
-Sencillo marco de trabajo (framework) para implementar compiladores o intérpretes para  lenguajes imperativos y tipados. Como parte del proyecto, se define un nuevo lenguaje, al que también se le llama Xpres.
+Sencillo marco de trabajo (framework) para implementar compiladores o intérpretes para  lenguajes imperativos y tipados. 
 
 Esta desarrollado con Free Pascal y  Lazarus.
 
@@ -39,5 +39,3 @@ El ejemplo de compilador incluye también una IDE sencilla. Solo permite manejar
 
 El intérprete mostrará siempre el valor de la última expresión evaluada.
  
-Solo se reconocen los tipos: int, float y string.
-
