@@ -5,7 +5,7 @@ Sencillo marco de trabajo (framework) para implementar compiladores o intérpret
 
 Esta desarrollado con Free Pascal y  Lazarus.
 
-Xpres no es solo una librería, es también una infraestructura que define normas y procedimientos en la creación de intérpretes o compiladores, usando Lazarus. Como ejemplo, se incluyen implementaciones simples de un intérprete y un compilador.
+Xpres no es solo una librería, es también una infraestructura (framework) que define normas y procedimientos en la creación de intérpretes o compiladores, usando Lazarus. Como ejemplo, se incluyen implementaciones simples de un intérprete y un compilador.
 
 El framework, incluye las siguientes dependencias:
 
@@ -40,33 +40,4 @@ El ejemplo de compilador incluye también una IDE sencilla. Solo permite manejar
 El intérprete mostrará siempre el valor de la última expresión evaluada.
  
 Solo se reconocen los tipos: int, float y string.
-
-Un programa sencillo, que se puede ejecutar es este:
-```
-program NoName;
-
-var x,y: int;
-   
-begin
-  puts "Hola mundo";
-  x := 5;
-  y := 10;
-  x;  //para mostrar el resultado
-end;
-```
-
-Lenguaje Xpres
-==============
-
-El lenguaje Xpres es un lenguaje simple, tipado e imperativo. En su versión actual, no soporta el manejo de objetos, pero se espera incluirlo en el futuro. Está pensado para poder implementar compiladores de bajo nivel para microcontroladores (de hecho el desarrollo del framework estuvo motivado en el desarrollo de un compilador para microcontroladores PIC). Por ello, se definen tipos de 8 bits, y la arquitectura del generador de código permite optimizar las operaciones.
-
-Xpres, es un lenguaje que se define empezando por los tipos, luego se definen los operadores que se apliquen a esos tipos, y luego las operaciones (sobre que tipo se aplica) que se permiten para cada operador. Por ejemplo:
-
-Si se define el tipo 'int8'. Luego se puede definir el operador '+' para 'int8', y luego se puede definir la operación 'suma de int8', que es la suma de un dato 'int8' con otro dato 'int8'.
-
-En este sentido, no existen operadores como elementos fundamentales del lenguaje, lo que si ocurre en la mayoría de lenguajes (como Pascal o C). Tampoco puede existir la sobrecarga de operadores, porque por definición, los operadores se definen para cada tipo de datos.
-
-Se espera que una implementación del lenguaje incluya ya las definiciones de tipos,  operadores y expresiones, de modo que no tengan que cambiarse luego.
-
-La definición del lenguaje Xpres, es también parte de este proyecto. Sin embargo, no se incluirá una implementación que cumpla con el 100% del lenguaje, al menos a corto plazo. El lenguaje se define, dejando abierta las puertas para implementaciones parciales. Por ejemplo, no se espera poder implementar aritmética en coma flotante de 64 bits, para microcontroladores sencillo de 8 bits. Las rutinas básicas del framework, detectan cuando no se ha implementado una operación u operador, y generan el mensaje de error correspondiente. De esta forma, el tratamiento de error se simplica considerablemente.
 
