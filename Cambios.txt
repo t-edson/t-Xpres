@@ -1,3 +1,18 @@
+XPres 0.9
+=========
+Se cambia el tipo TIdentifType por TxpElemType, (en la unidad XpresElements) y se renombran sus 
+elementos.
+Se crean las clases TxpElement y TxpElements en la unidad XpresElements.
+Se cambia el campo de nombre del objeto TxpVar, de "nom" a "name".
+
+Se cambia la definición de los elementos TxpCon, TxpVar y TxpFun, para hacerlos ahora 
+descendientes de la misma clase TxpElement.
+Se agregan métodos nuevos a la clase TxpFun. 
+Se crea la clase TXpTreeElements, para definir al árbol de sintaxis.
+Se agrega el árbol TCompilerBase.TreeElems de tipo TXpTreeElements, pero no se usa
+actualmente. Se deja para futuras ampliaciones. Todavía se sigue usando cons[], vars[] y funcs[].
+
+
 XPres 0.8
 =========
 Se cambia el nombre de algunos de los métodos de TCompilerBase, referidos a manejo de errores.
@@ -19,8 +34,10 @@ en lugar de índices.
 
 XPres 0.6.9
 ===========
-* Se crea la unidad XpresTypes y se traslada las definiciones referidas a los tipos, los operadores y las operaciones.
-* Para lograr la modularidad, se tuvo que cambiar la definición de TProcLoadOperand para que se pueda declarar sin 
+* Se crea la unidad XpresTypes y se traslada las definiciones referidas a los tipos, los operadores 
+y las operaciones.
+* Para lograr la modularidad, se tuvo que cambiar la definición de TProcLoadOperand para que se pueda 
+declarar sin 
 usar el tipo TOperand.
 
 XPres 0.6.8
@@ -56,19 +73,21 @@ La documentación referida al Framework, ha mejorado considerablemente.
 Xpress 0.5b
 ===========
 
-* Se cambia de nombre a "TokActL" por "tokL" en "TContexts" para hacerlo más consistente con la propiedad "tok".
+* Se cambia de nombre a "TokActL" por "tokL" en "TContexts" para hacerlo más consistente con la propiedad 
+"tok".
 * Se cambia de nombre a "NuevoContexEntArc" por "NewContextFromFile" en "TContexts".
 * Se cambia de nombre a "NuevoContexEntTxt" por "NewContextFromTxt" en "TContexts".
 
 * Se cambia de nombre "mosError" por "Show" en la clase "TPError".
 * Se cambia de nombre "Limpiar" por "Clear" en la clase "TPError".
 * Se crea la función GenError() como un acceso rápido a pErr.GenError().
-* Se separa parte del código (rutinas básicas que menos probabilidad tienen de cambiar) en un archivo aparte
-llamado "XpresParser.inc".
+* Se separa parte del código (rutinas básicas que menos probabilidad tienen de cambiar) en un archivo 
+aparte llamado "XpresParser.inc".
 
 Xpress 0.4b
 ===========
 
-* Se deriva el lexer de TSynComplet, en lugar de TSynFacilSyn, para poder acceder a propiedades protegidas de TsynFacilSyn.
+* Se deriva el lexer de TSynComplet, en lugar de TSynFacilSyn, para poder acceder a propiedades protegidas 
+de TsynFacilSyn.
 * Se incluye compilación condicional, para poder diferenciar bloques en mod intérprete y modo compialdor.
 * Se cambia le nombre de varios método de "XPresBas", a la terminología inglesa.

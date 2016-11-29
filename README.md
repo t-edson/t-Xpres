@@ -1,11 +1,11 @@
-t-Xpres 0.8
+t-Xpres 0.9
 ===========
 
-Sencillo marco de trabajo (framework) para implementar compiladores o intérpretes para  lenguajes imperativos y tipados. 
+Marco de trabajo (framework) para implementar compiladores o intérpretes para  lenguajes imperativos y tipados. 
 
 Esta desarrollado con Free Pascal y  Lazarus.
 
-Xpres no es solo una librería, es también una infraestructura (framework) que define normas y procedimientos en la creación de intérpretes o compiladores, usando Lazarus. Como ejemplo, se incluyen implementaciones simples de un intérprete y un compilador.
+Xpres no es solo una librería, es también una infraestructura que define normas y procedimientos en la creación de intérpretes o compiladores, usando Lazarus. Como ejemplo, se incluyen implementaciones simples de un intérprete y un compilador.
 
 El framework, incluye las siguientes dependencias:
 
@@ -24,12 +24,11 @@ La librería Xpres, incluye a los siguientes archivos:
 * "XpresBas.pas". Unidad con rutinas básicas del framework. Incluye el métodos para el manejo del texto fuente y el procesamiento de errores. Por lo general no debería modificarse. Funciona como una capa que se coloca sobre el analizador léxico o "lexer".
 * "XpresTypes.pas". Unidad con las definiciones referidas a los tipos-operadores-operaciones. Es también una unidad básica del framework.
 * "XpresParser.pas". Unidad con rutinas principales del framework. Incluyen el analizador sintáctivo o "parser". Incluye el analizador de expresiones y de las estructuras del lenguaje. No debería cambiar si el lenguaje sigue la línea del lenguaje Xpres.
+* "XpresElements.pas". Unidad que define los elementos de la sintaxis, como constantes, variables, procedimientos y funciones.
 
 Para la implementación de un Intérpretes o Generadores de código. Se debe crear una unidad que incluya a "XpresParser.pas" y "XpresTypes.pas" y ahí definir a  una clase (p. ej. TCompiler o TInterpreter) que descienda de la clase TCompilerBase.
 
 Los generadores de código pueden desarrollarse para generar código intermedio, como el bytecode de Java, o cualquier otro. Este proyecto no incluye ninguna máquina virtual.
-
-El framework se ha definido para un lenguaje especial al que se le ha llamado también Xpres, pero en teoría podría implementarse cualquier otro similar que se ajuste al modo de trabajo de los analizadores léxico y sintáctico; y de las librerías. 
 
 En los ejemplos se incluye un caso minimalista con intérprete y un ejemplo de compilador elemental para el intel 8086 en 16 bits.
 
@@ -37,5 +36,3 @@ Xpres, aún está en fase de desarrollo, pero permite realizar implementaciones 
 
 El ejemplo de compilador incluye también una IDE sencilla. Solo permite manejar variables, expresiones numéricas y de cadena.
 
-El intérprete mostrará siempre el valor de la última expresión evaluada.
- 
