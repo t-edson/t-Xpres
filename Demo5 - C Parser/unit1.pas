@@ -1,3 +1,5 @@
+{This demo shows how to use Xpres to create a very basic C parser and use
+TsynFacilCompletion to implement dynamic completion reading struct declarations}
 unit Unit1;
 
 {$mode objfpc}{$H+}
