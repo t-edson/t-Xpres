@@ -11,6 +11,10 @@ Se agregan métodos nuevos a la clase TxpFun.
 Se crea la clase TXpTreeElements, para definir al árbol de sintaxis.
 Se agrega el árbol TCompilerBase.TreeElems de tipo TXpTreeElements, pero no se usa
 actualmente. Se deja para futuras ampliaciones. Todavía se sigue usando cons[], vars[] y funcs[].
+Se agrega el método TCOntext.NestedBlocks, para indicar los blqoues anidados.
+Se agrega el método TCOntext.NextBlock, para saltar entre bloques.
+Se mueve TCompilerBase.Evaluar() a PROTECTED.
+Se crea el elemento TXPType, para representar a los tipos.
 
 
 XPres 0.8

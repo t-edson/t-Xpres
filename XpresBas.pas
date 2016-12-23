@@ -81,7 +81,9 @@ type
     property col: integer read getCol;
     function Token: string;  inline;  //Token actual
     function TokenType: TSynHighlighterAttributes; inline;  //Tipo de token actual
-    function Block: TFaSynBlock; inline;
+    function Block: TFaSynBlock;
+    function NestedBlocks: integer;
+    function NextBlock: boolean;
     //Métodos de lectura
     Function IniCont:Boolean;
     Function Eof:Boolean;
@@ -227,7 +229,22 @@ function TContext.Block: TFaSynBlock;
 begin
   Result := lex.TopCodeFoldBlock;
 end;
-
+function TContext.NestedBlocks: integer;
+begin
+  Result := lex.NestedBlocks;
+end;
+function TContext.NextBlock: boolean;
+{Escanea hasta detectar un cambio de bloque o hasta que se llegue al fin del
+contexto. Si encuentra fin de archivo, devuelve FALSE}
+var
+  nblk: Integer;
+begin
+  nblk := lex.NestedBlocks;
+  while not Eof and (lex.NestedBlocks=nblk) do begin
+    Next;  //struct identifier
+  end;
+  Result := not Eof;
+end;
 function TContext.Next: boolean;
 //Pasa al siguiente token. Si hay cambio de líne edvuelve TRUE
 var fFil: integer;

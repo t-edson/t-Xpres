@@ -14,10 +14,11 @@ uses
 type
   //Tipos de elementos del lenguaje
   TxpElemType = (eltNone,   //sin tipo
-                  eltMain,   //programa principal
-                  eltVar,    //variable
-                  eltFunc,   //función
-                  eltCons    //constante
+                  eltMain,  //programa principal
+                  eltVar,   //variable
+                  eltFunc,  //función
+                  eltCons,  //constante
+                  eltType   //tipo
                   );
   TFindFuncResult = (TFF_NONE, TFF_PARTIAL, TFF_FULL);
 
@@ -53,6 +54,15 @@ type
     constructor Create; override;
   end;
 
+  { TxpType }
+  //Clase para modelar a los tipos
+  { TODO : Revisar si este tipo, es equivalente al definido en XpresTypes: TType }
+  TxpType= class(TxpElement)
+    //valores de la constante
+    constructor Create; override;
+  end;
+  TxpTypes= specialize TFPGObjectList<TxpType>; //lista de variables
+
   { TxpCon }
   //Clase para modelar a las constantes
   TxpCon = class(TxpElement)
@@ -60,7 +70,7 @@ type
     val : TConsValue;
     constructor Create; override;
   end;
-  TxpCons = specialize TFPGObjectList<TxpCon>; //lista de variables
+  TxpCons = specialize TFPGObjectList<TxpCon>; //lista de constantes
 
   { TxpVar }
   //Clase para modelar a las variables
@@ -195,6 +205,12 @@ constructor TxpMain.Create;
 begin
   elemType:=eltMain;
   Parent := nil;  //la raiz no tiene padre
+end;
+
+{ TxpType }
+constructor TxpType.Create;
+begin
+  elemType:=eltType;
 end;
 
 { TxpCon }

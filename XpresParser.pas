@@ -147,8 +147,8 @@ protected  //Eventos del compilador
   procedure CaptureParams; virtual;
   function FindFuncWithParams0(const funName: string; var idx: integer;
     idx0: integer=0): TFindFuncResult;
-private
   procedure Evaluar(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
+private
   function GetExpressionCore(const prec: Integer): TOperand;
 public
   xLex  : TSynFacilSyn; //resaltador - lexer
@@ -898,7 +898,7 @@ begin
   //registra variable en la tabla
   r := TxpVar.Create;
   r.name :=varName;
-  r.typ := typ;   //fija  referencia a tipo
+  r.typ := typ;   //fija referencia a tipo
   vars.Add(r);
   //Ya encontró tipo, llama a evento
   if typ.OnGlobalDef<>nil then typ.OnGlobalDef(varName, '');
@@ -1073,7 +1073,7 @@ begin
   //------- sigue un operador ---------
   //verifica si el operador aplica al operando
   if opr1 = nullOper then begin
-    GenError('No está definido el operador: '+ opr1.txt + ' para tipo: '+Op1.typ.name);
+    GenError('No está definido el operador: "'+ opr1.txt + '" para tipo: '+Op1.typ.name);
     exit;
   end;
   //inicia secuencia de lectura: <Operador> <Operando>
