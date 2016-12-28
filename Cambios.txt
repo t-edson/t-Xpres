@@ -1,3 +1,16 @@
+XPres 1.0
+=========
+Se cambian los tipos de eventos OnExprStart, OnExprEnd de TCompilerBase, TProcExecFunction 
+(y otros más) para que trabajen con métodos "of Object".
+Se encapsulan las variables, que antes se hallaban dispersas, fuera de clases, para que 
+ahora todas estén dentro de las clases que las usan. De este modo, se permite crear diversas
+instancias de TCompilerBase (aún no probado). 
+Se crea el método TCompilerBase.StartSyntax(), con las inicializaciones básicas de los 
+tipos de tokens usados.
+Se elimina TOperand.GetOperator y se mueve a TCompilerBase.
+Se agrega un nuevo proyecto de ejemplo.
+
+
 XPres 0.9
 =========
 Se cambia el tipo TIdentifType por TxpElemType, (en la unidad XpresElements) y se renombran sus 

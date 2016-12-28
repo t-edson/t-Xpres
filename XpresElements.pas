@@ -92,7 +92,7 @@ type
   { TxpFun }
   //Clase para almacenar información de las funciones
   TxpFun = class;
-  TProcExecFunction = procedure(fun :TxpFun);  //con índice de función
+  TProcExecFunction = procedure(fun :TxpFun) of object;  //con índice de función
   TxpFun = class(TxpElement)
   public
     pars: array of Ttype;  //parámetros de entrada

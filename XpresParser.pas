@@ -3,35 +3,22 @@ XpresParser
 ===========
 Por Tito Hinostroza.
 
-Unidad con funciones básicas del Analizador sintáctico(como el analizador de
-expresiones aritméticas).
+Unidad con funciones básicas del Analizador sintáctico (como el analizador de
+expresiones).
 Se define la clase base "TCompilerBase", de donde debe derivarse el objeto
 compilador a usar. La clase hace un análisis léxico sencillo en un lenguaje similar
 al Pascal. Para personalizar al lenguaje, la clase ofrece la posibilidad de
 sobreescribir algunos métodos críticos, o inclusive se puede reescribir la clase, si
 las consideraciones de implementación lo requieren.
-El diseño de esta unidad es un poco especial.
-"TCompilerBase", usa variables estáticas definidas en esta unidad, para facilitar el
-acceso a estas variables, desde fuera de la unidad (sin necesidad de referirse al
-objeto).
-De ello se deduce que solo se soporta crear una instacia de "TCompilerBase" a la
-vez.
+
 "TCompilerBase", se definió como una clase (porque en realidad pudo haberse creado
 como un conjunto de métodos estáticos), para facilitar el poder sobreescribir
 algunas rutinas y poder personalizar mejor a la unidad.
 
-Aquí también se incluye el archivo en donde se implementará un intérprete/compilador.
-
-Las variables pública más importantes de este módulo son:
-
- vars[]  -> almacena a las variables declaradas
- typs[]  -> almacena a los tipos declarados
- funcs[] -> almacena a las funciones declaradas
- cons[]  -> almacena a las constantes declaradas
-
 Para mayor información sobre el uso del framework Xpres, consultar la documentación
 técnica.
-Para ver los cambios en esta versión, revisar el archivo cambios.txt.
+
+Para ver los cambios en esta versión, revisar el archivo "cambios.txt".
 }
 unit XpresParser;
 interface
@@ -67,7 +54,6 @@ public
   procedure Push; inline;  //pone el operador en la pila
   procedure Pop; inline;   //saca el operador en la pila
   function FindOperator(const oper: string): TOperator; //devuelve el objeto operador
-  function GetOperator: Toperator;
   //Funciones para facilitar el acceso a campos de la variable, cuando sea variable
   function VarName: string; inline; //nombre de la variable, cuando sea de categ. coVariab
   function addr: TVarAddr; inline;  //dirección de la variable
@@ -106,9 +92,9 @@ protected  //Eventos del compilador
   {Notar que estos eventos no se definen para usar métodos de objetos, sino que
   por comodidad para impementar el intérprete (y espero que por velocidad), usan
   simples procedimientos aislados}
-  OnExprStart: procedure(const exprLevel: integer);  {Se genera al iniciar la
-                                                      evaluación de una expresión.}
-  OnExprEnd  : procedure(const exprLevel: integer; isParam: boolean);  {Se genera
+  OnExprStart: procedure of object;  {Se genera al iniciar la
+                                             evaluación de una expresión.}
+  OnExprEnd  : procedure(isParam: boolean) of object;  {Se genera
                                              el terminar de evaluar una expresión}
   ExprLevel: Integer;  //Nivel de anidamiento de la rutina de evaluación de expresiones
   procedure ClearTypes;
@@ -121,11 +107,6 @@ protected  //Eventos del compilador
   procedure CreateParam(fun: TxpFun; parName: string; typStr: string);
   function CaptureDelExpres: boolean;
   procedure CompileVarDeclar; virtual;
-  procedure ClearVars;
-  procedure ClearAllConst;
-  procedure ClearAllFuncs;
-  procedure ClearAllVars;
-  procedure ClearFuncs;
   function CategName(cat: TCatType): string;
   procedure TipDefecBoolean(var Op: TOperand; tokcad: string);
   procedure TipDefecNumber(var Op: TOperand; toknum: string); virtual;
@@ -138,30 +119,58 @@ protected  //Eventos del compilador
   procedure GetBoolExpression;
   procedure CreateVariable(const varName: string; typ: ttype);
   procedure CreateVariable(varName, varType: string);
-  function FindVar(const varName: string; out idx: integer): boolean;
-  function FindCons(const conName: string; out idx: integer): boolean;
-  function FindFunc(const funName: string; out idx: integer): boolean;
-  function FindPredefName(name: string): TxpElemType;
   function GetOperand: TOperand; virtual;
   function GetOperandP(pre: integer): TOperand;
+  function GetOperator(const Op: Toperand): Toperator;
   procedure CaptureParams; virtual;
   function FindFuncWithParams0(const funName: string; var idx: integer;
     idx0: integer=0): TFindFuncResult;
   procedure Evaluar(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
+protected   //Campos de elementos
+  cons  : TxpCons;     //lista de constantes
+  vars  : TxpVars;     //lista de variables
+  funcs : TxpFuns;     //lista de funciones
+  nIntVar : integer;   //número de variables internas
+  nIntFun : integer;   //número de funciones internas
+  nIntCon : integer;   //número de constantes internas
+  TreeElems: TXpTreeElements; //tablas de elementos del lenguaje
+  procedure ClearVars;
+  procedure ClearFuncs;
+  procedure ClearAllVars;
+  procedure ClearAllFuncs;
+  procedure ClearAllConst;
+  function FindVar(const varName: string; out idx: integer): boolean;
+  function FindCons(const conName: string; out idx: integer): boolean;
+  function FindFunc(const funName: string; out idx: integer): boolean;
+  function FindPredefName(name: string): TxpElemType;
 private
   function GetExpressionCore(const prec: Integer): TOperand;
-public
+public  //Referencias a los tipos predefeinidos de tokens.
+  tkEol     : TSynHighlighterAttributes;
+  tkSymbol  : TSynHighlighterAttributes;
+  tkSpace   : TSynHighlighterAttributes;
+  tkIdentif : TSynHighlighterAttributes;
+  tkNumber  : TSynHighlighterAttributes;
+  tkKeyword : TSynHighlighterAttributes;
+  tkString  : TSynHighlighterAttributes;
+  tkComment : TSynHighlighterAttributes;
+  //otras referencias
+  tkOperator: TSynHighlighterAttributes;
+  tkBoolean : TSynHighlighterAttributes;
+  tkSysFunct: TSynHighlighterAttributes;
+  tkType    : TSynHighlighterAttributes;
+public  //Campos de control
   xLex  : TSynFacilSyn; //resaltador - lexer
+  cIn    : TContexts;   //entrada de datos
   //variables públicas del compilador
-  ejecProg: boolean;   //Indica que se está ejecutando un programa o compilando
+  ejecProg: boolean;  //Indica que se está ejecutando un programa o compilando
   DetEjec: boolean;   //para detener la ejecución (en intérpretes)
 
-  typs  : TTypes;       //lista de tipos (El nombre "types" ya está reservado)
-  func0 : TxpFun;      //función interna para almacenar parámetros
-  cons  : TxpCons;  //lista de constantes
-  vars  : TxpVars;  //lista de variables
-  funcs : TxpFuns;  //lista de funciones
-  TreeElems: TXpTreeElements; //tablas de elementos del lenguaje
+  typs  : TTypes;     //lista de tipos (El nombre "types" ya está reservado)
+  func0 : TxpFun;     //función interna para almacenar parámetros
+  p1, p2 : TOperand;  //Pasa los operandos de la operación actual
+  res    : TOperand;  //resultado de la evaluación de la última expresión.
+  catOperation: TCatOperation;  //combinación de categorías de los operandos
 public  //Manejo de errores
   PErr  : TPError;     //Objeto de Error
   function HayError: boolean;
@@ -172,38 +181,11 @@ public  //Manejo de errores
   function ErrorCol: integer;
   procedure ShowError;
 public  //Inicialización
+  procedure StartSyntax; virtual;
   constructor Create; virtual;
   destructor Destroy; override;
 end;
 
-var
-  {Variables globales. Realmente deberían ser campos de TCompilerBase. Se ponen aquí,
-   para que puedan ser accedidas fácilmente desde el archivo "interprte.pas"}
-
-  nIntVar : integer;    //número de variables internas
-  nIntFun : integer;    //número de funciones internas
-  nIntCon : integer;    //número de constantes internas
-
-  cIn    : TContexts;   //entrada de datos
-  p1, p2 : TOperand;    //Pasa los operandos de la operación actual
-  res    : TOperand;    //resultado de la evaluación de la última expresión.
-  catOperation: TCatOperation;  //combinación de categorías de los operandos
-  //referencias obligatorias
-  tkEol     : TSynHighlighterAttributes;
-  tkIdentif : TSynHighlighterAttributes;
-  tkKeyword : TSynHighlighterAttributes;
-  tkNumber  : TSynHighlighterAttributes;
-  tkString  : TSynHighlighterAttributes;
-  tkOperator: TSynHighlighterAttributes;
-  tkBoolean : TSynHighlighterAttributes;
-  tkSysFunct: TSynHighlighterAttributes;
-  //referencias adicionales
-  {Estas referencias no deberían declararse aquí,sino que deben ser propias de cada
-  implementación}
-//  tkExpDelim: TSynHighlighterAttributes;
-//  tkBlkDelim: TSynHighlighterAttributes;
-  tkType    : TSynHighlighterAttributes;
-//  tkOthers  : TSynHighlighterAttributes;
 
 implementation
 uses Graphics;
@@ -249,6 +231,63 @@ begin
 //  Perr.Show;
 end;
 
+//Manejo de tipos
+function TCompilerBase.CreateType(nom0: string; cat0: TCatType; siz0: smallint): TType;
+//Crea una nueva definición de tipo en el compilador. Devuelve referencia al tipo recien creado
+var r: TType;
+  i: Integer;
+begin
+  //verifica nombre
+  for i:=0 to typs.Count-1 do begin
+    if typs[i].name = nom0 then begin
+      GenError('Identificador de tipo duplicado.');
+      exit;
+    end;
+  end;
+  //configura nuevo tipo
+  r := TType.Create;
+  r.name:=nom0;
+  r.cat:=cat0;
+  r.size:=siz0;
+  r.idx:=typs.Count;  //toma ubicación
+//  r.amb:=;  //debe leer el bloque actual
+  //agrega
+  typs.Add(r);
+  Result:=r;   //devuelve índice al tipo
+end;
+procedure TCompilerBase.ClearTypes;  //Limpia los tipos
+begin
+  typs.Clear;
+end;
+//Campos de elementos
+procedure TCompilerBase.ClearVars;
+//Limpia todas las variables creadas por el usuario.
+begin
+  vars.Count:=nIntVar;  //deja las del sistema
+end;
+procedure TCompilerBase.ClearFuncs;
+//Limpia todas las funciones creadas por el usuario.
+begin
+  funcs.Count := nIntFun;  //deja las del sistema
+end;
+procedure TCompilerBase.ClearAllVars;
+//Elimina todas las variables, incluyendo las predefinidas.
+begin
+  nIntVar := 0;
+  vars.Clear;
+end;
+procedure TCompilerBase.ClearAllFuncs;
+//Elimina todas las funciones, incluyendo las predefinidas.
+begin
+  nIntFun := 0;
+  funcs.Clear;
+end;
+procedure TCompilerBase.ClearAllConst;
+//Elimina todas las funciones, incluyendo las predefinidas.
+begin
+  nIntCon := 0;
+  cons.Clear;
+end;
 function TCompilerBase.FindVar(const varName:string; out idx: integer): boolean;
 //Busca el nombre dado para ver si se trata de una variable definida
 //Si encuentra devuelve TRUE y actualiza el índice.
@@ -316,63 +355,6 @@ begin
   end;
   //no lo encuentra
   exit(eltNone);
-end;
-
-//Manejo de tipos
-function TCompilerBase.CreateType(nom0: string; cat0: TCatType; siz0: smallint): TType;
-//Crea una nueva definición de tipo en el compilador. Devuelve referencia al tipo recien creado
-var r: TType;
-  i: Integer;
-begin
-  //verifica nombre
-  for i:=0 to typs.Count-1 do begin
-    if typs[i].name = nom0 then begin
-      GenError('Identificador de tipo duplicado.');
-      exit;
-    end;
-  end;
-  //configura nuevo tipo
-  r := TType.Create;
-  r.name:=nom0;
-  r.cat:=cat0;
-  r.size:=siz0;
-  r.idx:=typs.Count;  //toma ubicación
-//  r.amb:=;  //debe leer el bloque actual
-  //agrega
-  typs.Add(r);
-  Result:=r;   //devuelve índice al tipo
-end;
-procedure TCompilerBase.ClearTypes;  //Limpia los tipos
-begin
-  typs.Clear;
-end;
-procedure TCompilerBase.ClearVars;
-//Limpia todas las variables creadas por el usuario.
-begin
-  vars.Count:=nIntVar;  //deja las del sistema
-end;
-procedure TCompilerBase.ClearAllVars;
-//Elimina todas las variables, incluyendo las predefinidas.
-begin
-  nIntVar := 0;
-  vars.Clear;
-end;
-procedure TCompilerBase.ClearFuncs;
-//Limpia todas las funciones creadas por el usuario.
-begin
-  funcs.Count := nIntFun;  //deja las del sistema
-end;
-procedure TCompilerBase.ClearAllFuncs;
-//Elimina todas las funciones, incluyendo las predefinidas.
-begin
-  nIntFun := 0;
-  funcs.Clear;
-end;
-procedure TCompilerBase.ClearAllConst;
-//Elimina todas las funciones, incluyendo las predefinidas.
-begin
-  nIntCon := 0;
-  cons.Clear;
 end;
 
 function TCompilerBase.CreateFunction(funName: string; typ: ttype; proc: TProcExecFunction): TxpFun;
@@ -1023,7 +1005,7 @@ begin
   //verifica si termina la expresion
   pos := cIn.PosAct;    //Guarda por si lo necesita
   SkipWhites;
-  opr := Op1.GetOperator;
+  opr := GetOperator(Op1);
   if opr = nil then begin  //no sigue operador
     Result:=Op1;
   end else if opr=nullOper then begin  //hay operador pero, ..
@@ -1046,6 +1028,16 @@ begin
     end;
   end;
 end;
+function TCompilerBase.GetOperator(const Op: Toperand): Toperator;
+{Busca la referecnia a un operador de "Op", leyendo del contexto de entrada
+Si no encuentra un operador en el contexto, devuelve NIL, pero no lo toma.
+Si el operador encontrado no se aplica al operando, devuelve nullOper.}
+begin
+  if cIn.tokType <> tkOperator then exit(nil);
+  //hay un operador
+  Result := Op.typ.FindOperator(cIn.tok);
+  cIn.Next;   //toma el token
+end;
 function TCompilerBase.GetExpressionCore(const prec: Integer): TOperand; //inline;
 {Analizador de expresiones. Esta es probablemente la función más importante del
  compilador. Procesa una expresión en el contexto de entrada llama a los eventos
@@ -1063,7 +1055,7 @@ begin
   debugln(space(ExprLevel)+' Op1='+Op1.txt);
   //verifica si termina la expresion
   SkipWhites;
-  opr1 := Op1.GetOperator;
+  opr1 := GetOperator(Op1);
   if opr1 = nil then begin  //no sigue operador
     //Expresión de un solo operando. Lo carga por si se necesita
     Op1.Load;   //carga el operador para cumplir. Este evento no debería ser necesario.
@@ -1118,7 +1110,7 @@ begin
     Op1 := res;
     if PErr.HayError then exit;
     SkipWhites;
-    opr1 := Op1.GetOperator;   {lo toma ahora con el tipo de la evaluación Op1 (opr1) Op2
+    opr1 := GetOperator(Op1);   {lo toma ahora con el tipo de la evaluación Op1 (opr1) Op2
                                 porque puede que Op1 (opr1) Op2, haya cambiado de tipo}
   end;  //hasta que ya no siga un operador
   Result := Op1;  //aquí debe haber quedado el resultado
@@ -1138,16 +1130,17 @@ de la expresion que la contiene, así que se puede liberar los registros o pila.
 begin
   Inc(ExprLevel);  //cuenta el anidamiento
   debugln(space(ExprLevel)+'>Inic.expr');
-  if OnExprStart<>nil then OnExprStart(ExprLevel);  //llama a evento
+  if OnExprStart<>nil then OnExprStart;  //llama a evento
   res := GetExpressionCore(prec);
   if PErr.HayError then exit;
-  if OnExprEnd<>nil then OnExprEnd(ExprLevel, isParam);    //llama al evento de salida
+  if OnExprEnd<>nil then OnExprEnd(isParam);    //llama al evento de salida
   debugln(space(ExprLevel)+'>Fin.expr');
   Dec(ExprLevel);
   if ExprLevel = 0 then debugln('');
 end;
 procedure TCompilerBase.GetBoolExpression;
 //Simplifica la evaluación de expresiones booleanas, validando el tipo
+//Devuelve el resultado em "res".
 begin
   GetExpression(0);  //evalua expresión
   if PErr.HayError then exit;
@@ -1155,7 +1148,6 @@ begin
     GenError('Se esperaba expresión booleana');
   end;
 end;
-
 {function GetNullExpression(): TOperand;
 //Simplifica la evaluación de expresiones sin dar error cuando encuentra algún delimitador
 begin
@@ -1163,7 +1155,23 @@ begin
   GetExpression(0);  //evalua expresión
   if PErr.HayError then exit;
 end;}
-
+procedure TCompilerBase.StartSyntax;
+begin
+  //Actualiza las referencias a los tipos de tokens existentes en SynFacilSyn
+  tkEol     := xLex.tkEol;
+  tkSymbol  := xLex.tkSymbol;
+  tkSpace   := xLex.tkSpace;
+  tkIdentif := xLex.tkIdentif;
+  tkNumber  := xLex.tkNumber;
+  tkKeyword := xLex.tkKeyword;
+  tkString  := xLex.tkString;
+  tkComment := xLex.tkComment;
+  //Crea nuevos tipos necesarios para el Analizador Sintáctico
+  tkOperator := xLex.NewTokType('Operador'); //necesario para analizar expresiones
+  tkBoolean  := xLex.NewTokType('Boolean');  //constantes booleanas
+  tkSysFunct := xLex.NewTokType('SysFunct'); //funciones del sistema
+  tkType     := xLex.NewTokType('Types');    //tipos de datos
+end;
 constructor TCompilerBase.Create;
 begin
   PErr.IniError;   //inicia motor de errores
@@ -1217,19 +1225,16 @@ procedure TOperand.SetvalBool(AValue: boolean);
 begin
   val.ValBool:=AValue;
 end;
-
 procedure TOperand.SetvalFloat(AValue: extended);
 begin
 //  if FvalFloat=AValue then Exit;
   val.ValFloat:=AValue;
 end;
-
 procedure TOperand.SetvalInt(AValue: Int64);
 begin
 //  if FvalInt=AValue then Exit;
   val.ValInt:=AValue;
 end;
-
 procedure TOperand.SetvalStr(AValue: string);
 begin
   val.ValStr:=AValue;
@@ -1281,15 +1286,6 @@ function TOperand.FindOperator(const oper: string): TOperator;
 //operando. Si no está definido el operador para este operando, devuelve nullOper.
 begin
   Result := typ.FindOperator(oper);
-end;
-function TOperand.GetOperator: Toperator;
-//Lee del contexto de entrada y toma un operador. Si no encuentra un operador, devuelve NIL.
-//Si el operador encontrado no se aplica al operando, devuelve nullOper.
-begin
-  if cIn.tokType <> tkOperator then exit(nil);
-  //hay un operador
-  Result := typ.FindOperator(cIn.tok);
-  cIn.Next;   //toma el token
 end;
 {Métodos de ayuda para implementar intérpretes}
 function TOperand.ReadBool: boolean;

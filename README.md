@@ -1,4 +1,4 @@
-t-Xpres 0.9
+t-Xpres 1.0
 ===========
 
 Marco de trabajo (framework) para implementar compiladores o intérpretes para  lenguajes imperativos y tipados. 

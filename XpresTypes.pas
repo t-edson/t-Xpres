@@ -57,11 +57,12 @@ type  //tipos enumerados
 
   TType = class;
 
-  //"Tipos de datos"
-  TProcExecOperat = procedure;
+  //Eventos
+  TProcExecOperat = procedure of object;
   TProcDefineVar = procedure(const varName, varInitVal: string);
-  TProcLoadOperand = procedure(const OpPtr: pointer);  {"OpPtr" debería ser "TOperand", pero
-                                                        aún no se define "TOperand".}
+  {Evento para cargar un  opeando en la pila.
+  "OpPtr" debería ser "TOperand", pero aún no se define "TOperand".}
+  TProcLoadOperand = procedure(const OpPtr: pointer) of object;
 
   //Tipo operación
   TxOperation = class
