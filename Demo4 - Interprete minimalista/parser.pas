@@ -17,7 +17,6 @@ type
   TCompiler = class(TCompilerBase)
   private
     tipStr : Ttype;
-    procedure CompilarArc;
     procedure fun_puts(fun: TxpFun);
   public
     procedure Compilar(NombArc: string; LinArc: Tstrings);
@@ -27,10 +26,14 @@ type
 
 implementation
 
-procedure TCompiler.CompilarArc;
-//Compila un programa en el contexto actual
+procedure TCompiler.Compilar(NombArc: string; LinArc: Tstrings);
+//Compila el contenido de un archivo a ensamblador
 begin
-  Perr.Clear;
+  Perr.IniError;
+  cIn.ClearAll;     //elimina todos los Contextos de entrada
+  ExprLevel := 0;  //inicia
+  //compila el archivo abierto
+  cIn.NewContextFromFile(NombArc,LinArc);   //Crea nuevo contenido
   SkipWhites;
   while not cIn.Eof do begin
     //se espera una expresión o estructura
@@ -44,24 +47,10 @@ begin
     end;
   end;
   if Perr.HayError then exit;
-end;
-
-procedure TCompiler.Compilar(NombArc: string; LinArc: Tstrings);
-//Compila el contenido de un archivo a ensamblador
-begin
-  Perr.IniError;
-  cIn.ClearAll;     //elimina todos los Contextos de entrada
-  ExprLevel := 0;  //inicia
-  //compila el archivo abierto
-  cIn.NewContextFromFile(NombArc,LinArc);   //Crea nuevo contenido
-  if PErr.HayError then exit;
-  CompilarArc;     //puede dar error
-  cIn.QuitaContexEnt;   //es necesario por dejar limpio
+  cIn.QuitaContexEnt;   //es necesario para dejar limpio
 end;
 
 constructor TCompiler.Create;
-var
-  f: TxpFun;
 begin
   inherited Create;
   StartSyntax;   //Debe hacerse solo una vez al inicio
@@ -73,7 +62,7 @@ begin
   ClearTypes;
   //Se crea un único tipo.
   tipStr:=CreateType('string',t_string,-1);
-  f := CreateSysFunction('eureka', tipStr, @fun_puts);
+  CreateSysFunction('eureka', tipStr, @fun_puts);
 end;
 
 procedure TCompiler.fun_puts(fun :TxpFun);
