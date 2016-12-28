@@ -1,7 +1,14 @@
-{Implementación de un interprete sencillo para el lenguaje Xpres.
-Implementado para probar la flexibilidad del compilador Xpres
-Este módulo no generará código sino que lo ejecutará directamente.
+{Implementación de un compialdor sencillo para un lenguaje similar a Pascal.
+Implementado para probar la implementación de compiladores, con del framework Xpres.
+Este módulo compialrá a código ensamblador, en lugar de código objeto.
 }
+unit GenCod;
+{$mode objfpc}{$H+}
+interface
+uses
+  Classes, SysUtils, SynEditHighlighter, Graphics,
+  SynFacilBasic, XpresParser, XpresTypes,  XpresElements;
+
 type
 //  TSatReg = (srFree, srUsed)
   //define un registro virtual para implementar un intérprete
@@ -15,6 +22,47 @@ type
     valUInt : Int64;     //valor en caso de que sea un entero sin signo
     valBool  : Boolean;  //valor  en caso de que sea un booleano
     valStr  : string;    //valor  en caso de que sea una cadena}
+  end;
+
+  { TGenCod }
+
+  TGenCod = class(TCompilerBase)
+
+  private
+    procedure chr_asig_chr;
+    procedure chr_OnPush(const OpPtr: pointer);
+    procedure chr_procDefine(const varName, varInitVal: string);
+    procedure chr_procLoad(const OpPtr: pointer);
+    procedure CodAsmInt(const inst: string);
+    procedure Code(cod: string);
+    procedure expr_end(isParam: boolean);
+    procedure expr_start;
+    procedure fun_putchar(fun: TxpFun);
+    procedure fun_puts(fun: TxpFun);
+    procedure fun_putsI(fun: TxpFun);
+    procedure int_asig_int;
+    procedure int_idiv_int;
+    procedure int_mult_int;
+    procedure int_OnPush(const OpPtr: pointer);
+    procedure int_procDefine(const varName, varInitVal: string);
+    procedure int_procLoad(const OpPtr: pointer);
+    procedure int_resid_int;
+    procedure int_resta_int;
+    procedure int_suma_int;
+    procedure str_asig_str;
+    procedure str_concat_str;
+    procedure str_procLoad(const OpPtr: pointer);
+  protected
+    tkStruct   : TSynHighlighterAttributes;
+    tkExpDelim : TSynHighlighterAttributes;
+    tkBlkDelim : TSynHighlighterAttributes;
+    tkOthers   : TSynHighlighterAttributes;
+    procedure Cod_StartData;
+    procedure Cod_StartProgram;
+    procedure Cod_EndProgram;
+    procedure StartSyntax; override;
+  public
+    mem   : TStringList;   //Para almacenar el código de salida del compilador
   end;
 
 var
@@ -60,7 +108,12 @@ var
   ncc: integer;  //Conatdor. Número de cosntantes cadenas.
   //banderas
 //  ALused: Boolean;  //indica que el registro Al está siendo usado
+implementation
 
+procedure TGenCod.Code(cod: string);
+begin
+  mem.Add(cod);
+end;
 {procedure LoadAcumStr(val: string; op: string);
 //Carga en el acumulador(es) un valor booleano, y genera t-code
 begin
@@ -78,24 +131,24 @@ begin
   end;
 end;}
 ////////////rutinas obligatorias
-procedure Cod_StartData;
+procedure TGenCod.Cod_StartData;
 //Codifica la parte inicial de declaración de variables estáticas
 begin
   Code('.MODEL TINY');
   Code('.DATA');
   Code('  _tmpStr0 DB 255 DUP(''#''),0');  //variable para cadena temporal
 end;
-procedure Cod_StartProgram;
+procedure TGenCod.Cod_StartProgram;
 //Codifica la parte inicial del programa
 begin
   Code('.CODE');   //inicia la sección de código
 end;
-procedure Cod_EndProgram;
+procedure TGenCod.Cod_EndProgram;
 //Codifica la parte inicial del programa
 begin
   Code('END');   //inicia la sección de código
 end;
-procedure expr_start(const exprLevel: integer);
+procedure TGenCod.expr_start;
 //Se ejecuta siempre al StartSyntax el procesamiento de una expresión
 begin
   if exprLevel=1 then begin //es el primer nivel
@@ -107,7 +160,7 @@ begin
 //      Code('  push al');  //lo guarda
   end;
 end;
-procedure expr_end(const exprLevel: integer; isParam: boolean);
+procedure TGenCod.expr_end(isParam: boolean);
 //Se ejecuta al final de una expresión, si es que no ha habido error.
 begin
   if isParam then begin
@@ -122,12 +175,12 @@ begin
 end;
 
 ////////////operaciones con Enteros
-procedure int_procDefine(const varName, varInitVal: string);
+procedure TGenCod.int_procDefine(const varName, varInitVal: string);
 //Se genera al declarar la variable
 begin
   Code('  ' + varname + ' DW 0');
 end;
-procedure int_procLoad(const OpPtr: pointer);
+procedure TGenCod.int_procLoad(const OpPtr: pointer);
 var
   Op: ^TOperand;
 begin
@@ -143,7 +196,7 @@ begin
                           exprwsión, auqnue si fuera una constante, ...   }
   a.used:=true;  //marac registro como usado
 end;
-procedure int_OnPush(const OpPtr: pointer);
+procedure TGenCod.int_OnPush(const OpPtr: pointer);
 var
   Op: ^TOperand;
 begin
@@ -159,7 +212,7 @@ begin
     GenError('No soportado'); exit;
   end;
 end;
-procedure int_asig_int;
+procedure TGenCod.int_asig_int;
 begin
   if p1.catOp <> coVariab then begin  //validación
     GenError('Solo se puede asignar a variable.'); exit;
@@ -182,7 +235,7 @@ begin
 //  res.used:=false;  //No hay obligación de que la asignación devuelva un valor.
 //  Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
-procedure CodAsmInt(const inst: string);
+procedure TGenCod.CodAsmInt(const inst: string);
 //Genera un código estandar para operaciones con entero.
 begin
   res.typ := tipInt;   //el rsultado será siempre entero
@@ -230,28 +283,28 @@ begin
             end;
   end;
 end;
-procedure int_suma_int;
+procedure TGenCod.int_suma_int;
 begin
   CodAsmInt('add');
 end;
-procedure int_resta_int;
+procedure TGenCod.int_resta_int;
 begin
   CodAsmInt('sub');
 end;
-procedure int_mult_int;
+procedure TGenCod.int_mult_int;
 begin
 //  CodAsmInt('add');
 end;
-procedure int_idiv_int;
+procedure TGenCod.int_idiv_int;
 begin
 //  LoadAcumInt(p1.GetValInt div p2.GetValInt,'\');
 end;
-procedure int_resid_int;
+procedure TGenCod.int_resid_int;
 begin
 //  LoadAcumInt(p1.GetValInt mod p2.GetValInt,'%');
 end;
 ////////////operaciones con string
-procedure str_procLoad(const OpPtr: pointer);
+procedure TGenCod.str_procLoad(const OpPtr: pointer);
 var
   nomStr: String;
   nomLab: String;
@@ -274,7 +327,7 @@ begin
   coVariab: ;
   end;
 end;
-procedure str_asig_str;
+procedure TGenCod.str_asig_str;
 begin
   if p1.catOp <> coVariab then begin  //validación
     GenError('Solo se puede asignar a variable.'); exit;
@@ -284,16 +337,16 @@ begin
 //  res.used:=false;  //No hay obligación de que la expresión devuelva un valor.
 //  Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
 end;
-procedure str_concat_str;
+procedure TGenCod.str_concat_str;
 begin
 //  LoadAcumStr(p1.GetValStr+p2.GetValStr,'+');
 end;
 ////////////operaciones con CHAR
-procedure chr_procDefine(const varName, varInitVal: string);
+procedure TGenCod.chr_procDefine(const varName, varInitVal: string);
 begin
   Code('  ' + varname + ' DB 0');
 end;
-procedure chr_procLoad(const OpPtr: pointer);
+procedure TGenCod.chr_procLoad(const OpPtr: pointer);
 var
   Op: ^TOperand;
 begin
@@ -309,7 +362,7 @@ begin
                           exprwsión, auqnue si fuera una constante, ...   }
   a.used:=true;  //marac registro como usado
 end;
-procedure chr_OnPush(const OpPtr: pointer);
+procedure TGenCod.chr_OnPush(const OpPtr: pointer);
 var
   Op: ^TOperand;
 begin
@@ -325,7 +378,7 @@ begin
     GenError('No soportado'); exit;
   end;
 end;
-procedure chr_asig_chr;
+procedure TGenCod.chr_asig_chr;
 begin
   if p1.catOp <> coVariab then begin  //validación
     GenError('Solo se puede asignar a variable.'); exit;
@@ -346,7 +399,7 @@ begin
   end;
 end;
 /////////////funciones del sistema
-procedure fun_putchar(fun :TxpFun);
+procedure TGenCod.fun_putchar(fun :TxpFun);
 begin
   //Esta es una fucnión INLINE
   code('  pop dx');  //necesita el byte en DL. El valor se empujó con 16 bits.
@@ -354,7 +407,7 @@ begin
   code('  int 21h');
   //Esta función no devuelve un valor, por eso no nos preocupamos del tipo.
 end;
-procedure fun_puts(fun :TxpFun);
+procedure TGenCod.fun_puts(fun :TxpFun);
 //envia un texto a consola
 begin
   if HayError then exit;
@@ -363,7 +416,7 @@ begin
   code('  int 21h');
   //Esta función no devuelve un valor, por eso no nos preocupamos del tipo.
 end;
-procedure fun_putsI(fun :TxpFun);
+procedure TGenCod.fun_putsI(fun :TxpFun);
 //envia un texto a consola
 begin
   if HayError then exit;
@@ -374,12 +427,68 @@ begin
   //Esta función no devuelve un valor, por eso no nos preocupamos del tipo.
 end;
 
-procedure TCompiler.StartSyntax;
+procedure TGenCod.StartSyntax;
 //Se ejecuta solo una vez al inicio
 var
   opr: TOperator;
   f: TxpFun;  //índice para funciones
 begin
+  inherited;
+  //tokens personalizados
+  tkExpDelim := xLex.NewTokType('ExpDelim');//delimitador de expresión ";"
+  tkBlkDelim := xLex.NewTokType('BlkDelim'); //delimitador de bloque
+  tkStruct   := xLex.NewTokType('Struct');   //personalizado
+  tkOthers   := xLex.NewTokType('Others');   //personalizado
+  //Configura atributos
+  tkKeyword.Style := [fsBold];     //en negrita
+  tkBlkDelim.Foreground:=clGreen;
+  tkBlkDelim.Style := [fsBold];     //en negrita
+  tkStruct.Foreground:=clGreen;
+  tkStruct.Style := [fsBold];     //en negrita
+  //inicia la configuración
+  xLex.ClearMethodTables;           //limpìa tabla de métodos
+  xLex.ClearSpecials;               //para empezar a definir tokens
+  //crea tokens por contenido
+  xLex.DefTokIdentif('[$A-Za-z_]', '[A-Za-z0-9_]*');
+  xLex.DefTokContent('[0-9]', '[0-9.]*', tkNumber);
+  //define palabras claves
+  xLex.AddIdentSpecList('THEN var type', tkKeyword);
+  xLex.AddIdentSpecList('program public private method const', tkKeyword);
+  xLex.AddIdentSpecList('class create destroy sub do begin', tkKeyword);
+  xLex.AddIdentSpecList('END ELSE ELSIF', tkBlkDelim);
+  xLex.AddIdentSpecList('true false', tkBoolean);
+  xLex.AddIdentSpecList('IF FOR', tkStruct);
+  xLex.AddIdentSpecList('and or xor not', tkOperator);
+  xLex.AddIdentSpecList('int float char string bool', tkType);
+  //símbolos especiales
+  xLex.AddSymbSpec('+',  tkOperator);
+  xLex.AddSymbSpec('-',  tkOperator);
+  xLex.AddSymbSpec('*',  tkOperator);
+  xLex.AddSymbSpec('/',  tkOperator);
+  xLex.AddSymbSpec('\',  tkOperator);
+  xLex.AddSymbSpec('%',  tkOperator);
+  xLex.AddSymbSpec('**', tkOperator);
+  xLex.AddSymbSpec('=',  tkOperator);
+  xLex.AddSymbSpec('>',  tkOperator);
+  xLex.AddSymbSpec('>=', tkOperator);
+  xLex.AddSymbSpec('<;', tkOperator);
+  xLex.AddSymbSpec('<=', tkOperator);
+  xLex.AddSymbSpec('<>', tkOperator);
+  xLex.AddSymbSpec('<=>',tkOperator);
+  xLex.AddSymbSpec(':=', tkOperator);
+  xLex.AddSymbSpec(';', tkExpDelim);
+  xLex.AddSymbSpec('(',  tkOthers);
+  xLex.AddSymbSpec(')',  tkOthers);
+  xLex.AddSymbSpec(':',  tkOthers);
+  xLex.AddSymbSpec(',',  tkOthers);
+  //crea tokens delimitados
+  xLex.DefTokDelim('''','''', tkString);
+  xLex.DefTokDelim('"','"', tkString);
+  xLex.DefTokDelim('//','', xLex.tkComment);
+  xLex.DefTokDelim('/\*','\*/', xLex.tkComment, tdMulLin);
+  //define bloques de sintaxis
+  xLex.AddBlock('{','}');
+  xLex.Rebuild;   //es necesario para terminar la definición
 
   //Define métodos a usar
   OnExprStart := @expr_start;
@@ -439,4 +548,7 @@ begin
   //Inicia contadores
   ncc := 0;
 end;
+
+
+end.
 

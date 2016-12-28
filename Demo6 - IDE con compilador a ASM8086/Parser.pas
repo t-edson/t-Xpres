@@ -8,25 +8,19 @@ interface
 uses
   Classes, SysUtils, LCLType, Dialogs, lclProc, Graphics, SynEditHighlighter,
   SynFacilBasic,
-  XpresTypes, XpresElements, XPresParser, FormOut;
+  XpresTypes, XpresElements, XPresParser, FormOut , GenCod;
 
 type
 
  { TCompiler }
 
-  TCompiler = class(TCompilerBase)
+  TCompiler = class(TGenCod)
   private
-    tkStruct   : TSynHighlighterAttributes;
-    tkExpDelim : TSynHighlighterAttributes;
-    tkBlkDelim : TSynHighlighterAttributes;
-    tkOthers   : TSynHighlighterAttributes;
     procedure CompilarArc;
     procedure TipDefecString(var Op: TOperand; tokcad: string); override;
   public
-    mem   : TStringList;   //Para almacenar el código de salida del compilador
     procedure ShowOperand(const Op: TOperand);
     procedure ShowResult;
-    procedure StartSyntax;
     procedure Compilar(NombArc: string; LinArc: Tstrings);
     constructor Create; override;
     destructor Destroy; override;
@@ -39,21 +33,12 @@ var
 implementation
 
 //Funciones de acceso al compilador. Facilitan el acceso de forma resumida.
-procedure Code(cod: string);
-begin
-  cxp.mem.Add(cod);
-end;
-procedure GenError(msg: string);
-begin
-  cxp.GenError(msg);
-end;
 function HayError: boolean;
 begin
   Result := cxp.HayError;
 end;
 {Incluye el código del compilador. Aquí tendrá acceso a todas las variables públicas
  de XPresParser}
-{$I GenCod.pas}
 //Métodos OVERRIDE
 procedure TCompiler.TipDefecString(var Op: TOperand; tokcad: string);
 //Devuelve el tipo de cadena encontrado en un token
@@ -189,74 +174,6 @@ constructor TCompiler.Create;
 begin
   inherited Create;
   mem := TStringList.Create;  //crea lista para almacenar ensamblador
-
-  ///////////define la sintaxis del compilador
-  //crea y guarda referencia a los atributos
-  tkEol      := xLex.tkEol;
-  tkIdentif  := xLex.tkIdentif;
-  tkKeyword  := xLex.tkKeyword;
-  tkNumber   := xLex.tkNumber;
-  tkString   := xLex.tkString;
-  //personalizados
-  tkOperator := xLex.NewTokType('Operador'); //personalizado
-  tkBoolean  := xLex.NewTokType('Boolean');  //personalizado
-  tkSysFunct := xLex.NewTokType('SysFunct'); //funciones del sistema
-  tkExpDelim := xLex.NewTokType('ExpDelim');//delimitador de expresión ";"
-  tkBlkDelim := xLex.NewTokType('BlkDelim'); //delimitador de bloque
-  tkType     := xLex.NewTokType('Types');    //personalizado
-  tkStruct   := xLex.NewTokType('Struct');   //personalizado
-  tkOthers   := xLex.NewTokType('Others');   //personalizado
-  //Configura atributos
-  tkKeyword.Style := [fsBold];     //en negrita
-  tkBlkDelim.Foreground:=clGreen;
-  tkBlkDelim.Style := [fsBold];     //en negrita
-  tkStruct.Foreground:=clGreen;
-  tkStruct.Style := [fsBold];     //en negrita
-  //inicia la configuración
-  xLex.ClearMethodTables;           //limpìa tabla de métodos
-  xLex.ClearSpecials;               //para empezar a definir tokens
-  //crea tokens por contenido
-  xLex.DefTokIdentif('[$A-Za-z_]', '[A-Za-z0-9_]*');
-  xLex.DefTokContent('[0-9]', '[0-9.]*', tkNumber);
-  //define palabras claves
-  xLex.AddIdentSpecList('THEN var type', tkKeyword);
-  xLex.AddIdentSpecList('program public private method const', tkKeyword);
-  xLex.AddIdentSpecList('class create destroy sub do begin', tkKeyword);
-  xLex.AddIdentSpecList('END ELSE ELSIF', tkBlkDelim);
-  xLex.AddIdentSpecList('true false', tkBoolean);
-  xLex.AddIdentSpecList('IF FOR', tkStruct);
-  xLex.AddIdentSpecList('and or xor not', tkOperator);
-  xLex.AddIdentSpecList('int float char string bool', tkType);
-  //símbolos especiales
-  xLex.AddSymbSpec('+',  tkOperator);
-  xLex.AddSymbSpec('-',  tkOperator);
-  xLex.AddSymbSpec('*',  tkOperator);
-  xLex.AddSymbSpec('/',  tkOperator);
-  xLex.AddSymbSpec('\',  tkOperator);
-  xLex.AddSymbSpec('%',  tkOperator);
-  xLex.AddSymbSpec('**', tkOperator);
-  xLex.AddSymbSpec('=',  tkOperator);
-  xLex.AddSymbSpec('>',  tkOperator);
-  xLex.AddSymbSpec('>=', tkOperator);
-  xLex.AddSymbSpec('<;', tkOperator);
-  xLex.AddSymbSpec('<=', tkOperator);
-  xLex.AddSymbSpec('<>', tkOperator);
-  xLex.AddSymbSpec('<=>',tkOperator);
-  xLex.AddSymbSpec(':=', tkOperator);
-  xLex.AddSymbSpec(';', tkExpDelim);
-  xLex.AddSymbSpec('(',  tkOthers);
-  xLex.AddSymbSpec(')',  tkOthers);
-  xLex.AddSymbSpec(':',  tkOthers);
-  xLex.AddSymbSpec(',',  tkOthers);
-  //crea tokens delimitados
-  xLex.DefTokDelim('''','''', tkString);
-  xLex.DefTokDelim('"','"', tkString);
-  xLex.DefTokDelim('//','', xLex.tkComment);
-  xLex.DefTokDelim('/\*','\*/', xLex.tkComment, tdMulLin);
-  //define bloques de sintaxis
-  xLex.AddBlock('{','}');
-  xLex.Rebuild;   //es necesario para terminar la definición
-
   StartSyntax;   //Debe hacerse solo una vez al inicio
 end;
 

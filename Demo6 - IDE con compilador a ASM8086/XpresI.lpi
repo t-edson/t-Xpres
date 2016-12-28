@@ -9,7 +9,6 @@
       <Title Value="XpresI"/>
       <ResourceType Value="res"/>
       <UseXPManifest Value="True"/>
-      <Icon Value="0"/>
     </General>
     <i18n>
       <EnableI18N LFM="False"/>
@@ -66,7 +65,7 @@
         <PackageName Value="LCL"/>
       </Item2>
     </RequiredPackages>
-    <Units Count="7">
+    <Units Count="8">
       <Unit0>
         <Filename Value="XpresI.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -86,6 +85,7 @@
       <Unit3>
         <Filename Value="globales.pas"/>
         <IsPartOfProject Value="True"/>
+        <UnitName Value="Globales"/>
       </Unit3>
       <Unit4>
         <Filename Value="formconfig.pas"/>
@@ -107,6 +107,10 @@
         <ComponentName Value="frmOut"/>
         <ResourceBaseClass Value="Form"/>
       </Unit6>
+      <Unit7>
+        <Filename Value="GenCod.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit7>
     </Units>
   </ProjectOptions>
   <CompilerOptions>
@@ -117,7 +121,7 @@
     </Target>
     <SearchPaths>
       <IncludeFiles Value="$(ProjOutDir);.."/>
-      <OtherUnitFiles Value="..;..\..\SynFacilUtils 0.7;..\..\MisUtils 0.3"/>
+      <OtherUnitFiles Value="..;..\..\SynFacilUtils 0.8;..\..\MisUtils 0.4"/>
       <UnitOutputDirectory Value="lib\$(TargetCPU)-$(TargetOS)"/>
     </SearchPaths>
     <Parsing>

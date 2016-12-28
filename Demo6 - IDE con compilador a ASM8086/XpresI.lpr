@@ -8,7 +8,7 @@ uses
   {$ENDIF}{$ENDIF}
   Interfaces, // this includes the LCL widgetset
   Forms, SynFacilHighlighter, SynFacilUtils, FormPrincipal,
-Parser, Globales, formconfig, FrameCfgEdit, FormOut
+Parser, Globales, formconfig, FrameCfgEdit, FormOut, GenCod
   { you can add units after this };
 
 {$R *.res}
