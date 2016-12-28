@@ -59,7 +59,7 @@ type  //tipos enumerados
 
   //Eventos
   TProcExecOperat = procedure of object;
-  TProcDefineVar = procedure(const varName, varInitVal: string);
+  TProcDefineVar = procedure(const varName, varInitVal: string) of object;
   {Evento para cargar un  opeando en la pila.
   "OpPtr" debería ser "TOperand", pero aún no se define "TOperand".}
   TProcLoadOperand = procedure(const OpPtr: pointer) of object;
