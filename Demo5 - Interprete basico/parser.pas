@@ -6,22 +6,16 @@ interface
 uses
   Classes, SysUtils, LCLType, Dialogs, lclProc, Graphics, SynEditHighlighter,
   SynFacilBasic,
-  XpresTypes, XPresParser, XpresElements, FormOut;
+  XpresTypes, XPresParser, FormOut, Interprete;
 
 type
 
  { TCompiler }
 
-  TCompiler = class(TCompilerBase)
+  TCompiler = class(TInterprete)
   private
-    tkExpDelim : TSynHighlighterAttributes;
-    tkBlkDelim : TSynHighlighterAttributes;
-    tkOthers   : TSynHighlighterAttributes;
     procedure CompilarArc;
   public
-    mem   : TStringList;   //Para almacenar el código de salida del compilador
-    procedure ShowOperand(const Op: TOperand);
-    procedure StartSyntax;
     procedure Compilar(NombArc: string; LinArc: Tstrings);
     constructor Create; override;
     destructor Destroy; override;
@@ -33,22 +27,6 @@ var
 
 implementation
 
-//Funciones de acceso al compilador. Facilitan el acceso de forma resumida.
-procedure Code(cod: string);
-begin
-  cxp.mem.Add(cod);
-end;
-procedure GenError(msg: string);
-begin
-  cxp.GenError(msg);
-end;
-function HayError: boolean;
-begin
-  Result := cxp.HayError;
-end;
-{Incluye el código del compilador. Aquí tendrá acceso a todas las variables públicas
- de XPresParser}
-{$I GenCod.pas}
 //Métodos OVERRIDE
 procedure TCompiler.CompilarArc;
 //Compila un programa en el contexto actual
@@ -113,7 +91,6 @@ begin
     Perr.IniError;
     ClearVars;       //limpia las variables
     ClearFuncs;      //limpia las funciones
-    mem.Clear;       //limpia salida
     cIn.ClearAll;     //elimina todos los Contextos de entrada
     ExprLevel := 0;  //inicia
     //compila el archivo abierto
@@ -131,33 +108,15 @@ begin
   end;
 end;
 
-//procedure TCompilerBase.ShowError
-procedure TCompiler.ShowOperand(const Op: TOperand);
-//muestra un operando por pantalla
-var
-  tmp: String;
-begin
-  tmp := 'Result ' + CategName(Op.typ.cat) + '(' + Op.typ.name + ') = ';
-  case Op.Typ.cat of
-  t_integer: frmOut.puts(tmp + IntToStr(Op.ReadInt));
-  t_float :  frmOut.puts(tmp + FloatToStr(Op.ReadFloat));
-  t_string:  frmOut.puts(tmp + Op.ReadStr);
-  t_boolean: if Op.ReadBool then frmOut.puts(tmp + 'TRUE')
-             else frmOut.puts(tmp + 'FALSE');
-  end;
-end;
-
 constructor TCompiler.Create;
 begin
   inherited Create;
-  mem := TStringList.Create;  //crea lista para almacenar ensamblador
   //se puede definir la sintaxis aquí o dejarlo para StartSyntax()
   StartSyntax;   //Debe hacerse solo una vez al inicio
 end;
 
 destructor TCompiler.Destroy;
 begin
-  mem.Free;  //libera
   inherited Destroy;
 end;
 
