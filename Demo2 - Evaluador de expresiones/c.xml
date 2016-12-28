@@ -1,0 +1,61 @@
+<?xml version="1.0"?>
+<Language name="C" ext="c" CaseSensitive="true">
+  <Completion CaseSensitive="false"> 
+    <List> 
+"#include "
+"#include &lt;assert.h&gt;"
+"#include &lt;alloc.h&gt;"
+"#include &lt;ctype.h&gt;"
+"#include &lt;dir.h&gt;"
+"#include &lt;errno.h&gt;"
+"#include &lt;float.h&gt;"
+"#include &lt;limits.h&gt;"
+"#include &lt;math.h&gt;"
+"#include &lt;setjmp.h&gt;"
+"#include &lt;signal.h&gt;"
+"#include &lt;stdarg.h&gt;"
+"#include &lt;stdef.h&gt;"
+"#include &lt;stdio.h&gt;"
+"#include &lt;stlib.h&gt;"
+"#include &lt;string.h&gt;"
+"#include &lt;time.h&gt;"
+"void main(){&#x0D;&#x0D;}"
+	</List>
+    <OpenOn AfterPattern="Identifier">
+      aaa aab aac
+      <Include Attribute="Keyword"></Include>
+    </OpenOn>
+  </Completion>
+  <Attribute Name="Keyword" Style="b"> </Attribute>
+  <Attribute Name="Comment" ForeCol="#00B0F7"> </Attribute>
+  <Attribute Name="Number" ForeCol="#DF7400"> </Attribute>
+  <Attribute Name="Directive" ForeCol="#FE2EF7"> </Attribute>
+
+  <Comment Start="//" ></Comment>
+  <Comment Start="/*" End="*/" Multiline="true" Folding="true"></Comment>
+  <Token Start="#" End="" Attribute='DIRECTIVE'> </Token>
+  <Token CharsStart="0..9" Content = '0..9.' Attribute='NUMBER'> </Token>
+   
+  <String Start='"' End='"'></String>
+  <Keyword>if else switch case default break goto return for while do continue typedef sizeof NULL</Keyword>
+  <Keyword>void struct union enum char short int long double float signed unsigned const static extern auto register volatile</Keyword>
+  <!--Definición de struct-->
+  <!--Esta definición no solo es para el plegado, también sirve al analizador sintáctico, y permite
+  reconocer bien las formas:
+    struct mystruct {};
+    struct mystruct {} variable;
+	struct mystruct {} variable = {};
+  -->
+  <Block Name="struct" Start="struct" End= ";" Parent="Main"> 
+    <Block Name="structBody" Start="{" End= "}"> </Block>
+  </Block>
+  <!--Definición de typedef-->
+  <!--Esta definición no solo es para el plegado, también sirve al analizador sintáctico-->
+  <Block Name="type" Start="typedef" End= ";" Parent="Main"> 
+    <Block Name="typeBody" Start="{" End= "}"> </Block>
+  </Block>
+  
+  <!--Bloques en general-->
+  <Block Start="{" End= "}"> </Block>
+
+  </Language>
