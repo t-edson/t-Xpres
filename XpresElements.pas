@@ -13,13 +13,13 @@ uses
 
 type
   //Tipos de elementos del lenguaje
-  TxpElemType = (eltNone,   //sin tipo
-                  eltMain,  //programa principal
-                  eltVar,   //variable
-                  eltFunc,  //función
-                  eltCons,  //constante
-                  eltType   //tipo
-                  );
+  TxpElemType = (eltNone,  //sin tipo
+                 eltMain,  //programa principal
+                 eltVar,   //variable
+                 eltFunc,  //función
+                 eltCons,  //constante
+                 eltType   //tipo
+                 );
   TFindFuncResult = (TFF_NONE, TFF_PARTIAL, TFF_FULL);
 
   TxpElement = class;
@@ -55,8 +55,8 @@ type
   end;
 
   { TxpType }
-  //Clase para modelar a los tipos
-  { TODO : Revisar si este tipo, es equivalente al definido en XpresTypes: TType }
+  //Clase para modelar a los tipos definidos por el usuario
+  { Es diferente a XpresTypes: TType, aunque no se ha hecho un anaálisis profundo }
   TxpType= class(TxpElement)
     //valores de la constante
     constructor Create; override;
@@ -92,7 +92,7 @@ type
   { TxpFun }
   //Clase para almacenar información de las funciones
   TxpFun = class;
-  TProcExecFunction = procedure(fun :TxpFun) of object;  //con índice de función
+  TProcExecFunction = procedure(fun: TxpFun) of object;  //con índice de función
   TxpFun = class(TxpElement)
   public
     pars: array of Ttype;  //parámetros de entrada

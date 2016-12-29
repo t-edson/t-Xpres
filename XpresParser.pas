@@ -23,10 +23,8 @@ Para ver los cambios en esta versión, revisar el archivo "cambios.txt".
 unit XpresParser;
 interface
 uses
-  Classes, SysUtils, fgl, Forms, LCLType, Dialogs, lclProc,
-  SynEditHighlighter, SynFacilHighlighter, SynFacilBasic,
-  XpresBas, XpresTypes, XpresElements, MisUtils;
-
+  Classes, SysUtils, Forms, LCLType, lclProc, SynEditHighlighter,
+  SynFacilHighlighter, XpresBas, XpresTypes, XpresElements, MisUtils;
 type
 
 { TOperand }
@@ -89,9 +87,6 @@ end;
 {Clase base para crear al objeto compilador}
 TCompilerBase = class
 protected  //Eventos del compilador
-  {Notar que estos eventos no se definen para usar métodos de objetos, sino que
-  por comodidad para impementar el intérprete (y espero que por velocidad), usan
-  simples procedimientos aislados}
   OnExprStart: procedure of object;  {Se genera al iniciar la
                                              evaluación de una expresión.}
   OnExprEnd  : procedure(isParam: boolean) of object;  {Se genera
@@ -145,7 +140,7 @@ protected   //Campos de elementos
   function FindPredefName(name: string): TxpElemType;
 private
   function GetExpressionCore(const prec: Integer): TOperand;
-public  //Referencias a los tipos predefeinidos de tokens.
+public  //Referencias a los tipos predefinidos de tokens.
   tkEol     : TSynHighlighterAttributes;
   tkSymbol  : TSynHighlighterAttributes;
   tkSpace   : TSynHighlighterAttributes;
@@ -171,6 +166,7 @@ public  //Campos de control
   p1, p2 : TOperand;  //Pasa los operandos de la operación actual
   res    : TOperand;  //resultado de la evaluación de la última expresión.
   catOperation: TCatOperation;  //combinación de categorías de los operandos
+  function CatOperationToStr(Op: string=','): string;
 public  //Manejo de errores
   PErr  : TPError;     //Objeto de Error
   function HayError: boolean;
@@ -181,7 +177,6 @@ public  //Manejo de errores
   function ErrorCol: integer;
   procedure ShowError;
 public  //Inicialización
-  procedure StartSyntax; virtual;
   constructor Create; virtual;
   destructor Destroy; override;
 end;
@@ -191,6 +186,21 @@ implementation
 uses Graphics;
 
 {TCompilerBase}
+function TCompilerBase.CatOperationToStr(Op: string=','): string;
+{Devuelve una cadena descriptiva de la variable global "catOperation"}
+begin
+  case catOperation of
+  coConst_Const  : exit('Constant'+ Op +'Constant');
+  coConst_Variab : exit('Constant'+ Op +'Variable');
+  coConst_Expres : exit('Constant'+ Op +'Expression');
+  coVariab_Const : exit('Variable'+ Op +'Constant');
+  coVariab_Variab: exit('Variable'+ Op +'Variable');
+  coVariab_Expres: exit('Variable'+ Op +'Constant');
+  coExpres_Const : exit('Expression'+ Op +'Constant');
+  coExpres_Variab: exit('Expression'+ Op +'Variable');
+  coExpres_Expres: exit('Expression'+ Op +'Expression');
+  end;
+end;
 function TCompilerBase.HayError: boolean;
 begin
   Result := PErr.HayError;
@@ -1155,23 +1165,6 @@ begin
   GetExpression(0);  //evalua expresión
   if PErr.HayError then exit;
 end;}
-procedure TCompilerBase.StartSyntax;
-begin
-  //Actualiza las referencias a los tipos de tokens existentes en SynFacilSyn
-  tkEol     := xLex.tkEol;
-  tkSymbol  := xLex.tkSymbol;
-  tkSpace   := xLex.tkSpace;
-  tkIdentif := xLex.tkIdentif;
-  tkNumber  := xLex.tkNumber;
-  tkKeyword := xLex.tkKeyword;
-  tkString  := xLex.tkString;
-  tkComment := xLex.tkComment;
-  //Crea nuevos tipos necesarios para el Analizador Sintáctico
-  tkOperator := xLex.NewTokType('Operador'); //necesario para analizar expresiones
-  tkBoolean  := xLex.NewTokType('Boolean');  //constantes booleanas
-  tkSysFunct := xLex.NewTokType('SysFunct'); //funciones del sistema
-  tkType     := xLex.NewTokType('Types');    //tipos de datos
-end;
 constructor TCompilerBase.Create;
 begin
   PErr.IniError;   //inicia motor de errores
@@ -1193,6 +1186,29 @@ begin
   if HayError then PErr.Show;
   cIn := TContexts.Create(xLex); //Crea lista de Contextos
   ejecProg := false;
+  //Actualiza las referencias a los tipos de tokens existentes en SynFacilSyn
+  tkEol     := xLex.tkEol;
+  tkSymbol  := xLex.tkSymbol;
+  tkSpace   := xLex.tkSpace;
+  tkIdentif := xLex.tkIdentif;
+  tkNumber  := xLex.tkNumber;
+  tkKeyword := xLex.tkKeyword;
+  tkString  := xLex.tkString;
+  tkComment := xLex.tkComment;
+  //Crea nuevos tipos necesarios para el Analizador Sintáctico
+  tkOperator := xLex.NewTokType('Operator'); //necesario para analizar expresiones
+  tkBoolean  := xLex.NewTokType('Boolean');  //constantes booleanas
+  tkSysFunct := xLex.NewTokType('SysFunct'); //funciones del sistema
+  tkType     := xLex.NewTokType('Types');    //tipos de datos
+  {Sabemos que SynFacilSyn, crea una definición por defecto para identificadores,
+  pero aquí crearemos algunas más, para hacer al lexer más completo, desde el inicio,
+  de todas formas lo recomendable será hacer un ClearMethodTables, y definir una
+  nueva sintaxis}
+  xLex.DefTokContent('[0-9]', '[0-9.]*', tkNumber);
+  xLex.DefTokDelim('''','''', tkString);
+  xLex.DefTokDelim('"','"', tkString);
+  xLex.DefTokDelim('//','', xLex.tkComment);
+  xLex.Rebuild;   //es necesario para terminar la definición
 end;
 destructor TCompilerBase.Destroy;
 begin
