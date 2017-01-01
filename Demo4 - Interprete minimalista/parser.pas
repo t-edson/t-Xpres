@@ -47,18 +47,12 @@ begin
     end;
   end;
   if Perr.HayError then exit;
-  cIn.QuitaContexEnt;   //es necesario para dejar limpio
+  cIn.RemoveContext;   //es necesario para dejar limpio
 end;
 
 constructor TCompiler.Create;
 begin
   inherited Create;
-  StartSyntax;   //Debe hacerse solo una vez al inicio
-  //inicia la configuración
-  xLex.ClearMethodTables;           //limpìa tabla de métodos
-  xLex.ClearSpecials;               //para empezar a definir tokens
-  xLex.DefTokIdentif('[$A-Za-z_]', '[A-Za-z0-9_]*');
-  xLex.Rebuild;   //es necesario para terminar la definición
   ClearTypes;
   //Se crea un único tipo.
   tipStr:=CreateType('string',t_string,-1);

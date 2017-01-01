@@ -9,7 +9,7 @@ object Form1: TForm1
   OnCreate = FormCreate
   OnDestroy = FormDestroy
   LCLVersion = '1.6.2.0'
-  inline edXpr: TSynEdit
+  inline SynEdit1: TSynEdit
     Left = 4
     Height = 246
     Top = 0
