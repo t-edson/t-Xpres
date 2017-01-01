@@ -16,7 +16,7 @@ type
 
   TCompiler = class(TCompilerBase)
   private
-    tipStr : Ttype;
+    tipStr : TxType;
     procedure fun_puts(fun: TxpFun);
   public
     procedure Compilar(NombArc: string; LinArc: Tstrings);

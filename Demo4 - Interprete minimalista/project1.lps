@@ -139,22 +139,21 @@
         <UnitName Value="Parser"/>
         <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="32"/>
-        <CursorPos X="20" Y="50"/>
+        <TopLine Value="2"/>
+        <CursorPos X="20" Y="19"/>
         <UsageCount Value="72"/>
         <Loaded Value="True"/>
       </Unit19>
       <Unit20>
         <Filename Value="..\XpresParser.pas"/>
-        <EditorIndex Value="2"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="32"/>
-        <CursorPos X="17" Y="60"/>
+        <CursorPos X="7" Y="60"/>
         <UsageCount Value="70"/>
         <Bookmarks Count="2">
           <Item0 X="13" Y="385" ID="3"/>
           <Item1 X="36" Y="414" ID="1"/>
         </Bookmarks>
-        <Loaded Value="True"/>
       </Unit20>
       <Unit21>
         <Filename Value="..\..\_Librerias\SynFacilUtils 0.4b\SynFacilBasic.pas"/>
@@ -173,11 +172,10 @@
       </Unit22>
       <Unit23>
         <Filename Value="..\XpresTypes.pas"/>
-        <EditorIndex Value="3"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="14"/>
         <CursorPos X="35" Y="33"/>
         <UsageCount Value="17"/>
-        <Loaded Value="True"/>
       </Unit23>
       <Unit24>
         <Filename Value="..\XpresElements.pas"/>
@@ -336,12 +334,12 @@
         <Caret Line="11" Column="33" TopLine="5"/>
       </Position28>
       <Position29>
-        <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="60" Column="17" TopLine="32"/>
+        <Filename Value="parser.pas"/>
+        <Caret Line="11" Column="33" TopLine="5"/>
       </Position29>
       <Position30>
         <Filename Value="parser.pas"/>
-        <Caret Line="11" Column="33" TopLine="5"/>
+        <Caret Line="46" Column="36" TopLine="32"/>
       </Position30>
     </JumpHistory>
   </ProjectSession>
