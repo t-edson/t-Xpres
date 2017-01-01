@@ -9,6 +9,7 @@ Se crea el método TCompilerBase.StartSyntax(), con las inicializaciones básicas 
 tipos de tokens usados.
 Se elimina TOperand.GetOperator y se mueve a TCompilerBase.
 Se agrega un nuevo proyecto de ejemplo.
+Se cambia de nombre a TContexts.QuitaContexEnt() por TContexts.RemoveContext().
 
 
 XPres 0.9

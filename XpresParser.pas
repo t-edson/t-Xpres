@@ -992,7 +992,7 @@ begin
     end;
    {Llama al evento asociado con p1 y p2 como operandos. Debe devolver el resultado
    en "res"}
-   p1 := Op1; p2 := Op2;  { TODO : Debe optimizarse }
+   p1 := Op1; p2 := Op2;  { Podría optimizarse si p1 y p2 fueran punteros. }
    catOperation := TCatOperation((Ord(Op1.catOp) << 2) or ord(Op2.catOp)); //junta categorías de operandos
    o.proc;      //Ejecuta la operación
    //El resultado debe estar en "res"
@@ -1069,6 +1069,9 @@ begin
   if opr1 = nil then begin  //no sigue operador
     //Expresión de un solo operando. Lo carga por si se necesita
     Op1.Load;   //carga el operador para cumplir. Este evento no debería ser necesario.
+    {Tal vez, lo más conveniente sería tener otro procedimiento Evaluar() (o uno
+    sobrecargadao), pero con un solo oeprando, y también pdoría haber otro para
+    operadores unarios.}
     Result:=Op1;
     exit;  //termina ejecucion
   end;
@@ -1078,7 +1081,7 @@ begin
     GenError('No está definido el operador: "'+ opr1.txt + '" para tipo: '+Op1.typ.name);
     exit;
   end;
-  //inicia secuencia de lectura: <Operador> <Operando>
+  //Inicia secuencia de lectura: <Operador> <Operando>
   while opr1<>nil do begin
     //¿Delimitada por precedencia?
     If opr1.jer <= prec Then begin  //es menor que la que sigue, expres.
@@ -1236,7 +1239,6 @@ function TOperand.bank: TVarBank;
 begin
   Result := rvar.bank;
 end;
-
 procedure TOperand.SetvalBool(AValue: boolean);
 begin
   val.ValBool:=AValue;
@@ -1255,12 +1257,10 @@ procedure TOperand.SetvalStr(AValue: string);
 begin
   val.ValStr:=AValue;
 end;
-
 function TOperand.aWord: word;
 begin
   Result := word(valInt);
 end;
-
 function TOperand.HByte: byte; inline;
 begin
   Result := HI(word(valInt));
@@ -1269,7 +1269,6 @@ function TOperand.LByte: byte; inline;
 begin
   Result := LO(word(valInt));
 end;
-
 function TOperand.CanBeWord: boolean;
 {Indica si el valor constante que contiene, puede ser convertido a un WORD sin pérdida}
 begin
@@ -1280,7 +1279,6 @@ function TOperand.CanBeByte: boolean;
 begin
   Result := (valInt>=0) and (valInt<=$ff);
 end;
-
 procedure TOperand.Load; inline;
 begin
   //llama al evento de carga
@@ -1296,10 +1294,9 @@ begin
   //llama al evento de pila
   if typ.OnPop <> nil then typ.OnPop(@self);
 end;
-
 function TOperand.FindOperator(const oper: string): TOperator;
-//Recibe la cadena de un operador y devuelve una referencia a un objeto Toperator, del
-//operando. Si no está definido el operador para este operando, devuelve nullOper.
+{Recibe la cadena de un operador y devuelve una referencia a un objeto Toperator, del
+operando. Si no está definido el operador para este operando, devuelve nullOper.}
 begin
   Result := typ.FindOperator(oper);
 end;

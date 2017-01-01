@@ -130,7 +130,7 @@ type
     procedure NewContextFromFile(arc0: String);
     procedure NewContextFromFile(arc0: String; lins: Tstrings);
     procedure NewContextFromTxt(txt: string; arc0: String);
-    procedure QuitaContexEnt;
+    procedure RemoveContext;
     procedure ClearAll;      //elimian todos los contextos
 
     function Eof: Boolean;
@@ -439,7 +439,7 @@ begin
   tok := lex.GetToken;    //lee el token
   tokType := lex.GetTokenAttribute;  //lee atributo
 end;
-procedure TContexts.QuitaContexEnt;
+procedure TContexts.RemoveContext;
 //Elimina el contexto de entrada actual. Deja apuntando al anterior en la misma posición.
 begin
   if ctxList.Count = 0 then begin
