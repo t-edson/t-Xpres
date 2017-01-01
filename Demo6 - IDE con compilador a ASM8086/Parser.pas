@@ -42,9 +42,6 @@ end;
 //Métodos OVERRIDE
 procedure TCompiler.TipDefecString(var Op: TOperand; tokcad: string);
 //Devuelve el tipo de cadena encontrado en un token
-var
-  i: Integer;
-  x: TType;
 begin
   Op.catTyp := t_string;   //es cadena
   Op.size:=length(tokcad);

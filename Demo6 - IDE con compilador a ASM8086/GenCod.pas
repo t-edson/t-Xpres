@@ -14,7 +14,7 @@ type
   //define un registro virtual para implementar un intérprete
   Tregister = record
     used    : boolean;  //indica si está usado
-    typ     : Ttype;    //tipo de dato
+    typ     : TxType;    //tipo de dato
     catOp   : TCatOperan;  //categoría de operando
     //valores de la variable.
 {    valFloat: extended; //Valor en caso de que sea un flotante
@@ -32,7 +32,7 @@ type
     procedure chr_asig_chr;
     procedure chr_OnPush(const OpPtr: pointer);
     procedure chr_procDefine(const varName, varInitVal: string);
-    procedure chr_procLoad(const OpPtr: pointer);
+    procedure chr_procLoad;
     procedure CodAsmInt(const inst: string);
     procedure Code(cod: string);
     procedure expr_end(isParam: boolean);
@@ -45,13 +45,13 @@ type
     procedure int_mult_int;
     procedure int_OnPush(const OpPtr: pointer);
     procedure int_procDefine(const varName, varInitVal: string);
-    procedure int_procLoad(const OpPtr: pointer);
+    procedure int_procLoad;
     procedure int_resid_int;
     procedure int_resta_int;
     procedure int_suma_int;
     procedure str_asig_str;
     procedure str_concat_str;
-    procedure str_procLoad(const OpPtr: pointer);
+    procedure str_procLoad;
   protected
     tkStruct   : TSynHighlighterAttributes;
     tkExpDelim : TSynHighlighterAttributes;
@@ -67,9 +67,9 @@ type
 
 var
   /////// Tipos de datos del lenguaje ////////////
-  tipInt : TType;   //entero flotante
-  tipStr : Ttype;   //cadena de caracteres
-  tipChr : Ttype;   //un caracter
+  tipInt : TxType;   //entero flotante
+  tipStr : TxType;   //cadena de caracteres
+  tipChr : TxType;   //un caracter
   ////////// Registros virtuales ////////////
   {la arquitectura definida aquí contempla:
 
@@ -180,20 +180,17 @@ procedure TGenCod.int_procDefine(const varName, varInitVal: string);
 begin
   Code('  ' + varname + ' DW 0');
 end;
-procedure TGenCod.int_procLoad(const OpPtr: pointer);
-var
-  Op: ^TOperand;
+procedure TGenCod.int_procLoad;
 begin
-  Op := OpPtr;
   //carga el operando en res
-  case Op^.catOp of
-  coConst : Code('  mov ax,'+Op^.txt);
-  coVariab: Code('  mov ax,'+Op^.VarName);
+  case p1^.catOp of
+  coConst : Code('  mov ax,'+p1^.txt);
+  coVariab: Code('  mov ax,'+p1^.VarName);
   coExpres: ;  //ya está en registro
   end;
   res.typ := tipInt;  //indica que devuelve un entero
   res.catOp := coExpres;  {Un operando cargado, se considerará siempre como una
-                          exprwsión, auqnue si fuera una constante, ...   }
+                          expresión, auqnue si fuera una constante, ...   }
   a.used:=true;  //marac registro como usado
 end;
 procedure TGenCod.int_OnPush(const OpPtr: pointer);
@@ -203,10 +200,10 @@ begin
   Op := OpPtr;
   case Op^.catOp of
   coConst : begin
-    code('  mov ax, ' + p2.txt);  //carga literal
+    code('  mov ax, ' + p2^.txt);  //carga literal
     code('  push ax');
   end;
-  coVariab: code('  push '+ p1.VarName);
+  coVariab: code('  push '+ p1^.VarName);
   coExpres: code('  push ax'); //ya está en AX
   else
     GenError('No soportado'); exit;
@@ -214,19 +211,19 @@ begin
 end;
 procedure TGenCod.int_asig_int;
 begin
-  if p1.catOp <> coVariab then begin  //validación
+  if p1^.catOp <> coVariab then begin  //validación
     GenError('Solo se puede asignar a variable.'); exit;
   end;
-  case p2.catOp of
+  case p2^.catOp of
   coConst : begin
-    Code('  mov '+ p1.VarName +', '+ p2.txt);
+    Code('  mov '+ p1^.VarName +', '+ p2^.txt);
   end;
   coVariab: begin
-    Code('  mov ax, ' + p2 .VarName);
-    Code('  mov '+ p1.VarName +', ax');
+    Code('  mov ax, ' + p2^.VarName);
+    Code('  mov '+ p1^.VarName +', ax');
   end;
   coExpres: begin  //ya está en AX
-    Code('  mov '+ p1.VarName +', ax');
+    Code('  mov '+ p1^.VarName +', ax');
   end;
   else
     GenError('No soportado'); exit;
@@ -240,41 +237,41 @@ procedure TGenCod.CodAsmInt(const inst: string);
 begin
   res.typ := tipInt;   //el rsultado será siempre entero
   res.catOp:=coExpres; //por defecto generará una expresión
-  case p1.catOp of
-  coConst : case p2.catOp of
+  case p1^.catOp of
+  coConst : case p2^.catOp of
             coConst: begin
               //Es una operación con constantes, No genera cósigo. Se optimiza evaluando primero
               res.catOp:=coConst;
-              res.valInt:= p1.valInt+p2.valInt;
+              res.valInt:= p1^.valInt+p2^.valInt;
               res.txt:=IntToStr(res.valInt);  //completa con texto
             end;
             coVariab: begin
-              code('  mov ax, '+p1.txt);
-              code('  '+inst+ ' ax, '+p2.VarName);
+              code('  mov ax, '+p1^.txt);
+              code('  '+inst+ ' ax, '+p2^.VarName);
             end;
             coExpres: begin
-              code('  '+inst+ ' ax, '+p1.txt);
+              code('  '+inst+ ' ax, '+p1^.txt);
             end;
             end;
-  coVariab: case p2.catOp of
+  coVariab: case p2^.catOp of
             coConst: begin
-              code('  mov ax, '+p2.txt);
-              code('  '+inst+ ' ax, '+p1.VarName);
+              code('  mov ax, '+p2^.txt);
+              code('  '+inst+ ' ax, '+p1^.VarName);
             end;
             coVariab: begin
-              code('  mov ax, '+p1.VarName);
-              code('  '+inst+ ' ax, '+p2.VarName);
+              code('  mov ax, '+p1^.VarName);
+              code('  '+inst+ ' ax, ' + p2^.VarName);
             end;
             coExpres: begin
-              code('  '+inst+ ' ax, '+p1.VarName);
+              code('  '+inst+ ' ax, '+p1^.VarName);
             end;
             end;
-  coExpres: case p2.catOp of
+  coExpres: case p2^.catOp of
             coConst: begin
-              code('  '+inst+ ' ax, '+p2.txt);
+              code('  '+inst+ ' ax, '+p2^.txt);
             end;
             coVariab: begin
-              code('  '+inst+ ' ax, '+p1.VarName);
+              code('  '+inst+ ' ax, '+p1^.VarName);
             end;
             coExpres: begin
               code('  pull bx');  //una expresión está en la pila
@@ -304,14 +301,12 @@ begin
 //  LoadAcumInt(p1.GetValInt mod p2.GetValInt,'%');
 end;
 ////////////operaciones con string
-procedure TGenCod.str_procLoad(const OpPtr: pointer);
+procedure TGenCod.str_procLoad;
 var
   nomStr: String;
   nomLab: String;
-  Op: ^TOperand;
 begin
-  Op := OpPtr;
-  case Op^.catOp of
+  case p1^.catOp of
   coConst : begin
     //genera nombre de variable cadena y etiqueta
     nomStr := 'cad' + IntToStr(ncc);
@@ -319,7 +314,7 @@ begin
     inc(ncc);
     //codifica
     code('  jmp ' + nomLab);   //deja expacio para cadena
-    code('  ' + nomStr + ' DB "' + Op^.valStr + '"');
+    code('  ' + nomStr + ' DB "' + p1^.valStr + '"');
     code(nomLab+':');
     code('  mov dx, OFFSET '+nomStr);
   end;
@@ -329,7 +324,7 @@ begin
 end;
 procedure TGenCod.str_asig_str;
 begin
-  if p1.catOp <> coVariab then begin  //validación
+  if p1^.catOp <> coVariab then begin  //validación
     GenError('Solo se puede asignar a variable.'); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
@@ -346,16 +341,13 @@ procedure TGenCod.chr_procDefine(const varName, varInitVal: string);
 begin
   Code('  ' + varname + ' DB 0');
 end;
-procedure TGenCod.chr_procLoad(const OpPtr: pointer);
-var
-  Op: ^TOperand;
+procedure TGenCod.chr_procLoad;
 begin
-  Op := OpPtr;
   //carga el operando en res
-  case Op^.catOp of
-  coConst : Code('  mov al, '''+Op^.valStr+ '''');
+  case p1^.catOp of
+  coConst : Code('  mov al, '''+p1^.valStr+ '''');
   coExpres: ;  //ya está en registro
-  coVariab: Code('  mov al,'+Op^.VarName);
+  coVariab: Code('  mov al,'+p1^.VarName);
   end;
   res.typ := tipChr;  //indica que devuelve un entero
   res.catOp := coExpres;  {Un operando cargado, se considerará siempre como una
@@ -369,10 +361,10 @@ begin
   Op := OpPtr;
   case Op^.catOp of
   coConst : begin
-    code('  mov al, ''' + p2.valStr + '''');  //carga literal
+    code('  mov al, ''' + p2^.valStr + '''');  //carga literal
     code('  push ax');
   end;
-  coVariab: code('  push '+ p1.VarName);
+  coVariab: code('  push '+ p1^.VarName);
   coExpres: code('  push ax'); //ya está en AX
   else
     GenError('No soportado'); exit;
@@ -380,19 +372,19 @@ begin
 end;
 procedure TGenCod.chr_asig_chr;
 begin
-  if p1.catOp <> coVariab then begin  //validación
+  if p1^.catOp <> coVariab then begin  //validación
     GenError('Solo se puede asignar a variable.'); exit;
   end;
-  case p2.catOp of
+  case p2^.catOp of
   coConst : begin
-    Code('  mov '+ p1.VarName +', '''+ p2.valStr+'''');
+    Code('  mov '+ p1^.VarName +', '''+ p2^.valStr+'''');
   end;
   coVariab: begin
-    Code('  mov al, ' + p2.VarName);
-    Code('  mov '+ p1.VarName +', al');
+    Code('  mov al, ' + p2^.VarName);
+    Code('  mov '+ p1^.VarName +', al');
   end;
   coExpres: begin  //ya está en AL
-    Code('  mov '+ p1.VarName +', al');
+    Code('  mov '+ p1^.VarName +', al');
   end;
   else
     GenError('No soportado'); exit;
@@ -430,7 +422,7 @@ end;
 procedure TGenCod.StartSyntax;
 //Se ejecuta solo una vez al inicio
 var
-  opr: TOperator;
+  opr: TxOperator;
   f: TxpFun;  //índice para funciones
 begin
   //tokens personalizados
@@ -496,17 +488,17 @@ begin
   ///////////Crea tipos y operaciones
   ClearTypes;
   tipInt  :=CreateType('int',t_integer,2);   //de 2 bytes
-  tipInt.OnLoad:=@int_procLoad;
+  tipInt.OperationLoad:=@int_procLoad;
   tipInt.OnGlobalDef:=@int_procDefine;
   tipInt.OnPush:=@int_OnPush;
   //debe crearse siempre el tipo char o string para manejar cadenas
   tipChr := CreateType('char',t_string,1);   //de 1 byte
-  tipChr.OnLoad:=@chr_procLoad;
+  tipChr.OperationLoad:=@chr_procLoad;
   tipChr.OnGlobalDef:=@chr_procDefine;
   tipChr.OnPush:=@chr_OnPush;
 //  tipStr:=CreateType('char',t_string,1);   //de 1 byte
   tipStr:=CreateType('string',t_string,-1);   //de longitud variable
-  tipStr.OnLoad:=@str_procLoad;
+  tipStr.OperationLoad:=@str_procLoad;
 
   //////// Operaciones con Chr ////////////
   {Los operadores deben crearse con su precedencia correcta}
