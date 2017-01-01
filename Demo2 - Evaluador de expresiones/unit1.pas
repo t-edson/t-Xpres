@@ -11,7 +11,7 @@ type
     procedure entero_mult_entero;
     procedure entero_suma_entero;
   public
-    tipEnt : Ttype;
+    tipEnt : TxType;
     constructor Create; override;
   end;
 
@@ -33,19 +33,19 @@ implementation
 
 procedure TEvaluador.entero_mult_entero;
 begin
-  Res.valInt := p1.valInt * p2.valInt;
+  Res.valInt := p1^.valInt * p2^.valInt;
   Res.typ := tipEnt;
 end;
 
 procedure TEvaluador.entero_suma_entero;
 begin
-  Res.valInt := p1.valInt + p2.valInt;
+  Res.valInt := p1^.valInt + p2^.valInt;
   Res.typ := tipEnt;
 end;
 
 constructor TEvaluador.Create;
 var
-  oprEntSum, oprEntMul: TOperator;
+  oprEntSum, oprEntMul: TxOperator;
 begin
   inherited Create;
   //Configura la sintaxis del lexer
