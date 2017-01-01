@@ -12,14 +12,14 @@ type
   private
     /////// Tipos de datos del lenguaje ////////////
     tipInt : TType;   //entero
-    tipStr : Ttype;
+    tipStr : TType;
     //Pila virtual
     sp: integer;  //puntero de pila
     stack: array[0..STACK_SIZE-1] of TOperand;
     procedure fun_puts(fun: TxpFun);
     procedure fun_putsI(fun: TxpFun);
     procedure int_asig_int;
-    procedure int_procLoad(const OpPtr: pointer);
+    procedure int_procLoad;
     procedure int_suma_int;
     procedure LoadResInt(val: int64);
     procedure LoadResStr(val: string);
@@ -27,7 +27,7 @@ type
     procedure PushResult;
     procedure str_asig_str;
     procedure str_concat_str;
-    procedure str_procLoad(const OpPtr: pointer);
+    procedure str_procLoad;
   public
     //Referencias de tipos adicionales a los ya existentes en TCompilerBase
     //Depende de la implementación a usar.
@@ -80,7 +80,7 @@ end;
 procedure TInterprete.StartSyntax;
 //Se ejecuta solo una vez al inicio
 var
-  opr: TOperator;
+  opr: TxpOperator;
   f: TxpFun;
 begin
   /////////// Crea tipos personalizados
@@ -128,13 +128,12 @@ begin
   ///////////Crea tipos y operaciones
   ClearTypes;
   tipInt  :=CreateType('int',t_integer,4);   //de 4 bytes
-  tipInt.OnLoad:=@int_procLoad;
   //debe crearse siempre el tipo char o string para manejar cadenas
 //  tipStr:=CreateType('char',t_string,1);   //de 1 byte
   tipStr:=CreateType('string',t_string,-1);   //de longitud variable
-  tipStr.OnLoad:=@str_procLoad;
 
   //////// Operaciones con String ////////////
+  tipStr.OperationLoad:=@str_procLoad;
   opr:=tipStr.CreateOperator(':=',2,'asig');  //asignación
   opr.CreateOperation(tipStr,@str_asig_str);
   opr:=tipStr.CreateOperator('+',7,'concat');
@@ -142,6 +141,7 @@ begin
 
   //////// Operaciones con Int ////////////
   {Los operadores deben crearse con su precedencia correcta}
+  tipInt.OperationLoad:=@int_procLoad;
   opr:=tipInt.CreateOperator(':=',2,'asig');  //asignación
   opr.CreateOperation(tipInt,@int_asig_int);
 
@@ -193,53 +193,47 @@ begin
 end;
 
 ////////////operaciones con Enteros
-procedure TInterprete.int_procLoad(const OpPtr: pointer);
-var
-  Op: ^TOperand;
+procedure TInterprete.int_procLoad;
 begin
-  Op := OpPtr;
   //carga el operando en res
   res.typ := tipInt;
-  res.valInt := Op^.ReadInt;
+  res.valInt := p1^.ReadInt;
 end;
 procedure TInterprete.int_asig_int;
 begin
-  if p1.catOp <> coVariab then begin  //validación
+  if p1^.catOp <> coVariab then begin  //validación
     GenError('Solo se puede asignar a variable.'); exit;
   end;
   //en la VM se puede mover directamente res memoria sin usar el registro res
-  p1.rVar.valInt:=p2.ReadInt;
+  p1^.rVar.valInt:=p2^.ReadInt;
 //  res.used:=false;  //No hay obligación de que la asignación devuelva un valor.
-//  Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
+//  Code('['+IntToStr(p1^.ivar)+']<-' + p2^.expres);
 end;
 
 procedure TInterprete.int_suma_int;
 begin
-  LoadResInt(p1.ReadInt+p2.ReadInt);
+  LoadResInt(p1^.ReadInt+p2^.ReadInt);
 end;
 ////////////operaciones con string
-procedure TInterprete.str_procLoad(const OpPtr: pointer);
-var
-  Op: ^TOperand;
+procedure TInterprete.str_procLoad;
 begin
-  Op := OpPtr;
   //carga el operando en res
   res.typ := tipStr;
-  res.valStr := Op^.ReadStr;
+  res.valStr := p1^.ReadStr;
 end;
 procedure TInterprete.str_asig_str;
 begin
-  if p1.catOp <> coVariab then begin  //validación
+  if p1^.catOp <> coVariab then begin  //validación
     GenError('Solo se puede asignar a variable.'); exit;
   end;
   //aquí se puede mover directamente res memoria sin usar el registro res
-  p1.rVar.valStr:=p2.ReadStr;
+  p1^.rVar.valStr:=p2^.ReadStr;
 //  res.used:=false;  //No hay obligación de que la expresión devuelva un valor.
-//  Code('['+IntToStr(p1.ivar)+']<-' + p2.expres);
+//  Code('['+IntToStr(p1^.ivar)+']<-' + p2^.expres);
 end;
 procedure TInterprete.str_concat_str;
 begin
-  LoadResStr(p1.ReadStr+p2.ReadStr);
+  LoadResStr(p1^.ReadStr+p2^.ReadStr);
 end;
 
 //funciones básicas
