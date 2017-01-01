@@ -132,7 +132,7 @@ begin
     if PErr.HayError then exit;
     CompilarArc;     //puede dar error
 
-    cIn.QuitaContexEnt;   //es necesario por dejar limpio
+    cIn.RemoveContext;   //es necesario por dejar limpio
     if PErr.HayError then exit;   //sale
   //  PosAct := con;   //recupera el contenido actual
 

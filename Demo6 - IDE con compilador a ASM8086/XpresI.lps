@@ -28,8 +28,10 @@
       <Unit2>
         <Filename Value="Parser.pas"/>
         <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <CursorPos X="12" Y="4"/>
+        <TopLine Value="118"/>
+        <CursorPos X="22" Y="135"/>
         <UsageCount Value="200"/>
         <Bookmarks Count="1">
           <Item0 Y="148" ID="1"/>
@@ -77,10 +79,9 @@
       <Unit7>
         <Filename Value="GenCod.pas"/>
         <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="2"/>
         <TopLine Value="418"/>
-        <CursorPos X="20" Y="431"/>
+        <CursorPos X="44" Y="437"/>
         <FoldState Value=" TMC010315151 T3kB04125 T0kOM3O T6lB01]GHlG244 piYiRCC5S"/>
         <UsageCount Value="21"/>
         <Loaded Value="True"/>
@@ -220,7 +221,7 @@
         <Loaded Value="True"/>
       </Unit27>
     </Units>
-    <JumpHistory Count="20" HistoryIndex="19">
+    <JumpHistory Count="21" HistoryIndex="20">
       <Position1>
         <Filename Value="..\XpresTypes.pas"/>
         <Caret Line="100" Column="16" TopLine="83"/>
@@ -299,6 +300,10 @@
         <Filename Value="GenCod.pas"/>
         <Caret Line="436" Column="11" TopLine="422"/>
       </Position20>
+      <Position21>
+        <Filename Value="Parser.pas"/>
+        <Caret Line="4" Column="12"/>
+      </Position21>
     </JumpHistory>
   </ProjectSession>
 </CONFIG>
