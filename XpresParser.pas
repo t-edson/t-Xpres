@@ -44,14 +44,9 @@ public
   catTyp: TCatType;  //Categoría de Tipo de dato.
   size  : integer;   //Tamaño del operando en bytes.
   {---------------------------------------------------------}
-{  estOp: integer;   Estado del operando. Usado para la generec. de código. No se define un
-                    tipo específico, para dar libertad a la implementación a usarlo de la mejor
-                    forma. La necesidad de este campo es debatible, pero se mantiene por
-                    compatibilidad.}
-  procedure Load; inline;  //carga el operador en registro o pila
   procedure Push; inline;  //pone el operador en la pila
   procedure Pop; inline;   //saca el operador en la pila
-  function FindOperator(const oper: string): TOperator; //devuelve el objeto operador
+  function FindOperator(const oper: string): TxpOperator; //devuelve el objeto operador
   //Funciones para facilitar el acceso a campos de la variable, cuando sea variable
   function VarName: string; inline; //nombre de la variable, cuando sea de categ. coVariab
   function addr: TVarAddr; inline;  //dirección de la variable
@@ -95,9 +90,9 @@ protected  //Eventos del compilador
   procedure ClearTypes;
   function CreateType(nom0: string; cat0: TCatType; siz0: smallint): TType;
   procedure CreateFunction(funName, varType: string);
-  function CreateFunction(funName: string; typ: ttype; proc: TProcExecFunction
+  function CreateFunction(funName: string; typ: TType; proc: TProcExecFunction
     ): TxpFun;
-  function CreateSysFunction(funName: string; typ: ttype; proc: TProcExecFunction
+  function CreateSysFunction(funName: string; typ: TType; proc: TProcExecFunction
     ): TxpFun;
   procedure CreateParam(fun: TxpFun; parName: string; typStr: string);
   function CaptureDelExpres: boolean;
@@ -112,15 +107,17 @@ protected  //Eventos del compilador
   procedure SkipWhites; virtual;  //rutina para saltar blancos
   procedure GetExpression(const prec: Integer; isParam: boolean=false);
   procedure GetBoolExpression;
-  procedure CreateVariable(const varName: string; typ: ttype);
+  procedure CreateVariable(const varName: string; typ: TType);
   procedure CreateVariable(varName, varType: string);
   function GetOperand: TOperand; virtual;
   function GetOperandP(pre: integer): TOperand;
-  function GetOperator(const Op: Toperand): Toperator;
+  function GetOperator(const Op: Toperand): TxpOperator;
   procedure CaptureParams; virtual;
   function FindFuncWithParams0(const funName: string; var idx: integer;
     idx0: integer=0): TFindFuncResult;
-  procedure Evaluar(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
+  procedure Evaluar(var Op1: TOperand; opr: TxpOperator; var Op2: TOperand);
+  procedure Evaluar(var Op1: TOperand; opr: TxpOperator);
+  procedure Evaluar(var Op1: TOperand);
 protected   //Campos de elementos
   cons  : TxpCons;     //lista de constantes
   vars  : TxpVars;     //lista de variables
@@ -155,16 +152,16 @@ public  //Referencias a los tipos predefinidos de tokens.
   tkSysFunct: TSynHighlighterAttributes;
   tkType    : TSynHighlighterAttributes;
 public  //Campos de control
-  xLex  : TSynFacilSyn; //resaltador - lexer
-  cIn    : TContexts;   //entrada de datos
+  xLex   : TSynFacilSyn; //resaltador - lexer
+  cIn    : TContexts;    //entrada de datos
   //variables públicas del compilador
-  ejecProg: boolean;  //Indica que se está ejecutando un programa o compilando
-  DetEjec: boolean;   //para detener la ejecución (en intérpretes)
+  ejecProg: boolean;   //Indica que se está ejecutando un programa o compilando
+  DetEjec: boolean;    //para detener la ejecución (en intérpretes)
 
-  typs  : TTypes;     //lista de tipos (El nombre "types" ya está reservado)
-  func0 : TxpFun;     //función interna para almacenar parámetros
-  p1, p2 : TOperand;  //Pasa los operandos de la operación actual
-  res    : TOperand;  //resultado de la evaluación de la última expresión.
+  typs   : TTypes;     //lista de tipos (El nombre "types" ya está reservado)
+  func0  : TxpFun;     //función interna para almacenar parámetros
+  p1, p2 : ^TOperand;  //Apuntan a los operandos de l aoperación actual
+  res    : TOperand;   //resultado de la evaluación de la última expresión.
   catOperation: TCatOperation;  //combinación de categorías de los operandos
   function CatOperationToStr(Op: string=','): string;
 public  //Manejo de errores
@@ -240,9 +237,9 @@ begin
                          PChar(Perr.NombPrograma), MB_ICONEXCLAMATION);
 //  Perr.Show;
 end;
-
 //Manejo de tipos
-function TCompilerBase.CreateType(nom0: string; cat0: TCatType; siz0: smallint): TType;
+function TCompilerBase.CreateType(nom0: string; cat0: TCatType; siz0: smallint
+  ): TType;
 //Crea una nueva definición de tipo en el compilador. Devuelve referencia al tipo recien creado
 var r: TType;
   i: Integer;
@@ -367,7 +364,8 @@ begin
   exit(eltNone);
 end;
 
-function TCompilerBase.CreateFunction(funName: string; typ: ttype; proc: TProcExecFunction): TxpFun;
+function TCompilerBase.CreateFunction(funName: string; typ: TType;
+  proc: TProcExecFunction): TxpFun;
 //Crea una nueva función y devuelve un índice a la función.
 var
   r : TxpFun;
@@ -396,7 +394,7 @@ begin
 end;
 procedure TCompilerBase.CreateFunction(funName, varType: string);
 //Define una nueva función en memoria.
-var t: ttype;
+var t: TType;
   hay: Boolean;
 begin
   //Verifica el tipo
@@ -414,7 +412,8 @@ begin
   //Ya encontró tipo, llama a evento
 //  if t.OnGlobalDef<>nil then t.OnGlobalDef(funName, '');
 end;
-function TCompilerBase.CreateSysFunction(funName: string; typ: ttype; proc: TProcExecFunction): TxpFun;
+function TCompilerBase.CreateSysFunction(funName: string; typ: TType;
+  proc: TProcExecFunction): TxpFun;
 //Crea una función del sistema o interna. Estas funciones estan siempre disponibles.
 //Las funciones internas deben crearse todas al inicio.
 begin
@@ -878,7 +877,7 @@ begin
     GenError('Se esperaba operando');
   end;
 end;
-procedure TCompilerBase.CreateVariable(const varName: string; typ: ttype);
+procedure TCompilerBase.CreateVariable(const varName: string; typ: TType);
 var
   r : TxpVar;
 begin
@@ -898,7 +897,7 @@ end;
 procedure TCompilerBase.CreateVariable(varName, varType: string);
 {Agrega una variable a la tabla de variables.
  Los tipos siempre aparecen en minúscula.}
-var t: ttype;
+var t: TType;
   hay: Boolean;
 begin
   //Verifica el tipo
@@ -969,7 +968,8 @@ begin
   if not CaptureDelExpres then exit;
   SkipWhites;
 end;
-procedure TCompilerBase.Evaluar(var Op1: TOperand; opr: TOperator; var Op2: TOperand);
+procedure TCompilerBase.Evaluar(var Op1: TOperand; opr: TxpOperator;
+  var Op2: TOperand);
 {Ejecuta una operación con dos operandos y un operador. "opr" es el operador de Op1.
 El resultado debe devolverse en "res". En el caso de intérpretes, importa el
 resultado de la Operación.
@@ -977,36 +977,72 @@ En el caso de compiladores, lo más importante es el tipo del resultado, pero pu
 usarse también "res" para cálculo de expresiones constantes.
 }
 var
-  o: TxOperation;
+  Operation: TxpOperation;
 begin
-   debugln(space(ExprLevel)+' Eval('+Op1.txt + ',' + Op2.txt+')');
+   debugln(space(ExprLevel)+' Eval('+Op1.txt + opr.txt + Op2.txt+')');
    PErr.IniError;
    //Busca si hay una operación definida para: <tipo de Op1>-opr-<tipo de Op2>
-   o := opr.FindOperation(Op2.typ);
-   if o = nil then begin
+   Operation := opr.FindOperation(Op2.typ);
+   if Operation = nil then begin
 //      GenError('No se ha definido la operación: (' +
 //                    Op1.typ.name + ') '+ opr.txt + ' ('+Op2.typ.name+')');
       GenError('Operación no válida: (' +
                     Op1.typ.name + ') '+ opr.txt + ' ('+Op2.typ.name+')');
       Exit;
     end;
-   {Llama al evento asociado con p1 y p2 como operandos. Debe devolver el resultado
-   en "res"}
-   p1 := Op1; p2 := Op2;  { Podría optimizarse si p1 y p2 fueran punteros. }
-   catOperation := TCatOperation((Ord(Op1.catOp) << 2) or ord(Op2.catOp)); //junta categorías de operandos
-   o.proc;      //Ejecuta la operación
-   //El resultado debe estar en "res"
+   {Llama al evento asociado con p1 y p2 como operandos. }
+   p1 := @Op1; p2 := @Op2;  { Se usan punteros por velocidad. De otra forma habría que
+                             copiar todo el objeto.}
+   //junta categorías de operandos
+   catOperation := TCatOperation((Ord(Op1.catOp) << 2) or ord(Op2.catOp));
+   {Ejecuta la operación.
+   Los parámetros de entrada se dejan en p1 y p2. El resultado debe dejarse en "res"}
+   Operation.proc;
    //Completa campos de "res", si es necesario
 //   res.txt := Op1.txt + opr.txt + Op2.txt;   //texto de la expresión
 //   res.uop := opr;   //última operación ejecutada
 End;
+procedure TCompilerBase.Evaluar(var Op1: TOperand; opr: TxpOperator);
+{Ejecuta una operación con un operando y un operador. "opr" es el operador de Op1.
+El resultado debe devolverse en "res".
+Este es el caso de operaciones Unarias.
+}
+begin
+   debugln(space(ExprLevel)+' Eval('+Op1.txt + opr.txt +')');
+   PErr.IniError;
+   {Llama al evento asociado con p1 como operando. }
+   p1 := @Op1; {Solo hay un parámetro}
+   {Ejecuta la operación. El resultado debe dejarse en "res"}
+   opr.Operation;
+   //Completa campos de "res", si es necesario
+//   res.txt := Op1.txt + opr.txt + Op2.txt;   //texto de la expresión
+//   res.uop := opr;   //última operación ejecutada
+end;
+procedure TCompilerBase.Evaluar(var Op1: TOperand);
+{Ejecuta una operación con un solo operando, que puede ser una constante, una variable
+o la llamada a una función.
+El resultado debe devolverse en "res".
+La implementación debe decidir, qué hacer cuando se encuentra un solo operando como
+expresión. En algunos casos puede ser inválido.
+}
+begin
+  debugln(space(ExprLevel)+' Eval('+Op1.txt+')');
+  PErr.IniError;
+  {Llama al evento asociado con p1 como operando. }
+  p1 := @Op1; {Solo hay un parámetro}
+  {Ejecuta la operación. El resultado debe dejarse en "res"}
+  if Op1.typ.OperationLoad <> nil then Op1.typ.OperationLoad();
+  //Completa campos de "res", si es necesario
+//   res.txt := Op1.txt + opr.txt + Op2.txt;   //texto de la expresión
+//   res.uop := opr;   //última operación ejecutada
+end;
 function TCompilerBase.GetOperandP(pre: integer): TOperand;
 //Toma un operando realizando hasta encontrar un operador de precedencia igual o menor
 //a la indicada
 var
   Op1: TOperand;
   Op2: TOperand;
-  opr: TOperator;
+  opr: TxpOperator;
   pos: TPosCont;
 begin
   debugln(space(ExprLevel)+' CogOperando('+IntToStr(pre)+')');
@@ -1026,7 +1062,7 @@ begin
     exit;
 //    Result:=Op1;
   end else begin  //si está definido el operador (opr) para Op1, vemos precedencias
-    If opr.jer > pre Then begin  //¿Delimitado por precedencia de operador?
+    If opr.pre> pre Then begin  //¿Delimitado por precedencia de operador?
       //es de mayor precedencia, se debe evaluar antes.
       Op2 := GetOperandP(pre);  //toma el siguiente operando (puede ser recursivo)
       if pErr.HayError then exit;
@@ -1038,7 +1074,7 @@ begin
     end;
   end;
 end;
-function TCompilerBase.GetOperator(const Op: Toperand): Toperator;
+function TCompilerBase.GetOperator(const Op: Toperand): TxpOperator;
 {Busca la referecnia a un operador de "Op", leyendo del contexto de entrada
 Si no encuentra un operador en el contexto, devuelve NIL, pero no lo toma.
 Si el operador encontrado no se aplica al operando, devuelve nullOper.}
@@ -1055,7 +1091,7 @@ function TCompilerBase.GetExpressionCore(const prec: Integer): TOperand; //inlin
  Devuelve un operando con información sobre el resultado de la expresión.}
 var
   Op1, Op2  : TOperand;   //Operandos
-  opr1: TOperator;  //Operadores
+  opr1: TxpOperator;  //Operadores
 begin
   Op1.catTyp:=t_integer;    //asumir opcion por defecto
   Op2.catTyp:=t_integer;   //asumir opcion por defecto
@@ -1067,12 +1103,9 @@ begin
   SkipWhites;
   opr1 := GetOperator(Op1);
   if opr1 = nil then begin  //no sigue operador
-    //Expresión de un solo operando. Lo carga por si se necesita
-    Op1.Load;   //carga el operador para cumplir. Este evento no debería ser necesario.
-    {Tal vez, lo más conveniente sería tener otro procedimiento Evaluar() (o uno
-    sobrecargadao), pero con un solo oeprando, y también pdoría haber otro para
-    operadores unarios.}
-    Result:=Op1;
+    //Expresión de un solo operando.
+    Evaluar(Op1);
+    Result:=res;
     exit;  //termina ejecucion
   end;
   //------- sigue un operador ---------
@@ -1084,38 +1117,20 @@ begin
   //Inicia secuencia de lectura: <Operador> <Operando>
   while opr1<>nil do begin
     //¿Delimitada por precedencia?
-    If opr1.jer <= prec Then begin  //es menor que la que sigue, expres.
+    If opr1.pre<= prec Then begin  //es menor que la que sigue, expres.
       Result := Op1;  //solo devuelve el único operando que leyó
       exit;
     End;
-{    //--------------------coger operador ---------------------------
-	//operadores unitarios ++ y -- (un solo operando).
-    //Se evaluan como si fueran una mini-expresión o función
-	if opr1.id = op_incremento then begin
-      case Op1.catTyp of
-        t_integer: Cod_IncremOperanNumerico(Op1);
-      else
-        GenError('Operador ++ no es soportado en este tipo de dato.',PosAct);
-        exit;
-      end;
-      opr1 := cogOperador; if pErr.HayError then exit;
-      if opr1.id = Op_ninguno then begin  //no sigue operador
-        Result:=Op1; exit;  //termina ejecucion
-      end;
-    end else if opr1.id = op_decremento then begin
-      case Op1.catTyp of
-        t_integer: Cod_DecremOperanNumerico(Op1);
-      else
-        GenError('Operador -- no es soportado en este tipo de dato.',PosAct);
-        exit;
-      end;
-      opr1 := cogOperador; if pErr.HayError then exit;
-      if opr1.id = Op_ninguno then begin  //no sigue operador
-        Result:=Op1; exit;  //termina ejecucion
-      end;
-    end;}
+    if opr1.Operation<>nil then begin  //Verifica si es operación Unaria
+      Evaluar(Op1, opr1);
+      if PErr.HayError then exit;
+      Op1 := res;
+      SkipWhites;
+      opr1 := GetOperator(Op1);
+      continue;
+    end;
     //--------------------coger segundo operando--------------------
-    Op2 := GetOperandP(Opr1.jer);   //toma operando con precedencia
+    Op2 := GetOperandP(Opr1.pre);   //toma operando con precedencia
     debugln(space(ExprLevel)+' Op2='+Op2.txt);
     if pErr.HayError then exit;
     //prepara siguiente operación
@@ -1279,11 +1294,6 @@ function TOperand.CanBeByte: boolean;
 begin
   Result := (valInt>=0) and (valInt<=$ff);
 end;
-procedure TOperand.Load; inline;
-begin
-  //llama al evento de carga
-  if typ.OnLoad <> nil then typ.OnLoad(@self);
-end;
 procedure TOperand.Push;
 begin
   //llama al evento de pila
@@ -1294,7 +1304,7 @@ begin
   //llama al evento de pila
   if typ.OnPop <> nil then typ.OnPop(@self);
 end;
-function TOperand.FindOperator(const oper: string): TOperator;
+function TOperand.FindOperator(const oper: string): TxpOperator;
 {Recibe la cadena de un operador y devuelve una referencia a un objeto Toperator, del
 operando. Si no está definido el operador para este operando, devuelve nullOper.}
 begin

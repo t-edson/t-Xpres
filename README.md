@@ -1,4 +1,4 @@
-t-Xpres 1.0
+t-Xpres 1.1
 ===========
 
 Marco de trabajo (framework) para implementar compiladores o intérpretes para  lenguajes imperativos y tipados. 
@@ -17,7 +17,7 @@ Xpres está diseñado para trabajar con el paquete SynEdit de Lazarus. Esto impl
 
 Además, al ser el analizador léxico, también un resaltador de sintaxis, se puede resaltar el código fuente con las mismas rutinas del analizador léxico, sin necesidad de implementar algún otro resaltador. De esta forma se garantiza una correspondencia al 100% entre los tokens del analizador léxico, y el coloreado que se puede lograr en pantalla.
 
-Hay que notar que de SynFacilSyn, solo se está usando su capacidad de lexer, más no de manejo de bloques de sintaxis. De momento los bloques de sintaxis, los maneja internamente el analizador sintáctico.
+Hay que notar que de SynFacilSyn, solo se está usando su capacidad de lexer, más no de manejo de bloques de sintaxis. De momento los bloques de sintaxis en Xpres, los maneja internamente el analizador sintáctico.
 
 La librería Xpres, incluye a los siguientes archivos:
 
@@ -26,13 +26,14 @@ La librería Xpres, incluye a los siguientes archivos:
 * "XpresParser.pas". Unidad con rutinas principales del framework. Incluyen el analizador sintáctivo o "parser". Incluye el analizador de expresiones y de las estructuras del lenguaje. No debería cambiar si el lenguaje sigue la línea del lenguaje Xpres.
 * "XpresElements.pas". Unidad que define los elementos de la sintaxis, como constantes, variables, procedimientos y funciones.
 
-Para la implementación de un Intérpretes o Generadores de código. Se debe crear una unidad que incluya a "XpresParser.pas" y "XpresTypes.pas" y ahí definir a  una clase (p. ej. TCompiler o TInterpreter) que descienda de la clase TCompilerBase.
+Para la implementación de un Intérprete o Generador de código. Se debe crear una unidad que incluya a "XpresParser.pas" y "XpresTypes.pas" y ahí definir a  una clase (p. ej. TCompiler o TInterpreter) que descienda de la clase TCompilerBase.
 
 Los generadores de código pueden desarrollarse para generar código intermedio, como el bytecode de Java, o cualquier otro. Este proyecto no incluye ninguna máquina virtual.
 
 En los ejemplos se incluye un caso minimalista con intérprete y un ejemplo de compilador elemental para el intel 8086 en 16 bits.
 
-Xpres, aún está en fase de desarrollo, pero permite realizar implementaciones básicas. 
-
 El ejemplo de compilador incluye también una IDE sencilla. Solo permite manejar variables, expresiones numéricas y de cadena.
 
+Xpres, puede ser usado también cuando se requiere implementar un lexer, un parser, un árbol de sintaxis, o un evaluador de expresiones.
+
+Para más información sobrfe Xpres, revisar la documentación técnica.

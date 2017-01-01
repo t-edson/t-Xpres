@@ -60,67 +60,67 @@ type  //tipos enumerados
   //Eventos
   TProcExecOperat = procedure of object;
   TProcDefineVar = procedure(const varName, varInitVal: string) of object;
-  {Evento para cargar un  opeando en la pila.
+  {Evento para cargar un  operando en la pila.
   "OpPtr" debería ser "TOperand", pero aún no se define "TOperand".}
   TProcLoadOperand = procedure(const OpPtr: pointer) of object;
 
   //Tipo operación
-  TxOperation = class
+  TxpOperation = class
     OperatType : TType;   //tipo de Operando sobre el cual se aplica la operación.
     proc       : TProcExecOperat;  //Procesamiento de la operación
   end;
 
-  TOperations = specialize TFPGObjectList<TxOperation>; //lista de operaciones
+  TxpOperations = specialize TFPGObjectList<TxpOperation>; //lista de operaciones
 
-//Operador
-{ TOperator }
+  { TxpOperator }
+  //Operador
+  TxpOperator = class
+    txt: string;    //cadena del operador '+', '-', '++', ...
+    pre: byte;      //precedencia
+    nom: string;    //nombre de la operación (suma, resta)
+    idx: integer;   //ubicación dentro de un arreglo
+    Operation: TProcExecOperat;  {Operación asociada al Operador. Usado cuando es un
+                                 operador unario. NO IMPLEMENTADO.}
+    Operations: TxpOperations;  //operaciones soportadas. Debería haber tantos como
+                              //Num. Operadores * Num.Tipos compatibles.
+    function CreateOperation(OperadType: TType; proc: TProcExecOperat): TxpOperation;  //Crea operación
+    function FindOperation(typ0: TType): TxpOperation;  //Busca una operación para este operador
+    constructor Create;
+    destructor Destroy; override;
+  end;
 
-TOperator = class
-  txt: string;    //cadena del operador '+', '-', '++', ...
-  jer: byte;      //precedencia
-  nom: string;    //nombre de la operación (suma, resta)
-  idx: integer;   //ubicación dentro de un arreglo
-  Operations: TOperations;  //operaciones soportadas. Debería haber tantos como
-                            //Num. Operadores * Num.Tipos compatibles.
-  function CreateOperation(OperadType: Ttype; proc: TProcExecOperat): TxOperation;  //Crea operación
-  function FindOperation(typ0: Ttype): TxOperation;  //Busca una operación para este operador
-  constructor Create;
-  destructor Destroy; override;
-end;
+  TxpOperators = specialize TFPGObjectList<TxpOperator>; //lista de operadores
 
-TOperators = specialize TFPGObjectList<TOperator>; //lista de operadores
+  { TType }
+  //"Tipos de datos"
+  TType = class
+    name : string;      //nombre del tipo ("int8", "int16", ...)
+    cat  : TCatType;    //categoría del tipo (numérico, cadena, etc)
+    size : smallint;    //tamaño en bytes del tipo
+    idx  : smallint;    //ubicación dentro de la matriz de tipos
+    OperationLoad: TProcExecOperat; {Evento. Es llamado cuando se pide evaluar una
+                                 expresión de un solo operando de este tipo. Es un caso
+                                 especial que debe ser tratado por la implementación}
+    OnGlobalDef: TProcDefineVar; {Evento. Es llamado cada vez que se encuentra la
+                                  declaración de una variable (de este tipo) en el ámbito global.}
+    OnLocalDef: TProcDefineVar;  {Evento. Es llamado cada vez que se encuentra la
+                                  declaración de una variable (de este tipo) en un ámbito local.}
+    OnPush  : TProcLoadOperand; {Evento. Es llamado cuando se pide cargar un operando
+                                 (de este tipo) en la pila. }
+    OnPop   : TProcLoadOperand; {Evento. Es llamado cuando se pide cargar un operando
+                                 (de este tipo) en la pila. }
+    Operators: TxpOperators;      //operadores soportados
+    function CreateOperator(txt0: string; jer0: byte; name0: string): TxpOperator; //Crea operador
+    function FindOperator(const Opr: string): TxpOperator;  //indica si el operador está definido
+    constructor Create;
+    destructor Destroy; override;
+  end;
 
-{ TType }
-//"Tipos de datos"
-TType = class
-  name : string;      //nombre del tipo ("int8", "int16", ...)
-  cat  : TCatType;    //categoría del tipo (numérico, cadena, etc)
-  size : smallint;    //tamaño en bytes del tipo
-  idx  : smallint;    //ubicación dentro de la matriz de tipos
-  OnGlobalDef: TProcDefineVar; {Evento. Es llamado cada vez que se encuentra la
-                                declaración de una variable (de este tipo) en el ámbito global.}
-  OnLocalDef: TProcDefineVar;  {Evento. Es llamado cada vez que se encuentra la
-                                declaración de una variable (de este tipo) en un ámbito local.}
-  OnLoad  : TProcLoadOperand; {Evento. Es llamado cuando se pide cargar un operando
-                               (de este tipo) en registro o pila. Por lo general, se
-                               hace como parte de la evaluación de una expresión. }
-  OnPush  : TProcLoadOperand; {Evento. Es llamado cuando se pide cargar un operando
-                               (de este tipo) en la pila. }
-  OnPop   : TProcLoadOperand; {Evento. Es llamado cuando se pide cargar un operando
-                               (de este tipo) en la pila. }
-//  codLoad : string;   //código de carga de operando. Se usa si "onLoad" es NIL.
-  Operators: TOperators;      //operadores soportados
-  function CreateOperator(txt0: string; jer0: byte; name0: string): TOperator; //Crea operador
-  function FindOperator(const Opr: string): TOperator;  //indica si el operador está definido
-  constructor Create;
-  destructor Destroy; override;
-end;
-
-//Lista de tipos
-TTypes = specialize TFPGObjectList<TType>; //lista de bloques
+  //Lista de tipos
+  TTypes = specialize TFPGObjectList<TType>; //lista de bloques
 
 var
-  nullOper : TOperator; //Operador nulo. Usado como valor cero.
+  nullOper : TxpOperator; //Operador nulo. Usado como valor cero.
 
 implementation
 
@@ -137,24 +137,25 @@ begin
    end;
 end;}
 
-{ TOperator }
-function TOperator.CreateOperation(OperadType: Ttype; proc: TProcExecOperat): TxOperation;
+{ TxpOperator }
+function TxpOperator.CreateOperation(OperadType: TType; proc: TProcExecOperat
+  ): TxpOperation;
 var
-  r: TxOperation;
+  r: TxpOperation;
 begin
   //agrega
-  r := TxOperation.Create;
+  r := TxpOperation.Create;
   r.OperatType:=OperadType;
   r.proc:=proc;
   //agrega
   operations.Add(r);
   Result := r;
 end;
-function TOperator.FindOperation(typ0: Ttype): TxOperation;
+function TxpOperator.FindOperation(typ0: TType): TxpOperation;
 {Busca, si encuentra definida, alguna operación, de este operador con el tipo indicado.
 Si no lo encuentra devuelve NIL}
 var
-  r: TxOperation;
+  r: TxpOperation;
 begin
   Result := nil;
   for r in Operations do begin
@@ -163,22 +164,22 @@ begin
     end;
   end;
 end;
-constructor TOperator.Create;
+constructor TxpOperator.Create;
 begin
-  Operations := TOperations.Create(true);
+  Operations := TxpOperations.Create(true);
 end;
-destructor TOperator.Destroy;
+destructor TxpOperator.Destroy;
 begin
   Operations.Free;
   inherited Destroy;
 end;
 
-{ TType }
-function TType.CreateOperator(txt0: string; jer0: byte; name0: string): TOperator;
+{ TxpType }
+function TType.CreateOperator(txt0: string; jer0: byte; name0: string): TxpOperator;
 {Permite crear un nuevo ooperador soportado por este tipo de datos. Si hubo error,
 devuelve NIL. En caso normal devuelve una referencia al operador creado}
 var
-  r: TOperator;  //operador
+  r: TxpOperator;  //operador
 begin
   //verifica nombre
   if FindOperator(txt0)<>nullOper then begin
@@ -186,17 +187,17 @@ begin
     exit;
   end;
   //inicia
-  r := TOperator.Create;
+  r := TxpOperator.Create;
   r.txt:=txt0;
-  r.jer:=jer0;
+  r.pre:=jer0;
   r.nom:=name0;
   r.idx:=Operators.Count;
   //agrega
   Operators.Add(r);
   Result := r;
 end;
-function TType.FindOperator(const Opr: string): TOperator;
-//Recibe la cadena de un operador y devuelve una referencia a un objeto Toperator, del
+function TType.FindOperator(const Opr: string): TxpOperator;
+//Recibe la cadena de un operador y devuelve una referencia a un objeto TxpOperator, del
 //tipo. Si no está definido el operador para este tipo, devuelve nullOper.
 var
   i: Integer;
@@ -212,7 +213,7 @@ begin
 end;
 constructor TType.Create;
 begin
-  Operators := TOperators.Create(true);  //crea contenedor de Contextos, con control de objetos.
+  Operators := TxpOperators.Create(true);  //crea contenedor de Contextos, con control de objetos.
 end;
 destructor TType.Destroy;
 begin
@@ -222,7 +223,7 @@ end;
 
 initialization
   //crea el operador NULL
-  nullOper := TOperator.Create;
+  nullOper := TxpOperator.Create;
 
 finalization
   nullOper.Free;

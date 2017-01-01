@@ -33,7 +33,7 @@ type
     amb  : string;      //ámbito o alcance de la constante
   public
     name : string;      //nombre de la variable
-    typ  : Ttype;       //tipo del elemento, si aplica
+    typ  : TType;       //tipo del elemento, si aplica
     Parent: TxpElement;    //referencia al padre
     elemType: TxpElemType; //no debería ser necesario
     Used: integer;      //veces que se usa este nombre
@@ -95,7 +95,7 @@ type
   TProcExecFunction = procedure(fun: TxpFun) of object;  //con índice de función
   TxpFun = class(TxpElement)
   public
-    pars: array of Ttype;  //parámetros de entrada
+    pars: array of TType;  //parámetros de entrada
   public
     //direción física. Usado para implementar un compilador
     adrr: integer;  //dirección física
@@ -103,7 +103,7 @@ type
     proc: TProcExecFunction;  //referencia a la función que implementa
     posF: TPoint;    //posición donde empieza la función en el código fuente
     procedure ClearParams;
-    procedure CreateParam(parName: string; typ0: ttype);
+    procedure CreateParam(parName: string; typ0: TType);
     function SameParams(Fun2: TxpFun): boolean;
     function ParamTypesList: string;
     function DuplicateIn(list: TObject): boolean; override;
@@ -231,7 +231,7 @@ procedure TxpFun.ClearParams;
 begin
   setlength(pars,0);
 end;
-procedure TxpFun.CreateParam(parName: string; typ0: ttype);
+procedure TxpFun.CreateParam(parName: string; typ0: TType);
 //Crea un parámetro para la función
 var
   n: Integer;

@@ -1,3 +1,41 @@
+XPres 1.1
+=========
+Se elimina el evento Load de TOperand, ya que en el nuevo esquema, no tiene sentido.
+Se renombra el evento OnLoad de TType a OperationLoad, y se cabia su tipo al de una 
+operación común.
+
+La idea con estos cambios, es generalizar mejor la evaluación de expresiones, creando
+3 métodos similares que deben ser llamados en el curso de una evaluación: 
+* Evaluar -> Con un operando
+* Evaluar -> Con un operando y un operador
+* Evaluar -> Con dos operandos, un operador
+
+Por otro lado, se convierten los campos p1 y p2 de TCompilerBase, a punteros, para evitar
+tener que crear copiar de objetos, y mejorar así la velocidad.
+
+Para ampliar la expresividad del analizador de expresiones, se crea el campo 
+Toperator.Operation para poder implementar los operadores unarios, y se incluye el 
+procesamiento en la rutina de evaluación de TCompilerBase.
+
+Se cambia el nombre de TOperator.jer a Toperator.pre, para que se asocie a la precedencia.
+Se cambia el nombre del tipo TxOperation a TxpOperation
+Se cambia el nombre del tipo TOperations a TxpOperations.
+Se cambia el nombre del tipo TOperator a TxpOperator.
+Se cambia el nombre del tipo TOperators a TxpOperators.
+
+
+Queda pendiente:
+
+Revisar si es necesario usar el tipo TProcLoadOperand, para los eventos OnPush y OnPop de 
+TType, ya que en el nuevo esquema, de la versión 1.0, hay acceso a todos los campos de 
+TCOmpilerBase. Es más, revisar si estos eventos sirven para algo.
+
+Ver si es mejor cambiar el nombre de los tipos descendientes de TxpElement, a TxpElMain,
+TxpElType, ... , de modo que se pueda renombrar sin conflictos el tipo TType a TxpType.
+
+
+
+
 XPres 1.0
 =========
 Se cambian los tipos de eventos OnExprStart, OnExprEnd de TCompilerBase, TProcExecFunction 
