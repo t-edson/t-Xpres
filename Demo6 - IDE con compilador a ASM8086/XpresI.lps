@@ -4,7 +4,7 @@
     <PathDelim Value="\"/>
     <Version Value="9"/>
     <BuildModes Active="Debug"/>
-    <Units Count="29">
+    <Units Count="28">
       <Unit0>
         <Filename Value="XpresI.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -29,9 +29,7 @@
         <Filename Value="Parser.pas"/>
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="8"/>
-        <CursorPos X="59" Y="9"/>
-        <FoldState Value=" TL0012 TMjQ21041 T3Z031221]B6i102]80iAU2A TEkB24 THkP264"/>
+        <CursorPos X="12" Y="4"/>
         <UsageCount Value="200"/>
         <Bookmarks Count="1">
           <Item0 Y="148" ID="1"/>
@@ -77,52 +75,63 @@
         <UsageCount Value="207"/>
       </Unit6>
       <Unit7>
+        <Filename Value="GenCod.pas"/>
+        <IsPartOfProject Value="True"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="418"/>
+        <CursorPos X="20" Y="431"/>
+        <FoldState Value=" TMC010315151 T3kB04125 T0kOM3O T6lB01]GHlG244 piYiRCC5S"/>
+        <UsageCount Value="21"/>
+        <Loaded Value="True"/>
+      </Unit7>
+      <Unit8>
         <Filename Value="synhighlighterfacil.pas"/>
         <CursorPos X="28" Y="8"/>
         <UsageCount Value="200"/>
-      </Unit7>
-      <Unit8>
+      </Unit8>
+      <Unit9>
         <Filename Value="utileditsyn.pas"/>
         <TopLine Value="42"/>
         <CursorPos X="3" Y="58"/>
         <UsageCount Value="200"/>
-      </Unit8>
-      <Unit9>
+      </Unit9>
+      <Unit10>
         <Filename Value="XpresBas.pas"/>
         <TopLine Value="6"/>
         <CursorPos X="5" Y="17"/>
         <UsageCount Value="200"/>
-      </Unit9>
-      <Unit10>
+      </Unit10>
+      <Unit11>
         <Filename Value="syncompletionq.pas"/>
         <TopLine Value="1341"/>
         <CursorPos X="25" Y="1356"/>
         <UsageCount Value="182"/>
-      </Unit10>
-      <Unit11>
+      </Unit11>
+      <Unit12>
         <Filename Value="xprescomplet.pas"/>
         <TopLine Value="234"/>
         <CursorPos Y="266"/>
         <UsageCount Value="183"/>
-      </Unit11>
-      <Unit12>
+      </Unit12>
+      <Unit13>
         <Filename Value="codgen8086.pas"/>
         <CursorPos X="6" Y="67"/>
         <UsageCount Value="13"/>
-      </Unit12>
-      <Unit13>
+      </Unit13>
+      <Unit14>
         <Filename Value="interprete1.pas"/>
         <TopLine Value="584"/>
         <CursorPos X="39" Y="607"/>
         <UsageCount Value="82"/>
-      </Unit13>
-      <Unit14>
+      </Unit14>
+      <Unit15>
         <Filename Value="configframe.pas"/>
         <TopLine Value="106"/>
         <CursorPos X="34" Y="126"/>
         <UsageCount Value="7"/>
-      </Unit14>
-      <Unit15>
+      </Unit15>
+      <Unit16>
         <Filename Value="..\XpresBas.pas"/>
         <EditorIndex Value="-1"/>
         <UsageCount Value="43"/>
@@ -131,18 +140,17 @@
           <Item1 Y="227" ID="4"/>
           <Item2 X="6" Y="230" ID="5"/>
         </Bookmarks>
-      </Unit15>
-      <Unit16>
+      </Unit16>
+      <Unit17>
         <Filename Value="C:\lazarus\components\synedit\synedithighlighter.pp"/>
         <TopLine Value="1251"/>
         <CursorPos X="3" Y="1256"/>
         <UsageCount Value="2"/>
-      </Unit16>
-      <Unit17>
+      </Unit17>
+      <Unit18>
         <Filename Value="..\XpresParser.pas"/>
-        <IsVisibleTab Value="True"/>
         <EditorIndex Value="-1"/>
-        <WindowIndex Value="1"/>
+        <WindowIndex Value="-1"/>
         <TopLine Value="1151"/>
         <CursorPos X="5" Y="1154"/>
         <FoldState Value=" TL00LC T4O03 TMia210716471326161 T7XBq T8Y0P4 piXjP0111]O3lL03D]JYjB0F5 pj8jU063]99jJ0B]Ik5kO0W3]9flY0G[R4Gja0b2]sgjd0M12J]BdlH071 T6mL01I T0mPU5L]PamBIE8]9Yk0c33]9cGY2E[{s6U18[y4iAZ7[94eiSQ1H[94l0Q56 THse38]8DuI4]7EuK44 TFxg4E1O"/>
@@ -150,25 +158,18 @@
         <Bookmarks Count="1">
           <Item0 X="2" Y="967" ID="2"/>
         </Bookmarks>
-      </Unit17>
-      <Unit18>
+      </Unit18>
+      <Unit19>
         <Filename Value="XPresParser.inc"/>
         <TopLine Value="335"/>
         <CursorPos X="36" Y="374"/>
         <UsageCount Value="2"/>
-      </Unit18>
-      <Unit19>
+      </Unit19>
+      <Unit20>
         <Filename Value="..\XPresParser.inc"/>
         <TopLine Value="560"/>
         <CursorPos Y="592"/>
         <UsageCount Value="7"/>
-      </Unit19>
-      <Unit20>
-        <Filename Value="GenCod.pas"/>
-        <EditorIndex Value="-1"/>
-        <CursorPos Y="80"/>
-        <FoldState Value=" TL0035 TM501031515181 TC7EA T0id04P T3j1047 piejB0lB]9dkE0J4 T6k101]+Hk6244]PYiRCC57"/>
-        <UsageCount Value="85"/>
       </Unit20>
       <Unit21>
         <Filename Value="..\..\_Librerias\SynFacilUtils 0.4b\SynFacilUtils.pas"/>
@@ -211,25 +212,15 @@
         <Loaded Value="True"/>
       </Unit26>
       <Unit27>
-        <Filename Value="GenCod.pas"/>
-        <IsPartOfProject Value="True"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="2"/>
-        <CursorPos X="5" Y="12"/>
-        <FoldState Value=" TL0035 TMC01031515181 T3kB04125 pjHkG03A piaj90J3 T0kOM3O T6lB01]xHlG244]XYiRCC53"/>
-        <UsageCount Value="21"/>
-        <Loaded Value="True"/>
-      </Unit27>
-      <Unit28>
         <Filename Value="..\..\SynFacilUtils 0.8\SynFacilBasic.pas"/>
         <EditorIndex Value="4"/>
         <TopLine Value="1380"/>
         <CursorPos X="30" Y="1386"/>
         <UsageCount Value="10"/>
         <Loaded Value="True"/>
-      </Unit28>
+      </Unit27>
     </Units>
-    <JumpHistory Count="17" HistoryIndex="16">
+    <JumpHistory Count="20" HistoryIndex="19">
       <Position1>
         <Filename Value="..\XpresTypes.pas"/>
         <Caret Line="100" Column="16" TopLine="83"/>
@@ -296,6 +287,18 @@
         <Filename Value="Parser.pas"/>
         <Caret Line="181" Column="3" TopLine="133"/>
       </Position17>
+      <Position18>
+        <Filename Value="GenCod.pas"/>
+        <Caret Line="26"/>
+      </Position18>
+      <Position19>
+        <Filename Value="GenCod.pas"/>
+        <Caret Line="63" Column="24" TopLine="47"/>
+      </Position19>
+      <Position20>
+        <Filename Value="GenCod.pas"/>
+        <Caret Line="436" Column="11" TopLine="422"/>
+      </Position20>
     </JumpHistory>
   </ProjectSession>
 </CONFIG>

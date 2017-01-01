@@ -60,7 +60,7 @@ type
     procedure Cod_StartData;
     procedure Cod_StartProgram;
     procedure Cod_EndProgram;
-    procedure StartSyntax; override;
+    procedure StartSyntax;
   public
     mem   : TStringList;   //Para almacenar el código de salida del compilador
   end;
@@ -433,7 +433,6 @@ var
   opr: TOperator;
   f: TxpFun;  //índice para funciones
 begin
-  inherited;
   //tokens personalizados
   tkExpDelim := xLex.NewTokType('ExpDelim');//delimitador de expresión ";"
   tkBlkDelim := xLex.NewTokType('BlkDelim'); //delimitador de bloque
