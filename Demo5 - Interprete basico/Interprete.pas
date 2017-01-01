@@ -2,8 +2,8 @@ unit Interprete;
 {$mode objfpc}{$H+}
 interface
 uses
-  Classes, SysUtils, SynEditHighlighter,
-  SynFacilBasic, XPresParser, XpresTypes, XpresElements, Graphics;
+  Classes, SysUtils, SynEditHighlighter, Graphics,
+  SynFacilBasic, XPresParser, XpresTypes, XpresElements;
 type
   { TInterprete }
   TInterprete = class(TCompilerBase)
@@ -39,7 +39,7 @@ type
     procedure Cod_EndProgram;
     procedure expr_start;
     procedure expr_End(isParam: boolean);
-    procedure StartSyntax; override;
+    procedure StartSyntax;
   end;
 
 implementation
@@ -83,16 +83,14 @@ var
   opr: TOperator;
   f: TxpFun;
 begin
-  inherited;  //actualiza referencias
-  ///////////define la sintaxis del compilador
-  //crea y guarda referencia a los atributos
-  tkKeyword.Foreground:=clGreen;
-  //personalizados
+  /////////// Crea tipos personalizados
   tkExpDelim := xLex.NewTokType('ExpDelim');//delimitador de expresión ";"
   tkBlkDelim := xLex.NewTokType('BlkDelim'); //delimitador de bloque
+  tkOthers   := xLex.NewTokType('Others');   //personalizado
+  /////////// Define atributos de los tokens /////////
+  tkKeyword.Foreground:=clGreen;
   tkBlkDelim.Foreground:=clGreen;
   tkBlkDelim.Style := [fsBold];     //en negrita
-  tkOthers   := xLex.NewTokType('Others');   //personalizado
   //inicia la configuración
   xLex.ClearMethodTables;           //limpìa tabla de métodos
   xLex.ClearSpecials;               //para empezar a definir tokens
@@ -117,8 +115,8 @@ begin
   //crea tokens delimitados
   xLex.DefTokDelim('''','''', tkString);
   xLex.DefTokDelim('"','"', tkString);
-  xLex.DefTokDelim('//','', xLex.tkComment);
-  xLex.DefTokDelim('/\*','\*/', xLex.tkComment, tdMulLin);
+  xLex.DefTokDelim('//','', tkComment);
+  xLex.DefTokDelim('/\*','\*/', tkComment, tdMulLin);
   //define bloques de sintaxis
   xLex.AddBlock('{','}');
   xLex.Rebuild;   //es necesario para terminar la definición

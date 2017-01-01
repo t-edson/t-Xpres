@@ -6,7 +6,7 @@ interface
 uses
   Classes, SysUtils, LCLType, Dialogs, lclProc, Graphics, SynEditHighlighter,
   SynFacilBasic,
-  XpresTypes, XPresParser, FormOut, Interprete;
+  XpresTypes, XPresParser, Interprete;
 
 type
 
@@ -99,7 +99,7 @@ begin
     if PErr.HayError then exit;
     CompilarArc;     //puede dar error
 
-    cIn.QuitaContexEnt;   //es necesario por dejar limpio
+    cIn.RemoveContext;   //es necesario por dejar limpio
     if PErr.HayError then exit;   //sale
   finally
     ejecProg := false;
