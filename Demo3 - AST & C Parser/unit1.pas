@@ -41,8 +41,8 @@ implementation
 procedure TForm1.ScanSource;
 {Scans and creates a simple AST}
 var
-  newType: TxpType;
-  newVar: TxpVar;
+  newType: TxpEleType;
+  newVar: TxpEleVar;
 begin
   ast.Clear;
   //Scan source code
@@ -53,7 +53,7 @@ begin
       doc.Next;  //space
       doc.SkipWhites;
       //Creates new node
-      newType := TxpType.Create;
+      newType := TxpEleType.Create;
       newType.name:=doc.Token;  //struct name
       ast.AddElement(newType);
       debugln('struct: '+ doc.Token);
@@ -72,7 +72,7 @@ begin
         //       struct mystruct {} variable;  or
 	//       struct mystruct {} variable = {};
         doc.SkipWhites;
-        newVar := TxpVar.Create;   //create variable
+        newVar := TxpEleVar.Create;   //create variable
         newVar.name:=doc.Token;  //var name
         ast.AddElement(newVar);
       end;
