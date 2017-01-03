@@ -16,8 +16,8 @@ type
     //Pila virtual
     sp: integer;  //puntero de pila
     stack: array[0..STACK_SIZE-1] of TOperand;
-    procedure fun_puts(fun: TxpFun);
-    procedure fun_putsI(fun: TxpFun);
+    procedure fun_puts(fun: TxpEleFun);
+    procedure fun_putsI(fun: TxpEleFun);
     procedure int_asig_int;
     procedure int_procLoad;
     procedure int_suma_int;
@@ -81,7 +81,7 @@ procedure TInterprete.StartSyntax;
 //Se ejecuta solo una vez al inicio
 var
   opr: TxpOperator;
-  f: TxpFun;
+  f: TxpEleFun;
 begin
   /////////// Crea tipos personalizados
   tkExpDelim := xLex.NewTokType('ExpDelim');//delimitador de expresión ";"
@@ -134,18 +134,18 @@ begin
 
   //////// Operaciones con String ////////////
   tipStr.OperationLoad:=@str_procLoad;
-  opr:=tipStr.CreateOperator(':=',2,'asig');  //asignación
+  opr:=tipStr.CreateBinaryOperator(':=',2,'asig');  //asignación
   opr.CreateOperation(tipStr,@str_asig_str);
-  opr:=tipStr.CreateOperator('+',7,'concat');
+  opr:=tipStr.CreateBinaryOperator('+',7,'concat');
   opr.CreateOperation(tipStr,@str_concat_str);
 
   //////// Operaciones con Int ////////////
   {Los operadores deben crearse con su precedencia correcta}
   tipInt.OperationLoad:=@int_procLoad;
-  opr:=tipInt.CreateOperator(':=',2,'asig');  //asignación
+  opr:=tipInt.CreateBinaryOperator(':=',2,'asig');  //asignación
   opr.CreateOperation(tipInt,@int_asig_int);
 
-  opr:=tipInt.CreateOperator('+',7,'suma');
+  opr:=tipInt.CreateBinaryOperator('+',7,'suma');
   opr.CreateOperation(tipInt,@int_suma_int);
 
   //////// Funciones básicas ////////////
@@ -237,7 +237,7 @@ begin
 end;
 
 //funciones básicas
-procedure TInterprete.fun_puts(fun :TxpFun);
+procedure TInterprete.fun_puts(fun :TxpEleFun);
 //envia un texto a consola
 begin
   PopResult;  //saca parámetro 1
@@ -245,7 +245,7 @@ begin
   frmOut.puts(stack[sp].valStr);  //sabemos que debe ser String
   //el tipo devuelto lo fijará el framework, al tipo definido
 end;
-procedure TInterprete.fun_putsI(fun :TxpFun);
+procedure TInterprete.fun_putsI(fun :TxpEleFun);
 //envia un texto a consola
 begin
   PopResult;  //saca parámetro 1
