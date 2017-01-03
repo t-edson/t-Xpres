@@ -17,7 +17,7 @@ type
   TCompiler = class(TCompilerBase)
   private
     tipStr : TType;
-    procedure fun_puts(fun: TxpFun);
+    procedure fun_puts(fun: TxpEleFun);
   public
     procedure Compilar(NombArc: string; LinArc: Tstrings);
     constructor Create; override;
@@ -59,7 +59,7 @@ begin
   CreateSysFunction('eureka', tipStr, @fun_puts);
 end;
 
-procedure TCompiler.fun_puts(fun :TxpFun);
+procedure TCompiler.fun_puts(fun :TxpEleFun);
 begin
   ShowMessage('Eureka');
 end;
