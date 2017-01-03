@@ -72,17 +72,27 @@ type  //tipos enumerados
 
   TxpOperations = specialize TFPGObjectList<TxpOperation>; //lista de operaciones
 
+  TxpOperatorKind = (
+    opkUnaryPre,   //operador Unario Pre
+    opkUnaryPost,  //operador Unario Post
+    opkBinary      //operador Binario
+  );
+
   { TxpOperator }
   //Operador
   TxpOperator = class
-    txt: string;    //cadena del operador '+', '-', '++', ...
-    pre: byte;      //precedencia
-    nom: string;    //nombre de la operación (suma, resta)
-    idx: integer;   //ubicación dentro de un arreglo
-    Operation: TProcExecOperat;  {Operación asociada al Operador. Usado cuando es un
-                                 operador unario. NO IMPLEMENTADO.}
+  private
     Operations: TxpOperations;  //operaciones soportadas. Debería haber tantos como
-                              //Num. Operadores * Num.Tipos compatibles.
+                                //Num. Operadores * Num.Tipos compatibles.
+  public
+    txt  : string;     //cadena del operador '+', '-', '++', ...
+    prec : byte;      //precedencia
+    name : string;    //nombre de la operación (suma, resta)
+    kind : TxpOperatorKind;   //Tipo de operador
+    OperationPre: TProcExecOperat;  {Operación asociada al Operador. Usado cuando es un
+                                    operador unario PRE. }
+    OperationPost: TProcExecOperat; {Operación asociada al Operador. Usado cuando es un
+                                    operador unario POST }
     function CreateOperation(OperadType: TType; proc: TProcExecOperat): TxpOperation;  //Crea operación
     function FindOperation(typ0: TType): TxpOperation;  //Busca una operación para este operador
     constructor Create;
@@ -97,21 +107,37 @@ type  //tipos enumerados
     name : string;      //nombre del tipo ("int8", "int16", ...)
     cat  : TCatType;    //categoría del tipo (numérico, cadena, etc)
     size : smallint;    //tamaño en bytes del tipo
-    idx  : smallint;    //ubicación dentro de la matriz de tipos
+  public   //Eventos
+    {Este evento es llamado automáticamente por el Analizador de expresiones,
+     cuando encuentre una expresión de un solo operando, de este tipo.
+    Por seguridad, debe implementarse siempre para cada tipo creado. La implementación
+    más cimple sería devolver en "res", el operando "pi^".}
     OperationLoad: TProcExecOperat; {Evento. Es llamado cuando se pide evaluar una
                                  expresión de un solo operando de este tipo. Es un caso
                                  especial que debe ser tratado por la implementación}
-    OnGlobalDef: TProcDefineVar; {Evento. Es llamado cada vez que se encuentra la
+    {Estos eventos NO se generan automáticamente en TCompilerBase, sino que es la implementación, la
+     que deberá llamarlos. Son como una ayuda para facilitar la implementación.
+     OnPush y OnPop, son útiles para cuando la implementación va a manejar pila.}
+    OperationPush: TProcLoadOperand; {Se usa cuando se solicita cargar un operando
+                                 (de este tipo) en la pila. }
+    OperationPop : TProcLoadOperand; {Se usa cuando se solicita descargar un operando
+                                 (de este tipo) de la pila. }
+    OnGlobalDef: TProcDefineVar; {Es llamado cada vez que se encuentra la
                                   declaración de una variable (de este tipo) en el ámbito global.}
-    OnLocalDef: TProcDefineVar;  {Evento. Es llamado cada vez que se encuentra la
+    OnLocalDef: TProcDefineVar;  {Es llamado cada vez que se encuentra la
                                   declaración de una variable (de este tipo) en un ámbito local.}
-    OnPush  : TProcLoadOperand; {Evento. Es llamado cuando se pide cargar un operando
-                                 (de este tipo) en la pila. }
-    OnPop   : TProcLoadOperand; {Evento. Es llamado cuando se pide cargar un operando
-                                 (de este tipo) en la pila. }
+  public  //Campos de operadores
     Operators: TxpOperators;      //operadores soportados
-    function CreateOperator(txt0: string; jer0: byte; name0: string): TxpOperator; //Crea operador
-    function FindOperator(const Opr: string): TxpOperator;  //indica si el operador está definido
+    function CreateBinaryOperator(txt: string; prec: byte; OpName: string): TxpOperator;
+    function CreateUnaryPreOperator(txt: string; prec: byte; OpName: string;
+                                    proc: TProcExecOperat): TxpOperator;
+    function CreateUnaryPostOperator(txt: string; prec: byte; OpName: string;
+                                     proc: TProcExecOperat): TxpOperator;
+    //Funciones de búsqueda
+    function FindBinaryOperator(const OprTxt: string): TxpOperator;
+    function FindUnaryPreOperator(const OprTxt: string): TxpOperator;
+    function FindUnaryPostOperator(const OprTxt: string): TxpOperator;
+  public   //Inicialización
     constructor Create;
     destructor Destroy; override;
   end;
@@ -175,42 +201,110 @@ begin
 end;
 
 { TxpType }
-function TType.CreateOperator(txt0: string; jer0: byte; name0: string): TxpOperator;
-{Permite crear un nuevo ooperador soportado por este tipo de datos. Si hubo error,
-devuelve NIL. En caso normal devuelve una referencia al operador creado}
+function TType.CreateBinaryOperator(txt: string; prec: byte; OpName: string
+  ): TxpOperator;
+{Permite crear un nuevo ooperador bianrio soportado por este tipo de datos. Si hubiera
+error, devuelve NIL. En caso normal devuelve una referencia al operador creado}
 var
   r: TxpOperator;  //operador
 begin
   //verifica nombre
-  if FindOperator(txt0)<>nullOper then begin
+  if FindBinaryOperator(txt)<>nullOper then begin
     Result := nil;  //indica que hubo error
     exit;
   end;
-  //inicia
+  //Crea y configura objeto
   r := TxpOperator.Create;
-  r.txt:=txt0;
-  r.pre:=jer0;
-  r.nom:=name0;
-  r.idx:=Operators.Count;
-  //agrega
+  r.txt:=txt;
+  r.prec:=prec;
+  r.name:=OpName;
+  r.kind:=opkBinary;
+  //Agrega operador
   Operators.Add(r);
   Result := r;
 end;
-function TType.FindOperator(const Opr: string): TxpOperator;
-//Recibe la cadena de un operador y devuelve una referencia a un objeto TxpOperator, del
-//tipo. Si no está definido el operador para este tipo, devuelve nullOper.
+
+function TType.CreateUnaryPreOperator(txt: string; prec: byte; OpName: string;
+  proc: TProcExecOperat): TxpOperator;
+{Crea operador unario de tipo Pre, para este tipo de dato.}
 var
-  i: Integer;
+  r: TxpOperator;  //operador
+begin
+  //Crea y configura objeto
+  r := TxpOperator.Create;
+  r.txt:=txt;
+  r.prec:=prec;
+  r.name:=OpName;
+  r.kind:=opkUnaryPre;
+  r.OperationPre:=proc;
+  //Agrega operador
+  Operators.Add(r);
+  Result := r;
+end;
+function TType.CreateUnaryPostOperator(txt: string; prec: byte; OpName: string;
+  proc: TProcExecOperat): TxpOperator;
+{Crea operador binario de tipo Post, para este tipo de dato.}
+var
+  r: TxpOperator;  //operador
+begin
+  //Crea y configura objeto
+  r := TxpOperator.Create;
+  r.txt:=txt;
+  r.prec:=prec;
+  r.name:=OpName;
+  r.kind:=opkUnaryPost;
+  r.OperationPost:=proc;
+  //Agrega operador
+  Operators.Add(r);
+  Result := r;
+end;
+
+function TType.FindBinaryOperator(const OprTxt: string): TxpOperator;
+{Recibe el texto de un operador y devuelve una referencia a un objeto TxpOperator, del
+tipo. Si no está definido el operador para este tipo, devuelve nullOper.}
+var
+  oper: TxpOperator;
 begin
   Result := nullOper;   //valor por defecto
-  for i:=0 to Operators.Count-1 do begin
-    if Operators[i].txt = upCase(Opr) then begin
-      exit(Operators[i]); //está definido
+  for oper in Operators do begin
+    if (oper.kind = opkBinary) and (oper.txt = upCase(OprTxt)) then begin
+      exit(oper); //está definido
     end;
   end;
   //no encontró
-  Result.txt := Opr;    //para que sepa el operador leído
+  Result.txt := OprTxt;    //para que sepa el operador leído
 end;
+function TType.FindUnaryPreOperator(const OprTxt: string): TxpOperator;
+{Recibe el texto de un operador unario Pre y devuelve una referencia a un objeto
+TxpOperator, del tipo. Si no está definido el operador para este tipo, devuelve nullOper.}
+var
+  oper: TxpOperator;
+begin
+  Result := nullOper;   //valor por defecto
+  for oper in Operators do begin
+    if (oper.kind = opkUnaryPre) and (oper.txt = upCase(OprTxt)) then begin
+      exit(oper); //está definido
+    end;
+  end;
+  //no encontró
+  Result.txt := OprTxt;    //para que sepa el operador leído
+end;
+function TType.FindUnaryPostOperator(const OprTxt: string): TxpOperator;
+{Recibe el texto de un operador unario Post y devuelve una referencia a un objeto
+TxpOperator, del tipo. Si no está definido el operador para este tipo, devuelve nullOper.}
+var
+  oper: TxpOperator;
+begin
+  Result := nullOper;   //valor por defecto
+  for oper in Operators do begin
+    if (oper.kind = opkUnaryPost) and (oper.txt = upCase(OprTxt)) then begin
+      exit(oper); //está definido
+    end;
+  end;
+  //no encontró
+  Result.txt := OprTxt;    //para que sepa el operador leído
+end;
+
 constructor TType.Create;
 begin
   Operators := TxpOperators.Create(true);  //crea contenedor de Contextos, con control de objetos.

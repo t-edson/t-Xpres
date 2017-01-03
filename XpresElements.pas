@@ -19,7 +19,7 @@ type
                  eltFunc,  //función
                  eltCons,  //constante
                  eltType   //tipo
-                 );
+                );
   TFindFuncResult = (TFF_NONE, TFF_PARTIAL, TFF_FULL);
 
   TxpElement = class;
@@ -30,7 +30,7 @@ type
   TxpElement = class
   public
   private
-    amb  : string;      //ámbito o alcance de la constante
+//    amb  : string;      //ámbito o alcance de la constante
   public
     name : string;      //nombre de la variable
     typ  : TType;       //tipo del elemento, si aplica
@@ -49,32 +49,32 @@ type
   TVarBank = byte;
 
   //Clase para modelar al bloque principal
-  { TxpMain }
-  TxpMain = class(TxpElement)
+  { TxpEleMain }
+  TxpEleMain = class(TxpElement)
     constructor Create; override;
   end;
 
-  { TxpType }
+  { TxpEleType }
   //Clase para modelar a los tipos definidos por el usuario
   { Es diferente a XpresTypes: TType, aunque no se ha hecho un anaálisis profundo }
-  TxpType= class(TxpElement)
+  TxpEleType= class(TxpElement)
     //valores de la constante
     constructor Create; override;
   end;
-  TxpTypes= specialize TFPGObjectList<TxpType>; //lista de variables
+  TxpEleTypes= specialize TFPGObjectList<TxpEleType>; //lista de variables
 
-  { TxpCon }
+  { TxpEleCon }
   //Clase para modelar a las constantes
-  TxpCon = class(TxpElement)
+  TxpEleCon = class(TxpElement)
     //valores de la constante
     val : TConsValue;
     constructor Create; override;
   end;
-  TxpCons = specialize TFPGObjectList<TxpCon>; //lista de constantes
+  TxpEleCons = specialize TFPGObjectList<TxpEleCon>; //lista de constantes
 
-  { TxpVar }
+  { TxpEleVar }
   //Clase para modelar a las variables
-  TxpVar = class(TxpElement)
+  TxpEleVar = class(TxpElement)
     //direción física. Usado para implementar un compilador
     addr: TVarAddr;
     bank: TVarBank;   //banco o segmento. Usado solo en algunas arquitecturas
@@ -87,13 +87,13 @@ type
     valStr  : string;    //valor  en caso de que sea una cadena
     constructor Create; override;
   end;
-  TxpVars = specialize TFPGObjectList<TxpVar>; //lista de variables
+  TxpEleVars = specialize TFPGObjectList<TxpEleVar>; //lista de variables
 
-  { TxpFun }
+  { TxpEleFun }
   //Clase para almacenar información de las funciones
-  TxpFun = class;
-  TProcExecFunction = procedure(fun: TxpFun) of object;  //con índice de función
-  TxpFun = class(TxpElement)
+  TxpEleFun = class;
+  TProcExecFunction = procedure(fun: TxpEleFun) of object;  //con índice de función
+  TxpEleFun = class(TxpElement)
   public
     pars: array of TType;  //parámetros de entrada
   public
@@ -104,12 +104,12 @@ type
     posF: TPoint;    //posición donde empieza la función en el código fuente
     procedure ClearParams;
     procedure CreateParam(parName: string; typ0: TType);
-    function SameParams(Fun2: TxpFun): boolean;
+    function SameParams(Fun2: TxpEleFun): boolean;
     function ParamTypesList: string;
     function DuplicateIn(list: TObject): boolean; override;
     constructor Create; override;
   end;
-  TxpFuns = specialize TFPGObjectList<TxpFun>;
+  TxpEleFuns = specialize TFPGObjectList<TxpEleFun>;
 
   { TXpTreeElements }
   {Árbol de elementos. Solo se espera que haya una instacia de este objeto. Aquí es
@@ -120,15 +120,15 @@ type
   TXpTreeElements = class
   private
     curNode : TxpElement;  //referencia al nodo actual
-    vars    : TxpVars;
+    vars    : TxpEleVars;
     //variables de estado para la búsqueda con FindFirst() - FindNext()
     curFindName: string;
     curFindNode: TxpElement;
     curFindIdx: integer;
   public
-    main    : TxpMain;  //nodo raiz
+    main    : TxpEleMain;  //nodo raiz
     procedure Clear;
-    function AllVars: TxpVars;
+    function AllVars: TxpEleVars;
     function CurNodeName: string;
     //funciones para llenado del arbol
     function AddElement(elem: TxpElement; verifDuplic: boolean=true): boolean;
@@ -138,9 +138,9 @@ type
     //Métodos para identificación de nombres
     function FindFirst(const name: string): TxpElement;
     function FindNext: TxpElement;
-    function FindFuncWithParams(const funName: string; const func0: TxpFun;
-      var fmatch: TxpFun): TFindFuncResult;
-    function FindVar(varName: string): TxpVar;
+    function FindFuncWithParams(const funName: string; const func0: TxpEleFun;
+      var fmatch: TxpEleFun): TFindFuncResult;
+    function FindVar(varName: string): TxpEleVar;
   public  //constructor y destructror
     constructor Create; virtual;
     destructor Destroy; override;
@@ -200,38 +200,38 @@ begin
   inherited Destroy;
 end;
 
-{ TxpMain }
-constructor TxpMain.Create;
+{ TxpEleMain }
+constructor TxpEleMain.Create;
 begin
   elemType:=eltMain;
   Parent := nil;  //la raiz no tiene padre
 end;
 
-{ TxpType }
-constructor TxpType.Create;
-begin
-  elemType:=eltType;
-end;
-
-{ TxpCon }
-constructor TxpCon.Create;
+{ TxpEleCon }
+constructor TxpEleCon.Create;
 begin
   elemType:=eltCons;
 end;
 
-{ TxpVar }
-constructor TxpVar.Create;
+{ TxpEleVar }
+constructor TxpEleVar.Create;
 begin
   elemType:=eltVar;
 end;
 
-{ TxpFun }
-procedure TxpFun.ClearParams;
+{ TxpEleType }
+constructor TxpEleType.Create;
+begin
+  elemType:=eltType;
+end;
+
+{ TxpEleFun }
+procedure TxpEleFun.ClearParams;
 //Elimina los parámetros de una función
 begin
   setlength(pars,0);
 end;
-procedure TxpFun.CreateParam(parName: string; typ0: TType);
+procedure TxpEleFun.CreateParam(parName: string; typ0: TType);
 //Crea un parámetro para la función
 var
   n: Integer;
@@ -241,7 +241,7 @@ begin
   setlength(pars, n+1);
   pars[n] := typ0;  //agrega referencia
 end;
-function TxpFun.SameParams(Fun2: TxpFun): boolean;
+function TxpEleFun.SameParams(Fun2: TxpEleFun): boolean;
 {Compara los parámetros de la función con las de otra. Si tienen el mismo número
 de parámetros y el mismo tipo, devuelve TRUE.}
 var
@@ -258,7 +258,7 @@ begin
   end;
   //si llegó hasta aquí, hay coincidencia, sale con TRUE
 end;
-function TxpFun.ParamTypesList: string;
+function TxpEleFun.ParamTypesList: string;
 {Devuelve una lista con los nombres de los tipos de los parámetros, de la forma:
 (byte, word) }
 var
@@ -273,7 +273,7 @@ begin
   if length(tmp)>0 then tmp := copy(tmp,1,length(tmp)-2);
   Result := '('+tmp+')';
 end;
-function TxpFun.DuplicateIn(list: TObject): boolean;
+function TxpEleFun.DuplicateIn(list: TObject): boolean;
 var
   uName: String;
   ele: TxpElement;
@@ -285,7 +285,7 @@ begin
       //hay coincidencia de nombre
       if ele.elemType = eltFunc then begin
         //para las funciones, se debe comparar los parámetros
-        if SameParams(TxpFun(ele)) then begin
+        if SameParams(TxpEleFun(ele)) then begin
           exit(true);
         end;
       end else begin
@@ -296,7 +296,7 @@ begin
   end;
   exit(false);
 end;
-constructor TxpFun.Create;
+constructor TxpEleFun.Create;
 begin
   elemType:=eltFunc;
 end;
@@ -307,7 +307,7 @@ begin
   main.elements.Clear;  //esto debe hacer un borrado recursivo
   curNode := main;      //retorna al nodo principal
 end;
-function TXpTreeElements.AllVars: TxpVars;
+function TXpTreeElements.AllVars: TxpEleVars;
 {Devuelve una lista de todas las variables usadas, incluyendo las de las funciones y
  procedimientos.}
   procedure AddVars(nod: TxpElement);
@@ -317,7 +317,7 @@ function TXpTreeElements.AllVars: TxpVars;
     if nod.elements<>nil then begin
       for ele in nod.elements do begin
         if ele.elemType = eltVar then begin
-          vars.Add(TxpVar(ele));
+          vars.Add(TxpEleVar(ele));
         end else begin
           if ele.elements<>nil then
             AddVars(ele);  //recursivo
@@ -325,11 +325,9 @@ function TXpTreeElements.AllVars: TxpVars;
       end;
     end;
   end;
-var
-  ele : TxpElement;
 begin
   if vars = nil then begin  //debe estar creada la lista
-    vars := TxpVars.Create(false);
+    vars := TxpEleVars.Create(false);
   end else begin
     vars.Clear;   //por si estaba llena
   end;
@@ -420,8 +418,8 @@ function TXpTreeElements.FindNext: TxpElement;
 begin
 
 end;
-function TXpTreeElements.FindFuncWithParams(const funName: string; const func0: TxpFun;
-  var fmatch: TxpFun): TFindFuncResult;
+function TXpTreeElements.FindFuncWithParams(const funName: string; const func0: TxpEleFun;
+  var fmatch: TxpEleFun): TFindFuncResult;
 {Busca una función que coincida con el nombre "funName" y con los parámetros de func0
 El resultado puede ser:
  TFF_NONE   -> No se encuentra.
@@ -441,8 +439,8 @@ begin
     if (ele.elemType = eltFunc) and (Upcase(ele.name) = tmp) then begin
       //coincidencia de nombre, compara parámetros
       hayFunc := true;  //para indicar que encontró el nombre
-      if func0.SameParams(TxpFun(ele)) then begin
-        fmatch := TxpFun(ele);  //devuelve ubicación
+      if func0.SameParams(TxpEleFun(ele)) then begin
+        fmatch := TxpEleFun(ele);  //devuelve ubicación
         Result := TFF_FULL;     //encontró
         exit;
       end;
@@ -465,7 +463,7 @@ begin
     end;}
   end;
 end;
-function TXpTreeElements.FindVar(varName: string): TxpVar;
+function TXpTreeElements.FindVar(varName: string): TxpEleVar;
 {Busca una variable con el nombre indicado en el espacio de nombres actual}
 var
   ele : TxpElement;
@@ -474,7 +472,7 @@ begin
   uName := upcase(varName);
   for ele in curNode.elements do begin
     if (ele.elemType = eltVar) and (upCase(ele.name) = uName) then begin
-      Result := TxpVar(ele);
+      Result := TxpEleVar(ele);
       exit;
     end;
   end;
@@ -483,7 +481,7 @@ end;
 //constructor y destructror
 constructor TXpTreeElements.Create;
 begin
-  main:= TxpMain.Create;  //No debería
+  main:= TxpEleMain.Create;  //No debería
   main.elements := TxpElements.Create(true);  //debe tener lista
   curNode := main;  //empieza con el nodo principal como espacio de nombres actual
 end;

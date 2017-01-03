@@ -1,3 +1,25 @@
+XPres 1.2
+=========
+Se cambia de nombre a TType.CreateOperator() por TType.CreateBinaryOperator()
+Se cambia de nombre a los parámetros de TType.CreateBinaryOperator()
+Se crea el método TType.CreateUnaryOperator().
+Se cambia el nombre de los campos de TxpOperator. 
+Se elimina el campo idx de TxpOperator. No se estaba usando.
+Se elimina el campo idx de TType. No se estab usando.
+Se agrega el campo kind a TxOperator y se crea el tipo TxpOperatorKind.
+Se cambia el nombre de TType.FindOperator a TType.FindBinaryOperator.
+Se crean TType.FindUnaryPreOperator y TType.FindUnaryPostOperator.
+Se cambia el nombre de GetOperandP() a GetOperandPrec(). 
+Se crea el método TType.CreateUnaryPreOperator().
+Se cambia de nombre al evento TType.OnPush por TType.OperationPush y a TType.OnPop
+por TType.OperationPop.
+Se divide Evaluar(), y se crean dos versiones con nombres ditintos: EvaluarPre() y 
+EvaluarPost().
+Se cambiar el nombre de los tipos descendientes de TxpElement, a TxpEleMain, TxpEleType, ..., 
+de modo que se pueda renombrar luego y sin conflictos el tipo TType a TxpType.
+
+
+
 XPres 1.1
 =========
 Se elimina el evento Load de TOperand, ya que en el nuevo esquema, no tiene sentido.
@@ -22,16 +44,6 @@ Se cambia el nombre del tipo TxOperation a TxpOperation
 Se cambia el nombre del tipo TOperations a TxpOperations.
 Se cambia el nombre del tipo TOperator a TxpOperator.
 Se cambia el nombre del tipo TOperators a TxpOperators.
-
-
-Queda pendiente:
-
-Revisar si es necesario usar el tipo TProcLoadOperand, para los eventos OnPush y OnPop de 
-TType, ya que en el nuevo esquema, de la versión 1.0, hay acceso a todos los campos de 
-TCOmpilerBase. Es más, revisar si estos eventos sirven para algo.
-
-Ver si es mejor cambiar el nombre de los tipos descendientes de TxpElement, a TxpElMain,
-TxpElType, ... , de modo que se pueda renombrar sin conflictos el tipo TType a TxpType.
 
 
 
