@@ -57,8 +57,8 @@ begin
   //Crea operación de suma entre enteros
   ClearTypes;
   tipEnt := CreateType('t_ent',t_integer,1);
-  oprEntSum := tipEnt.CreateOperator('+',1,'suma');
-  oprEntMul := tipEnt.CreateOperator('*',2,'suma');
+  oprEntSum := tipEnt.CreateBinaryOperator('+',1,'suma');
+  oprEntMul := tipEnt.CreateBinaryOperator('*',2,'suma');
   oprEntSum.CreateOperation(tipEnt, @entero_suma_entero);
   oprEntMul.CreateOperation(tipEnt, @entero_mult_entero);
   //Calcula una suma
