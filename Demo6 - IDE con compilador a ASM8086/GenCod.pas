@@ -37,9 +37,9 @@ type
     procedure Code(cod: string);
     procedure expr_end(isParam: boolean);
     procedure expr_start;
-    procedure fun_putchar(fun: TxpFun);
-    procedure fun_puts(fun: TxpFun);
-    procedure fun_putsI(fun: TxpFun);
+    procedure fun_putchar(fun: TxpEleFun);
+    procedure fun_puts(fun: TxpEleFun);
+    procedure fun_putsI(fun: TxpEleFun);
     procedure int_asig_int;
     procedure int_idiv_int;
     procedure int_mult_int;
@@ -391,7 +391,7 @@ begin
   end;
 end;
 /////////////funciones del sistema
-procedure TGenCod.fun_putchar(fun :TxpFun);
+procedure TGenCod.fun_putchar(fun: TxpEleFun);
 begin
   //Esta es una fucnión INLINE
   code('  pop dx');  //necesita el byte en DL. El valor se empujó con 16 bits.
@@ -399,7 +399,7 @@ begin
   code('  int 21h');
   //Esta función no devuelve un valor, por eso no nos preocupamos del tipo.
 end;
-procedure TGenCod.fun_puts(fun :TxpFun);
+procedure TGenCod.fun_puts(fun: TxpEleFun);
 //envia un texto a consola
 begin
   if HayError then exit;
@@ -408,7 +408,7 @@ begin
   code('  int 21h');
   //Esta función no devuelve un valor, por eso no nos preocupamos del tipo.
 end;
-procedure TGenCod.fun_putsI(fun :TxpFun);
+procedure TGenCod.fun_putsI(fun: TxpEleFun);
 //envia un texto a consola
 begin
   if HayError then exit;
@@ -423,7 +423,7 @@ procedure TGenCod.StartSyntax;
 //Se ejecuta solo una vez al inicio
 var
   opr: TxpOperator;
-  f: TxpFun;  //índice para funciones
+  f: TxpEleFun;  //índice para funciones
 begin
   //tokens personalizados
   tkExpDelim := xLex.NewTokType('ExpDelim');//delimitador de expresión ";"
@@ -490,43 +490,43 @@ begin
   tipInt  :=CreateType('int',t_integer,2);   //de 2 bytes
   tipInt.OperationLoad:=@int_procLoad;
   tipInt.OnGlobalDef:=@int_procDefine;
-  tipInt.OnPush:=@int_OnPush;
+  tipInt.OperationPush:=@int_OnPush;
   //debe crearse siempre el tipo char o string para manejar cadenas
   tipChr := CreateType('char',t_string,1);   //de 1 byte
   tipChr.OperationLoad:=@chr_procLoad;
   tipChr.OnGlobalDef:=@chr_procDefine;
-  tipChr.OnPush:=@chr_OnPush;
+  tipChr.OperationPush:=@chr_OnPush;
 //  tipStr:=CreateType('char',t_string,1);   //de 1 byte
   tipStr:=CreateType('string',t_string,-1);   //de longitud variable
   tipStr.OperationLoad:=@str_procLoad;
 
   //////// Operaciones con Chr ////////////
   {Los operadores deben crearse con su precedencia correcta}
-  opr:=tipChr.CreateOperator(':=',2,'asig');  //asignación
+  opr:=tipChr.CreateBinaryOperator(':=',2,'asig');  //asignación
   opr.CreateOperation(tipChr,@chr_asig_chr);
 
   //////// Operaciones con String ////////////
-  opr:=tipStr.CreateOperator(':=',2,'asig');  //asignación
-  opr:=tipStr.CreateOperator('+',7,'concat');
+  opr:=tipStr.CreateBinaryOperator(':=',2,'asig');  //asignación
+  opr:=tipStr.CreateBinaryOperator('+',7,'concat');
   opr.CreateOperation(tipStr,@str_concat_str);
 
   //////// Operaciones con Int ////////////
   {Los operadores deben crearse con su precedencia correcta}
-  opr:=tipInt.CreateOperator(':=',2,'asig');  //asignación
+  opr:=tipInt.CreateBinaryOperator(':=',2,'asig');  //asignación
   opr.CreateOperation(tipInt,@int_asig_int);
 
-  opr:=tipInt.CreateOperator('+',7,'suma');
+  opr:=tipInt.CreateBinaryOperator('+',7,'suma');
   opr.CreateOperation(tipInt,@int_suma_int);
 
-  opr:=tipInt.CreateOperator('-',7,'resta');
+  opr:=tipInt.CreateBinaryOperator('-',7,'resta');
   opr.CreateOperation(tipInt,@int_resta_int);
 
-  opr:=tipInt.CreateOperator('*',8,'mult');
+  opr:=tipInt.CreateBinaryOperator('*',8,'mult');
   opr.CreateOperation(tipInt,@int_mult_int);
 
-  opr:=tipInt.CreateOperator('\',8,'idiv');
+  opr:=tipInt.CreateBinaryOperator('\',8,'idiv');
   opr.CreateOperation(tipInt,@int_idiv_int);
-  opr:=tipInt.CreateOperator('%',8,'resid');
+  opr:=tipInt.CreateBinaryOperator('%',8,'resid');
   opr.CreateOperation(tipInt,@int_resid_int);
 
 //////// Funciones básicas ////////////
