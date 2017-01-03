@@ -11,7 +11,7 @@ type
     procedure entero_mult_entero;
     procedure entero_suma_entero;
   public
-    tipEnt : TxType;
+    tipEnt : TType;
     constructor Create; override;
   end;
 
@@ -45,7 +45,7 @@ end;
 
 constructor TEvaluador.Create;
 var
-  oprEntSum, oprEntMul: TxOperator;
+  oprEntSum, oprEntMul: TxpOperator;
 begin
   inherited Create;
   //Configura la sintaxis del lexer
