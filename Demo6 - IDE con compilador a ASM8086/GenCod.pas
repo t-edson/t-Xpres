@@ -14,7 +14,7 @@ type
   //define un registro virtual para implementar un intérprete
   Tregister = record
     used    : boolean;  //indica si está usado
-    typ     : TxType;    //tipo de dato
+    typ     : TType;    //tipo de dato
     catOp   : TCatOperan;  //categoría de operando
     //valores de la variable.
 {    valFloat: extended; //Valor en caso de que sea un flotante
@@ -67,9 +67,9 @@ type
 
 var
   /////// Tipos de datos del lenguaje ////////////
-  tipInt : TxType;   //entero flotante
-  tipStr : TxType;   //cadena de caracteres
-  tipChr : TxType;   //un caracter
+  tipInt : TType;   //entero flotante
+  tipStr : TType;   //cadena de caracteres
+  tipChr : TType;   //un caracter
   ////////// Registros virtuales ////////////
   {la arquitectura definida aquí contempla:
 
@@ -422,7 +422,7 @@ end;
 procedure TGenCod.StartSyntax;
 //Se ejecuta solo una vez al inicio
 var
-  opr: TxOperator;
+  opr: TxpOperator;
   f: TxpFun;  //índice para funciones
 begin
   //tokens personalizados
