@@ -26,8 +26,8 @@ interface
 uses
   Classes, SysUtils, Forms, LCLType, lclProc, SynEditHighlighter,
   SynFacilHighlighter, XpresBas, XpresTypes, XpresElements, MisUtils;
-type
 
+type
 { TOperand }
 //Operando
 TOperand = object
@@ -107,7 +107,7 @@ protected  //Eventos del compilador
   function EOExpres: boolean;
   function EOBlock: boolean;
   procedure SkipWhites; virtual;  //rutina para saltar blancos
-  procedure GetExpression(const prec: Integer; isParam: boolean=false);
+  procedure GetExpressionE(const prec: Integer; isParam: boolean=false);
   procedure GetBoolExpression;
   procedure CreateVariable(const varName: string; typ: TType);
   procedure CreateVariable(varName, varType: string);
@@ -117,10 +117,10 @@ protected  //Eventos del compilador
   procedure CaptureParams; virtual;
   function FindFuncWithParams0(const funName: string; var idx: integer;
     idx0: integer=0): TFindFuncResult;
-  procedure Evaluar(var Op1: TOperand; opr: TxpOperator; var Op2: TOperand);
-  procedure EvaluarPre(var Op1: TOperand; opr: TxpOperator);
-  procedure EvaluarPost(var Op1: TOperand; opr: TxpOperator);
-  procedure Evaluar(var Op1: TOperand);
+  procedure Oper(var Op1: TOperand; opr: TxpOperator; var Op2: TOperand);
+  procedure OperPre(var Op1: TOperand; opr: TxpOperator);
+  procedure OperPost(var Op1: TOperand; opr: TxpOperator);
+  procedure Oper(var Op1: TOperand);
 protected   //Campos de elementos
   cons  : TxpEleCons;     //lista de constantes
   vars  : TxpEleVars;     //lista de variables
@@ -139,8 +139,17 @@ protected   //Campos de elementos
   function FindFunc(const funName: string; out idx: integer): boolean;
   function FindPredefName(name: string): TxpElemType;
 private
-  function GetExpressionCore(const prec: Integer): TOperand;
+  function GetExpression(const prec: Integer): TOperand;
 public  //Referencias a los tipos predefinidos de tokens.
+  tnEol     : integer;
+  tnSymbol  : integer;
+  tnSpace   : integer;
+  tnIdentif : integer;
+  tnNumber  : integer;
+  tnKeyword : integer;
+  tnString  : integer;
+  tnComment : integer;
+  //Atributos
   tkEol     : TSynHighlighterAttributes;
   tkSymbol  : TSynHighlighterAttributes;
   tkSpace   : TSynHighlighterAttributes;
@@ -150,6 +159,11 @@ public  //Referencias a los tipos predefinidos de tokens.
   tkString  : TSynHighlighterAttributes;
   tkComment : TSynHighlighterAttributes;
   //otras referencias
+  tnOperator: integer;
+  tnBoolean : integer;
+  tnSysFunct: integer;
+  tnType    : integer;
+  //Atributos
   tkOperator: TSynHighlighterAttributes;
   tkBoolean : TSynHighlighterAttributes;
   tkSysFunct: TSynHighlighterAttributes;
@@ -739,7 +753,7 @@ begin
     end;
     cin.Next;
     repeat
-      GetExpression(0, true);  //captura parámetro
+      GetExpressionE(0, true);  //captura parámetro
       if perr.HayError then exit;   //aborta
       //guarda tipo de parámetro
       func0.CreateParam('',res.typ);
@@ -775,7 +789,7 @@ var
 begin
   PErr.Clear;
   SkipWhites;
-  if cIn.tokType = tkNumber then begin  //constantes numéricas
+  if cIn.tokType = tnNumber then begin  //constantes numéricas
     Result.catOp:=coConst;       //constante es Mono Operando
     Result.txt:= cIn.tok;     //toma el texto
     TipDefecNumber(Result, cIn.tok); //encuentra tipo de número, tamaño y valor
@@ -785,7 +799,7 @@ begin
         exit;
       end;
     cIn.Next;    //Pasa al siguiente
-  end else if cIn.tokType = tkIdentif then begin  //puede ser variable, constante, función
+  end else if cIn.tokType = tnIdentif then begin  //puede ser variable, constante, función
     if FindVar(cIn.tok, ivar) then begin
       //es una variable
       Result.rvar:=vars[ivar];   //guarda referencia a la variable
@@ -819,7 +833,7 @@ begin
       GenError('Identificador desconocido: "' + cIn.tok + '"');
       exit;
     end;
-  end else if cIn.tokType = tkSysFunct then begin  //es función de sistema
+  end else if cIn.tokType = tnSysFunct then begin  //es función de sistema
     //Estas funciones debem crearse al iniciar el compilador y están siempre disponibles.
     tmp := cIn.tok;  //guarda nombre de función
     cIn.Next;    //Toma identificador
@@ -842,7 +856,7 @@ begin
         exit;
       end;
     end;
-  end else if cIn.tokType = tkBoolean then begin  //true o false
+  end else if cIn.tokType = tnBoolean then begin  //true o false
     Result.catOp:=coConst;       //constante es Mono Operando
     Result.txt:= cIn.tok;     //toma el texto
     TipDefecBoolean(Result, cIn.tok); //encuentra tipo de número, tamaño y valor
@@ -863,7 +877,7 @@ begin
        GenError('Error en expresión. Se esperaba ")"');
        Exit;       //error
     end;
-  end else if cIn.tokType = tkString then begin  //constante cadena
+  end else if cIn.tokType = tnString then begin  //constante cadena
     Result.catOp:=coConst;     //constante es Mono Operando
 //    Result.txt:= cIn.tok;     //toma el texto
     TipDefecString(Result, cIn.tok); //encuentra tipo de número, tamaño y valor
@@ -873,7 +887,7 @@ begin
        exit;
      end;
     cIn.Next;    //Pasa al siguiente
-  end else if cIn.tokType = tkOperator then begin
+  end else if cIn.tokType = tnOperator then begin
     {Si sigue un operador puede ser un operador Unario.
     El problema que tenemos, es que no sabemos de antemano el tipo, para saber si el
     operador aplica a ese tipo como operador Unario Pre. Así que asumiremos que es así,
@@ -892,7 +906,7 @@ begin
       exit;
     end;
     //Sí corresponde. Así que apliquémoslo
-    EvaluarPre(Op, opr);
+    OperPre(Op, opr);
     Result := res;
   end else begin
     //No se reconoce el operador
@@ -952,7 +966,7 @@ begin
   repeat
     SkipWhites;
     //ahora debe haber un identificador de variable
-    if cIn.tokType <> tkIdentif then begin
+    if cIn.tokType <> tnIdentif then begin
       GenError('Se esperaba identificador de variable.');
       exit;
     end;
@@ -972,7 +986,7 @@ begin
     //debe venir el tipo de la variable
     cIn.Next;  //lo toma
     SkipWhites;
-    if (cIn.tokType <> tkType) then begin
+    if (cIn.tokType <> tnType) then begin
       GenError('Se esperaba identificador de tipo.');
       exit;
     end;
@@ -990,7 +1004,7 @@ begin
   if not CaptureDelExpres then exit;
   SkipWhites;
 end;
-procedure TCompilerBase.Evaluar(var Op1: TOperand; opr: TxpOperator; var Op2: TOperand);
+procedure TCompilerBase.Oper(var Op1: TOperand; opr: TxpOperator; var Op2: TOperand);
 {Ejecuta una operación con dos operandos y un operador. "opr" es el operador de Op1.
 El resultado debe devolverse en "res". En el caso de intérpretes, importa el
 resultado de la Operación.
@@ -1000,7 +1014,7 @@ usarse también "res" para cálculo de expresiones constantes.
 var
   Operation: TxpOperation;
 begin
-  {$IFDEF LogExpres} debugln(space(ExprLevel)+' Eval('+Op1.txt + opr.txt + Op2.txt+')');{$ENDIF}
+  {$IFDEF LogExpres} debugln(space(ExprLevel)+' Oper('+Op1.txt + opr.txt + Op2.txt+')');{$ENDIF}
    PErr.IniError;
    //Busca si hay una operación definida para: <tipo de Op1>-opr-<tipo de Op2>
    Operation := opr.FindOperation(Op2.typ);
@@ -1020,12 +1034,12 @@ begin
    //Completa campos de "res", si es necesario
    {$IFDEF LogExpres} res.txt := '%';{$ENDIF}   //indica que es expresión
 End;
-procedure TCompilerBase.EvaluarPre(var Op1: TOperand; opr: TxpOperator);
+procedure TCompilerBase.OperPre(var Op1: TOperand; opr: TxpOperator);
 {Ejecuta una operación con un operando y un operador unario de tipo Pre. "opr" es el
 operador de Op1.
 El resultado debe devolverse en "res".}
 begin
-  {$IFDEF LogExpres} debugln(space(ExprLevel)+' Eval('+ opr.txt + Op1.txt + ')'); {$ENDIF}
+  {$IFDEF LogExpres} debugln(space(ExprLevel)+' Oper('+ opr.txt + Op1.txt + ')'); {$ENDIF}
    PErr.IniError;
    if opr.OperationPre = nil then begin
       GenError('Operación no válida: ' +
@@ -1039,12 +1053,12 @@ begin
    //Completa campos de "res", si es necesario
    {$IFDEF LogExpres} res.txt := '%';{$ENDIF}   //indica que es expresión
 end;
-procedure TCompilerBase.EvaluarPost(var Op1: TOperand; opr: TxpOperator);
+procedure TCompilerBase.OperPost(var Op1: TOperand; opr: TxpOperator);
 {Ejecuta una operación con un operando y un operador unario de tipo Post. "opr" es el
 operador de Op1.
 El resultado debe devolverse en "res".}
 begin
-  {$IFDEF LogExpres} debugln(space(ExprLevel)+' Eval('+Op1.txt + opr.txt +')'); {$ENDIF}
+  {$IFDEF LogExpres} debugln(space(ExprLevel)+' Oper('+Op1.txt + opr.txt +')'); {$ENDIF}
    PErr.IniError;
    if opr.OperationPost = nil then begin
       GenError('Operación no válida: ' +
@@ -1058,7 +1072,7 @@ begin
    //Completa campos de "res", si es necesario
    {$IFDEF LogExpres} res.txt := '%';{$ENDIF}   //indica que es expresión
 end;
-procedure TCompilerBase.Evaluar(var Op1: TOperand);
+procedure TCompilerBase.Oper(var Op1: TOperand);
 {Ejecuta una operación con un solo operando, que puede ser una constante, una variable
 o la llamada a una función.
 El resultado debe devolverse en "res".
@@ -1066,7 +1080,7 @@ La implementación debe decidir, qué hacer cuando se encuentra un solo operando
 expresión. En algunos casos puede ser inválido.
 }
 begin
-  {$IFDEF LogExpres} debugln(space(ExprLevel)+' Eval('+Op1.txt+')'); {$ENDIF}
+  {$IFDEF LogExpres} debugln(space(ExprLevel)+' Oper('+Op1.txt+')'); {$ENDIF}
   PErr.IniError;
   {Llama al evento asociado con p1 como operando. }
   p1 := @Op1; {Solo hay un parámetro}
@@ -1104,10 +1118,10 @@ begin
 //    Result:=Op1;
   end else begin  //si está definido el operador (opr) para Op1, vemos precedencias
     If opr.prec> pre Then begin  //¿Delimitado por precedencia de operador?
-      //es de mayor precedencia, se debe evaluar antes.
+      //es de mayor precedencia, se debe Oper antes.
       Op2 := GetOperandPrec(pre);  //toma el siguiente operando (puede ser recursivo)
       if pErr.HayError then exit;
-      Evaluar(Op1, opr, Op2);  //devuelve en "res"
+      Oper(Op1, opr, Op2);  //devuelve en "res"
       Result:=res;
     End else begin  //la precedencia es menor o igual, debe salir
       cIn.PosAct := pos;   //antes de coger el operador
@@ -1120,12 +1134,12 @@ function TCompilerBase.GetOperator(const Op: Toperand): TxpOperator;
 Si no encuentra un operador en el contexto, devuelve NIL, pero no lo toma.
 Si el operador encontrado no se aplica al operando, devuelve nullOper.}
 begin
-  if cIn.tokType <> tkOperator then exit(nil);
+  if cIn.tokType <> tnOperator then exit(nil);
   //hay un operador
   Result := Op.typ.FindBinaryOperator(cIn.tok);
   cIn.Next;   //toma el token
 end;
-function TCompilerBase.GetExpressionCore(const prec: Integer): TOperand; //inline;
+function TCompilerBase.GetExpression(const prec: Integer): TOperand; //inline;
 {Analizador de expresiones. Esta es probablemente la función más importante del
  compilador. Procesa una expresión en el contexto de entrada llama a los eventos
  configurados para que la expresión se evalúe (intérpretes) o se compile (compiladores).
@@ -1146,7 +1160,7 @@ begin
   opr1 := GetOperator(Op1);
   if opr1 = nil then begin  //no sigue operador
     //Expresión de un solo operando.
-    Evaluar(Op1);
+    Oper(Op1);
     Result:=res;
     exit;  //termina ejecucion
   end;
@@ -1164,7 +1178,7 @@ begin
       exit;
     End;
     if opr1.OperationPost<>nil then begin  //Verifica si es operación Unaria
-      EvaluarPost(Op1, opr1);
+      OperPost(Op1, opr1);
       if PErr.HayError then exit;
       Op1 := res;
       SkipWhites;
@@ -1176,7 +1190,7 @@ begin
     {$IFDEF LogExpres} debugln(space(ExprLevel)+' Op2='+Op2.txt); {$ENDIF}
     if pErr.HayError then exit;
     //prepara siguiente operación
-    Evaluar(Op1, opr1, Op2);    //evalua resultado en "res"
+    Oper(Op1, opr1, Op2);    //evalua resultado en "res"
     Op1 := res;
     if PErr.HayError then exit;
     SkipWhites;
@@ -1185,7 +1199,7 @@ begin
   end;  //hasta que ya no siga un operador
   Result := Op1;  //aquí debe haber quedado el resultado
 end;
-procedure TCompilerBase.GetExpression(const prec: Integer; isParam: boolean = false
+procedure TCompilerBase.GetExpressionE(const prec: Integer; isParam: boolean = false
     //indep: boolean = false
     );
 {Envoltura para GetExpressionCore(). Se coloca así porque GetExpressionCore()
@@ -1201,7 +1215,7 @@ begin
   Inc(ExprLevel);  //cuenta el anidamiento
   {$IFDEF LogExpres} debugln(space(ExprLevel)+'>Inic.expr'); {$ENDIF}
   if OnExprStart<>nil then OnExprStart;  //llama a evento
-  res := GetExpressionCore(prec);
+  res := GetExpression(prec);
   if PErr.HayError then exit;
   if OnExprEnd<>nil then OnExprEnd(isParam);    //llama al evento de salida
   {$IFDEF LogExpres} debugln(space(ExprLevel)+'>Fin.expr'); {$ENDIF}
@@ -1212,7 +1226,7 @@ procedure TCompilerBase.GetBoolExpression;
 //Simplifica la evaluación de expresiones booleanas, validando el tipo
 //Devuelve el resultado em "res".
 begin
-  GetExpression(0);  //evalua expresión
+  GetExpressionE(0);  //evalua expresión
   if PErr.HayError then exit;
   if res.Typ.cat <> t_boolean then begin
     GenError('Se esperaba expresión booleana');
@@ -1247,6 +1261,15 @@ begin
   cIn := TContexts.Create(xLex); //Crea lista de Contextos
   ejecProg := false;
   //Actualiza las referencias a los tipos de tokens existentes en SynFacilSyn
+  tnEol     := xLex.tnEol;
+  tnSymbol  := xLex.tnSymbol;
+  tnSpace   := xLex.tnSpace;
+  tnIdentif := xLex.tnIdentif;
+  tnNumber  := xLex.tnNumber;
+  tnKeyword := xLex.tnKeyword;
+  tnString  := xLex.tnString;
+  tnComment := xLex.tnComment;
+  //Atributos
   tkEol     := xLex.tkEol;
   tkSymbol  := xLex.tkSymbol;
   tkSpace   := xLex.tkSpace;
@@ -1256,18 +1279,18 @@ begin
   tkString  := xLex.tkString;
   tkComment := xLex.tkComment;
   //Crea nuevos tipos necesarios para el Analizador Sintáctico
-  tkOperator := xLex.NewTokType('Operator'); //necesario para analizar expresiones
-  tkBoolean  := xLex.NewTokType('Boolean');  //constantes booleanas
-  tkSysFunct := xLex.NewTokType('SysFunct'); //funciones del sistema
-  tkType     := xLex.NewTokType('Types');    //tipos de datos
+  tnOperator := xLex.NewTokType('Operator', tkOperator); //necesario para analizar expresiones
+  tnBoolean  := xLex.NewTokType('Boolean', tkBoolean);  //constantes booleanas
+  tnSysFunct := xLex.NewTokType('SysFunct', tkSysFunct); //funciones del sistema
+  tnType     := xLex.NewTokType('Types', tkType);    //tipos de datos
   {Sabemos que SynFacilSyn, crea una definición por defecto para identificadores,
   pero aquí crearemos algunas más, para hacer al lexer más completo, desde el inicio,
   de todas formas lo recomendable será hacer un ClearMethodTables, y definir una
   nueva sintaxis}
-  xLex.DefTokContent('[0-9]', '[0-9.]*', tkNumber);
-  xLex.DefTokDelim('''','''', tkString);
-  xLex.DefTokDelim('"','"', tkString);
-  xLex.DefTokDelim('//','', xLex.tkComment);
+  xLex.DefTokContent('[0-9]', '[0-9.]*', tnNumber);
+  xLex.DefTokDelim('''','''', tnString);
+  xLex.DefTokDelim('"','"', tnString);
+  xLex.DefTokDelim('//','', xLex.tnComment);
   xLex.Rebuild;   //es necesario para terminar la definición
 end;
 destructor TCompilerBase.Destroy;

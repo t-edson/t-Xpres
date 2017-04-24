@@ -80,7 +80,8 @@ type
     property row: integer read getRow;
     property col: integer read getCol;
     function Token: string;  inline;  //Token actual
-    function TokenType: TSynHighlighterAttributes; inline;  //Tipo de token actual
+    function TokenType: integer; inline;  //Tipo de token actual
+    function TokenAttrib: TSynHighlighterAttributes; inline; //Atributo del token actual
     function Block: TFaSynBlock;
     function NestedBlocks: integer;
     function NextBlock: boolean;
@@ -121,10 +122,11 @@ type
     procedure FijPosContAct(pc: TPosCont);
   public
     MsjError : string;
-    tok      : string;       //token actual
-    tokType  : TSynHighlighterAttributes;  //tipo de token actual
+    tok      : string;     //token actual
+    tokType  : integer;    //tipo de token actual
     OnNewLine: procedure(lin: string) of object;
     function tokL: string;   //token actual en minúscula
+    function tokAttrib: TSynHighlighterAttributes; inline;
     property PosAct: TPosCont read LeePosContAct write FijPosContAct;
     property curCon: TContext read cEnt;
     procedure NewContextFromFile(arc0: String);
@@ -220,10 +222,14 @@ function TContext.Token: string;
 begin
   Result := lex.GetToken;
 end;
-function TContext.TokenType: TSynHighlighterAttributes;
+function TContext.TokenType: integer;
 {Devuelve el tipo de token actual}
 begin
-  Result := TSynHighlighterAttributes(UIntPtr(lex.GetTokenKind));
+  Result := lex.GetTokenKind;
+end;
+function TContext.TokenAttrib: TSynHighlighterAttributes;
+begin
+  Result := lex.GetTokenAttribute;
 end;
 function TContext.Block: TFaSynBlock;
 begin
@@ -394,7 +400,7 @@ begin
   end;
   //actualiza token actual
   tok := lex.GetToken;    //lee el token
-  tokType := lex.GetTokenAttribute;  //lee atributo
+  tokType := lex.GetTokenKind;  //lee atributo
 end;
 procedure TContexts.NewContextFromTxt(txt: string; arc0: String);
 //Crea un Contexto a partir de una cadena.
@@ -408,7 +414,7 @@ begin
                          las funciones $NOM_ACTUAL y $DIR_ACTUAL}
   //actualiza token actual
   tok := lex.GetToken;    //lee el token
-  tokType := lex.GetTokenAttribute;  //lee atributo
+  tokType := lex.GetTokenKind;  //lee atributo
 end;
 procedure TContexts.NewContextFromFile(arc0: String);
 //Crea un Contexto a partir de un archivo.
@@ -424,7 +430,7 @@ begin
   cEnt.SetSourceF(arc0);     //inicia con archivo
   //actualiza token actual
   tok := lex.GetToken;    //lee el token
-  tokType := lex.GetTokenAttribute;  //lee atributo
+  tokType := lex.GetTokenKind;  //lee atributo
 end;
 procedure TContexts.NewContextFromFile(arc0: String; lins: Tstrings);
 //Crea un Contexto a partir de un Tstring, como si fuera un archivo.
@@ -437,7 +443,7 @@ begin
   cEnt.arc :=  arc0;      //archivo
   //actualiza token actual
   tok := lex.GetToken;    //lee el token
-  tokType := lex.GetTokenAttribute;  //lee atributo
+  tokType := lex.GetTokenKind;  //lee atributo
 end;
 procedure TContexts.RemoveContext;
 //Elimina el contexto de entrada actual. Deja apuntando al anterior en la misma posición.
@@ -474,7 +480,7 @@ begin
   end;
   //actualiza token actual
   tok := lex.GetToken;    //lee el token
-  tokType := lex.GetTokenAttribute;  //lee atributo
+  tokType := lex.GetTokenKind;  //lee atributo
 end;
 procedure TContexts.SkipWhitesNoEOL;
 {Salta los blancos sin incluir los saltos de línea}
@@ -488,7 +494,7 @@ begin
   end;
   //actualiza token actual
   tok := lex.GetToken;    //lee el token
-  tokType := lex.GetTokenAttribute;  //lee atributo
+  tokType := lex.GetTokenKind;  //lee atributo
 end;
 procedure TContexts.Next;
 begin
@@ -497,12 +503,16 @@ begin
   end;
   //actualiza token actual
   tok := lex.GetToken;    //lee el token
-  tokType := lex.GetTokenAttribute;  //lee atributo
+  tokType := lex.GetTokenKind;  //lee atributo
 end;
 function TContexts.tokL: string; inline;
 //Devuelve el token actual, ignorando la caja.
 begin
   Result:=lowercase(tok);
+end;
+function TContexts.tokAttrib: TSynHighlighterAttributes;
+begin
+  Result := lex.GetTokenAttribute;
 end;
 constructor TContexts.Create(Lex0: TSynFacilSyn);
 begin
