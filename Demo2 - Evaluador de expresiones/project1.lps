@@ -4,7 +4,7 @@
     <PathDelim Value="\"/>
     <Version Value="9"/>
     <BuildModes Active="Default"/>
-    <Units Count="30">
+    <Units Count="31">
       <Unit0>
         <Filename Value="project1.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -19,9 +19,8 @@
         <HasResources Value="True"/>
         <ResourceBaseClass Value="Form"/>
         <UnitName Value="Unit1"/>
-        <IsVisibleTab Value="True"/>
-        <TopLine Value="42"/>
-        <CursorPos X="43" Y="61"/>
+        <TopLine Value="40"/>
+        <CursorPos X="17" Y="66"/>
         <UsageCount Value="201"/>
         <Loaded Value="True"/>
         <LoadedDesigner Value="True"/>
@@ -31,7 +30,7 @@
         <IsPartOfProject Value="True"/>
         <EditorIndex Value="-1"/>
         <CursorPos Y="16"/>
-        <UsageCount Value="41"/>
+        <UsageCount Value="42"/>
       </Unit2>
       <Unit3>
         <Filename Value="formout.pas"/>
@@ -145,14 +144,17 @@
       </Unit19>
       <Unit20>
         <Filename Value="..\XpresParser.pas"/>
-        <EditorIndex Value="-1"/>
-        <TopLine Value="44"/>
-        <CursorPos Y="72"/>
-        <UsageCount Value="72"/>
+        <IsVisibleTab Value="True"/>
+        <EditorIndex Value="1"/>
+        <TopLine Value="536"/>
+        <CursorPos X="33" Y="777"/>
+        <FoldState Value=" T4P02 TMiV210G4713261 T7WBm T8X0L216 T3lU0EE piajO0F4]9XjB0J]9jGje0B5 pk5kO0W213 THlX2A]86n201F T0n6U5L[-4mBIE8]9Yk0c33]9cGY2E['5PU1[Q4diDZ771EA"/>
+        <UsageCount Value="73"/>
         <Bookmarks Count="2">
           <Item0 X="13" Y="385" ID="3"/>
           <Item1 X="36" Y="414" ID="1"/>
         </Bookmarks>
+        <Loaded Value="True"/>
       </Unit20>
       <Unit21>
         <Filename Value="..\..\_Librerias\SynFacilUtils 0.4b\SynFacilBasic.pas"/>
@@ -179,9 +181,9 @@
       <Unit24>
         <Filename Value="..\XpresElements.pas"/>
         <EditorIndex Value="-1"/>
-        <TopLine Value="64"/>
-        <CursorPos X="20" Y="96"/>
-        <FoldState Value=" TL006E T4A01 TMib4]77TFG41]98V21213 T3kM06B picjN0E7]9gj90A6 pjWjQ0E2 T6kV02A T0kaY4F]YXkaL1D:"/>
+        <TopLine Value="431"/>
+        <CursorPos X="6" Y="431"/>
+        <FoldState Value=" TL0066 T4A01 TMib4]77TFG41]98V21213 T3kM06B picjN0E7 T6kV02]u0kaY4F;"/>
         <UsageCount Value="27"/>
       </Unit24>
       <Unit25>
@@ -216,12 +218,19 @@
       <Unit29>
         <Filename Value="..\..\SynFacilUtils 0.8\SynFacilHighlighter.pas"/>
         <EditorIndex Value="-1"/>
-        <TopLine Value="1165"/>
-        <CursorPos X="3" Y="1191"/>
-        <UsageCount Value="9"/>
+        <TopLine Value="49"/>
+        <CursorPos X="3" Y="67"/>
+        <UsageCount Value="10"/>
       </Unit29>
+      <Unit30>
+        <Filename Value="..\..\SynFacilUtils-1.1\SynFacilBasic.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="1394"/>
+        <CursorPos X="32" Y="1422"/>
+        <UsageCount Value="10"/>
+      </Unit30>
     </Units>
-    <JumpHistory Count="8" HistoryIndex="7">
+    <JumpHistory Count="15" HistoryIndex="14">
       <Position1>
         <Filename Value="unit1.pas"/>
         <Caret Line="55" Column="21" TopLine="37"/>
@@ -254,6 +263,34 @@
         <Filename Value="unit1.pas"/>
         <Caret Line="48" Column="28" TopLine="30"/>
       </Position8>
+      <Position9>
+        <Filename Value="unit1.pas"/>
+        <Caret Line="53" Column="23" TopLine="33"/>
+      </Position9>
+      <Position10>
+        <Filename Value="unit1.pas"/>
+        <Caret Line="66" Column="10" TopLine="40"/>
+      </Position10>
+      <Position11>
+        <Filename Value="..\XpresParser.pas"/>
+        <Caret Line="1218" Column="19" TopLine="1202"/>
+      </Position11>
+      <Position12>
+        <Filename Value="..\XpresParser.pas"/>
+        <Caret Line="1181" Column="15" TopLine="1167"/>
+      </Position12>
+      <Position13>
+        <Filename Value="..\XpresParser.pas"/>
+        <Caret Line="778" Column="3" TopLine="777"/>
+      </Position13>
+      <Position14>
+        <Filename Value="..\XpresParser.pas"/>
+        <Caret Line="871" Column="19" TopLine="777"/>
+      </Position14>
+      <Position15>
+        <Filename Value="..\XpresParser.pas"/>
+        <Caret Line="1202" Column="39" TopLine="1052"/>
+      </Position15>
     </JumpHistory>
   </ProjectSession>
 </CONFIG>

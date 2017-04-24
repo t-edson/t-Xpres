@@ -50,9 +50,9 @@ begin
   inherited Create;
   //Configura la sintaxis del lexer
   xLex.ClearMethodTables;
-  xLex.DefTokContent('[0-9]', '[0-9]*', tkNumber);
-  xLex.AddSymbSpec('+',  tkOperator);   //Importante
-  xLex.AddSymbSpec('*',  tkOperator);   //Importante
+  xLex.DefTokContent('[0-9]', '[0-9]*', tnNumber);
+  xLex.AddSymbSpec('+',  tnOperator);   //Importante
+  xLex.AddSymbSpec('*',  tnOperator);   //Importante
   xLex.Rebuild;
   //Crea operación de suma entre enteros
   ClearTypes;
@@ -63,7 +63,7 @@ begin
   oprEntMul.CreateOperation(tipEnt, @entero_mult_entero);
   //Calcula una suma
   cIn.NewContextFromTxt('2+3*4', '');
-  GetExpression(0);
+  GetExpressionE(0);
   if HayError then ShowError;
   ShowMessage(IntToStr(res.valInt));
 end;
