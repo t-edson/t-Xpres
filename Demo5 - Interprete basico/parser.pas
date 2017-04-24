@@ -55,7 +55,7 @@ begin
     SkipWhites;
     while not cIn.Eof and (cIn.tokL<>'end') do begin
       //se espera una expresión o estructura
-      GetExpression(0);
+      GetExpressionE(0);
       if perr.HayError then exit;   //aborta
       //busca delimitador
       SkipWhites;

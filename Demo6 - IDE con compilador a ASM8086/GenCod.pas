@@ -53,10 +53,14 @@ type
     procedure str_concat_str;
     procedure str_procLoad;
   protected
-    tkStruct   : TSynHighlighterAttributes;
-    tkExpDelim : TSynHighlighterAttributes;
+    //Tipos adicionales
+    tnStruct   : integer;
+    tnExpDelim : integer;
+    tnBlkDelim : integer;
+    tnOthers   : integer;
+    //Atributos
     tkBlkDelim : TSynHighlighterAttributes;
-    tkOthers   : TSynHighlighterAttributes;
+    tkStruct   : TSynHighlighterAttributes;
     procedure Cod_StartData;
     procedure Cod_StartProgram;
     procedure Cod_EndProgram;
@@ -426,10 +430,10 @@ var
   f: TxpEleFun;  //índice para funciones
 begin
   //tokens personalizados
-  tkExpDelim := xLex.NewTokType('ExpDelim');//delimitador de expresión ";"
-  tkBlkDelim := xLex.NewTokType('BlkDelim'); //delimitador de bloque
-  tkStruct   := xLex.NewTokType('Struct');   //personalizado
-  tkOthers   := xLex.NewTokType('Others');   //personalizado
+  tnExpDelim := xLex.NewTokType('ExpDelim');//delimitador de expresión ";"
+  tnBlkDelim := xLex.NewTokType('BlkDelim', tkBlkDelim); //delimitador de bloque
+  tnStruct   := xLex.NewTokType('Struct', tkStruct);   //personalizado
+  tnOthers   := xLex.NewTokType('Others');   //personalizado
   //Configura atributos
   tkKeyword.Style := [fsBold];     //en negrita
   tkBlkDelim.Foreground:=clGreen;
@@ -441,42 +445,42 @@ begin
   xLex.ClearSpecials;               //para empezar a definir tokens
   //crea tokens por contenido
   xLex.DefTokIdentif('[$A-Za-z_]', '[A-Za-z0-9_]*');
-  xLex.DefTokContent('[0-9]', '[0-9.]*', tkNumber);
+  xLex.DefTokContent('[0-9]', '[0-9.]*', tnNumber);
   //define palabras claves
-  xLex.AddIdentSpecList('THEN var type', tkKeyword);
-  xLex.AddIdentSpecList('program public private method const', tkKeyword);
-  xLex.AddIdentSpecList('class create destroy sub do begin', tkKeyword);
-  xLex.AddIdentSpecList('END ELSE ELSIF', tkBlkDelim);
-  xLex.AddIdentSpecList('true false', tkBoolean);
-  xLex.AddIdentSpecList('IF FOR', tkStruct);
-  xLex.AddIdentSpecList('and or xor not', tkOperator);
-  xLex.AddIdentSpecList('int float char string bool', tkType);
+  xLex.AddIdentSpecList('THEN var type', tnKeyword);
+  xLex.AddIdentSpecList('program public private method const', tnKeyword);
+  xLex.AddIdentSpecList('class create destroy sub do begin', tnKeyword);
+  xLex.AddIdentSpecList('END ELSE ELSIF', tnBlkDelim);
+  xLex.AddIdentSpecList('true false', tnBoolean);
+  xLex.AddIdentSpecList('IF FOR', tnStruct);
+  xLex.AddIdentSpecList('and or xor not', tnOperator);
+  xLex.AddIdentSpecList('int float char string bool', tnType);
   //símbolos especiales
-  xLex.AddSymbSpec('+',  tkOperator);
-  xLex.AddSymbSpec('-',  tkOperator);
-  xLex.AddSymbSpec('*',  tkOperator);
-  xLex.AddSymbSpec('/',  tkOperator);
-  xLex.AddSymbSpec('\',  tkOperator);
-  xLex.AddSymbSpec('%',  tkOperator);
-  xLex.AddSymbSpec('**', tkOperator);
-  xLex.AddSymbSpec('=',  tkOperator);
-  xLex.AddSymbSpec('>',  tkOperator);
-  xLex.AddSymbSpec('>=', tkOperator);
-  xLex.AddSymbSpec('<;', tkOperator);
-  xLex.AddSymbSpec('<=', tkOperator);
-  xLex.AddSymbSpec('<>', tkOperator);
-  xLex.AddSymbSpec('<=>',tkOperator);
-  xLex.AddSymbSpec(':=', tkOperator);
-  xLex.AddSymbSpec(';', tkExpDelim);
-  xLex.AddSymbSpec('(',  tkOthers);
-  xLex.AddSymbSpec(')',  tkOthers);
-  xLex.AddSymbSpec(':',  tkOthers);
-  xLex.AddSymbSpec(',',  tkOthers);
+  xLex.AddSymbSpec('+',  tnOperator);
+  xLex.AddSymbSpec('-',  tnOperator);
+  xLex.AddSymbSpec('*',  tnOperator);
+  xLex.AddSymbSpec('/',  tnOperator);
+  xLex.AddSymbSpec('\',  tnOperator);
+  xLex.AddSymbSpec('%',  tnOperator);
+  xLex.AddSymbSpec('**', tnOperator);
+  xLex.AddSymbSpec('=',  tnOperator);
+  xLex.AddSymbSpec('>',  tnOperator);
+  xLex.AddSymbSpec('>=', tnOperator);
+  xLex.AddSymbSpec('<;', tnOperator);
+  xLex.AddSymbSpec('<=', tnOperator);
+  xLex.AddSymbSpec('<>', tnOperator);
+  xLex.AddSymbSpec('<=>',tnOperator);
+  xLex.AddSymbSpec(':=', tnOperator);
+  xLex.AddSymbSpec(';', tnExpDelim);
+  xLex.AddSymbSpec('(',  tnOthers);
+  xLex.AddSymbSpec(')',  tnOthers);
+  xLex.AddSymbSpec(':',  tnOthers);
+  xLex.AddSymbSpec(',',  tnOthers);
   //crea tokens delimitados
-  xLex.DefTokDelim('''','''', tkString);
-  xLex.DefTokDelim('"','"', tkString);
-  xLex.DefTokDelim('//','', xLex.tkComment);
-  xLex.DefTokDelim('/\*','\*/', xLex.tkComment, tdMulLin);
+  xLex.DefTokDelim('''','''', tnString);
+  xLex.DefTokDelim('"','"', tnString);
+  xLex.DefTokDelim('//','', xLex.tnComment);
+  xLex.DefTokDelim('/\*','\*/', xLex.tnComment, tdMulLin);
   //define bloques de sintaxis
   xLex.AddBlock('{','}');
   xLex.Rebuild;   //es necesario para terminar la definición

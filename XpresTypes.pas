@@ -85,7 +85,7 @@ type  //tipos enumerados
     Operations: TxpOperations;  //operaciones soportadas. Debería haber tantos como
                                 //Num. Operadores * Num.Tipos compatibles.
   public
-    txt  : string;     //cadena del operador '+', '-', '++', ...
+    txt  : string;    //cadena del operador '+', '-', '++', ...
     prec : byte;      //precedencia
     name : string;    //nombre de la operación (suma, resta)
     kind : TxpOperatorKind;   //Tipo de operador
@@ -111,7 +111,7 @@ type  //tipos enumerados
     {Este evento es llamado automáticamente por el Analizador de expresiones,
      cuando encuentre una expresión de un solo operando, de este tipo.
     Por seguridad, debe implementarse siempre para cada tipo creado. La implementación
-    más cimple sería devolver en "res", el operando "pi^".}
+    más simple sería devolver en "res", el operando "p1^".}
     OperationLoad: TProcExecOperat; {Evento. Es llamado cuando se pide evaluar una
                                  expresión de un solo operando de este tipo. Es un caso
                                  especial que debe ser tratado por la implementación}

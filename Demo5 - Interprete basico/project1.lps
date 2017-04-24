@@ -4,7 +4,7 @@
     <PathDelim Value="\"/>
     <Version Value="9"/>
     <BuildModes Active="Default"/>
-    <Units Count="25">
+    <Units Count="26">
       <Unit0>
         <Filename Value="project1.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -37,12 +37,12 @@
       <Unit3>
         <Filename Value="Interprete.pas"/>
         <IsPartOfProject Value="True"/>
-        <EditorIndex Value="5"/>
-        <TopLine Value="120"/>
-        <CursorPos X="33" Y="142"/>
+        <EditorIndex Value="2"/>
+        <TopLine Value="73"/>
+        <CursorPos X="6" Y="88"/>
         <UsageCount Value="51"/>
         <Bookmarks Count="1">
-          <Item0 X="10" Y="144" ID="1"/>
+          <Item0 X="10" Y="147" ID="1"/>
         </Bookmarks>
         <Loaded Value="True"/>
       </Unit3>
@@ -115,22 +115,21 @@
       <Unit14>
         <Filename Value="parser.pas"/>
         <UnitName Value="Parser"/>
+        <IsVisibleTab Value="True"/>
         <EditorIndex Value="1"/>
-        <TopLine Value="46"/>
-        <CursorPos X="16" Y="55"/>
+        <TopLine Value="39"/>
+        <CursorPos X="21" Y="58"/>
         <UsageCount Value="80"/>
         <Loaded Value="True"/>
       </Unit14>
       <Unit15>
         <Filename Value="..\XpresParser.pas"/>
-        <IsVisibleTab Value="True"/>
-        <EditorIndex Value="4"/>
-        <TopLine Value="1140"/>
-        <CursorPos X="9" Y="1173"/>
-        <FoldState Value=" TL00LH p0;G01717 TMiV210E471326161]SwU820T18151 T4P02 T7WBm T8X0L216 T3lG0EE piajO0F4]9XjB0J]9jGje0B5 pk5kO0W213]K2oH0T3111[X40nZ03I THlJ2A1 p0*4243 T6mV01B]GwB01]j T0mZU5L piamBIE8]9Yk0c33]9cGY2E[{c5PU15JC523]nDuS46 TEuU44 TFy94E1A"/>
+        <EditorIndex Value="3"/>
+        <TopLine Value="1255"/>
+        <CursorPos X="48" Y="1285"/>
         <UsageCount Value="78"/>
         <Bookmarks Count="1">
-          <Item0 Y="1034" ID="2"/>
+          <Item0 Y="1048" ID="2"/>
         </Bookmarks>
         <Loaded Value="True"/>
       </Unit15>
@@ -151,22 +150,20 @@
       </Unit17>
       <Unit18>
         <Filename Value="..\XpresTypes.pas"/>
-        <EditorIndex Value="3"/>
-        <TopLine Value="110"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="109"/>
         <CursorPos X="18" Y="123"/>
         <UsageCount Value="24"/>
         <Bookmarks Count="1">
           <Item0 Y="101" ID="3"/>
         </Bookmarks>
-        <Loaded Value="True"/>
       </Unit18>
       <Unit19>
         <Filename Value="..\XpresElements.pas"/>
-        <EditorIndex Value="2"/>
+        <EditorIndex Value="-1"/>
         <TopLine Value="461"/>
         <CursorPos Y="495"/>
         <UsageCount Value="34"/>
-        <Loaded Value="True"/>
       </Unit19>
       <Unit20>
         <Filename Value="..\..\SynFacilUtils 0.7\SynFacilBasic.pas"/>
@@ -204,125 +201,115 @@
         <CursorPos X="42" Y="2381"/>
         <UsageCount Value="12"/>
       </Unit24>
+      <Unit25>
+        <Filename Value="..\..\SynFacilUtils-1.1\SynFacilBasic.pas"/>
+        <EditorIndex Value="-1"/>
+        <TopLine Value="218"/>
+        <CursorPos X="20" Y="232"/>
+        <UsageCount Value="10"/>
+      </Unit25>
     </Units>
-    <JumpHistory Count="30" HistoryIndex="29">
+    <JumpHistory Count="25" HistoryIndex="24">
       <Position1>
-        <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="209" Column="3" TopLine="205"/>
+        <Filename Value="Interprete.pas"/>
+        <Caret Line="131" Column="51" TopLine="113"/>
       </Position1>
       <Position2>
-        <Filename Value="..\XpresElements.pas"/>
-        <Caret Line="165" Column="25" TopLine="141"/>
+        <Filename Value="Interprete.pas"/>
+        <Caret Line="87" Column="3" TopLine="68"/>
       </Position2>
       <Position3>
-        <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="1334" Column="35" TopLine="1322"/>
+        <Filename Value="Interprete.pas"/>
+        <Caret Line="34" Column="15" TopLine="16"/>
       </Position3>
       <Position4>
-        <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="40" Column="16" TopLine="23"/>
+        <Filename Value="Interprete.pas"/>
+        <Caret Line="35" Column="15" TopLine="16"/>
       </Position4>
       <Position5>
-        <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="98" Column="14" TopLine="79"/>
+        <Filename Value="Interprete.pas"/>
+        <Caret Line="142" TopLine="105"/>
       </Position5>
       <Position6>
-        <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="99" Column="36" TopLine="81"/>
+        <Filename Value="Interprete.pas"/>
+        <Caret Line="87" Column="33" TopLine="68"/>
       </Position6>
       <Position7>
-        <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="125" Column="17" TopLine="108"/>
+        <Filename Value="Interprete.pas"/>
+        <Caret Line="77" Column="27" TopLine="77"/>
       </Position7>
       <Position8>
-        <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="165" Column="18" TopLine="148"/>
+        <Filename Value="Interprete.pas"/>
+        <Caret Line="91" Column="5" TopLine="72"/>
       </Position8>
       <Position9>
         <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="387" Column="14" TopLine="365"/>
+        <Caret Line="149" Column="12" TopLine="116"/>
       </Position9>
       <Position10>
         <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="912" Column="14" TopLine="887"/>
+        <Caret Line="1254" Column="7" TopLine="1231"/>
       </Position10>
       <Position11>
         <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="1237" Column="18" TopLine="1218"/>
+        <Caret Line="144" Column="8" TopLine="119"/>
       </Position11>
       <Position12>
-        <Filename Value="..\XpresElements.pas"/>
-        <Caret Line="89" Column="7" TopLine="79"/>
+        <Filename Value="Interprete.pas"/>
+        <Caret Line="91" Column="11" TopLine="72"/>
       </Position12>
       <Position13>
-        <Filename Value="..\XpresElements.pas"/>
-        <Caret Line="57" TopLine="36"/>
+        <Filename Value="..\XpresParser.pas"/>
+        <Caret Line="158" Column="5" TopLine="124"/>
       </Position13>
       <Position14>
         <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="1042" Column="36" TopLine="559"/>
+        <Caret Line="1278" Column="7" TopLine="1259"/>
       </Position14>
       <Position15>
         <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="1167" Column="18" TopLine="1128"/>
+        <Caret Line="158" Column="12" TopLine="124"/>
       </Position15>
       <Position16>
         <Filename Value="..\XpresParser.pas"/>
+        <Caret Line="1282" Column="22" TopLine="1259"/>
       </Position16>
       <Position17>
-        <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="23"/>
+        <Filename Value="Interprete.pas"/>
+        <Caret Line="92" Column="13" TopLine="74"/>
       </Position17>
       <Position18>
         <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="1087" Column="3" TopLine="728"/>
+        <Caret Line="1282" Column="3" TopLine="1259"/>
       </Position18>
       <Position19>
-        <Filename Value="..\XpresParser.pas"/>
+        <Filename Value="Interprete.pas"/>
+        <Caret Line="91" Column="3" TopLine="63"/>
       </Position19>
       <Position20>
-        <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="115" Column="26" TopLine="85"/>
+        <Filename Value="Interprete.pas"/>
+        <Caret Line="87" Column="3" TopLine="72"/>
       </Position20>
       <Position21>
         <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="121" Column="16" TopLine="105"/>
+        <Caret Line="1284" Column="3" TopLine="1260"/>
       </Position21>
       <Position22>
-        <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="880" Column="24" TopLine="865"/>
+        <Filename Value="Interprete.pas"/>
+        <Caret Line="37" TopLine="16"/>
       </Position22>
       <Position23>
-        <Filename Value="..\XpresParser.pas"/>
+        <Filename Value="Interprete.pas"/>
+        <Caret Line="123" Column="31" TopLine="88"/>
       </Position23>
       <Position24>
         <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="121" Column="23" TopLine="95"/>
+        <Caret Line="170" Column="9" TopLine="145"/>
       </Position24>
       <Position25>
-        <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="895" Column="15" TopLine="867"/>
+        <Filename Value="parser.pas"/>
+        <Caret Line="55" Column="16" TopLine="46"/>
       </Position25>
-      <Position26>
-        <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="1023" Column="35" TopLine="878"/>
-      </Position26>
-      <Position27>
-        <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="895" Column="5" TopLine="879"/>
-      </Position27>
-      <Position28>
-        <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="122" Column="24" TopLine="106"/>
-      </Position28>
-      <Position29>
-        <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="1042" Column="36" TopLine="879"/>
-      </Position29>
-      <Position30>
-        <Filename Value="..\XpresParser.pas"/>
-        <Caret Line="1141" Column="21" TopLine="1118"/>
-      </Position30>
     </JumpHistory>
   </ProjectSession>
 </CONFIG>

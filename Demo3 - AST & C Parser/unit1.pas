@@ -24,10 +24,10 @@ type
     hlt : TSynFacilComplet;  //highlighter - lexer
     doc : TContext;    //Context to scan
     ast: TXpTreeElements;
-    oev: TFaOpenEvent;
+    opEve: TFaOpenEvent;
     blkStruct, blkStructBody: TFaSynBlock;
     procedure ScanSource;
-    procedure oevLoadItems(curEnv: TFaCursorEnviron; var Cancel: boolean);
+    procedure opEveLoadItems(curEnv: TFaCursorEnviron; var Cancel: boolean);
   end;
 
 var
@@ -84,19 +84,19 @@ begin
   end;
 end;
 
-procedure TForm1.oevLoadItems(curEnv: TFaCursorEnviron; var Cancel: boolean);
+procedure TForm1.opEveLoadItems(curEnv: TFaCursorEnviron; var Cancel: boolean);
 {Fills the completion list, scanning the Syntax Tree}
 var
   el : TxpElement;
 begin
   ScanSource;  //No optimal, doing this every time we press a key
-  oev.ClearAvails;
+  opEve.ClearAvails;
   //only scan global declaraction
   for el in ast.main.elements do begin
     //Could be types, variables
-    oev.AddAvail(el.name);
+    opEve.AddAvail(el.name);
   end;
-  oev.AddAvail('alfa');
+  opEve.AddAvail('alfa');
   Cancel := true;
 end;
 
@@ -119,8 +119,8 @@ begin
 
   doc.DefSyn(hlt);
 
-  oev :=  hlt.OpenEvents[0];
-  oev.OnLoadItems:=@oevLoadItems;
+  opEve :=  hlt.OpenEvents[0];
+  opEve.OnLoadItems:=@opEveLoadItems;
 end;
 
 procedure TForm1.FormDestroy(Sender: TObject);
