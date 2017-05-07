@@ -1,3 +1,20 @@
+XPres 1.3
+=========
+Se adapta el código para trabajar con SynFacilUtils 1.1.
+Se cambia el tipo de TContext.TokenType a integer.
+Se crea TContext.TokenAttrib.
+Se cambia el tipo de TContexts.tokType a integer.
+Se crea la función function TContexts.tokAttrib, para devolver el atributo.
+Se cambia de nombre a GetExpression() por GetExpressionE().
+Se cambia de nombre a GetExpressionCore() por GetExpression().
+Se cambia de nombre a las rutinas de tipo TCompilerBase.Evaluar*, por TCompilerBase.Oper*, 
+Se corrige una llamada errónea a GetExpressionE(), por GetExpression(), en 
+TCompilerBase.GetOperand().
+Se crean los tipos TSrcPos y TSrcPosArray.
+Se modifican TContexts.NewContextFromFile() y TContexts.RemoveContext, para que guerde y 
+recupere el estado del lexer.
+Se crea el método TContexts.CloseContext().
+
 XPres 1.2
 =========
 Se cambia de nombre a TType.CreateOperator() por TType.CreateBinaryOperator()

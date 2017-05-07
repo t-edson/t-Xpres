@@ -18,6 +18,18 @@ uses Classes, SysUtils, fgl,
 
 
 type
+  //Posición dentro del código fuente
+  {Este tipo sirve para identificar la posicñon de algún elemento dentro del código
+  fuente. Tiene relación con un contexto, pero solo se remite a manejar ubicación.
+  No es lo mismo que TPosCont, que se usa para gaurdar posiciones dentro de un contexto
+  con fines de retomar la exploración.}
+  TSrcPos = record
+    fil: string;  //archivo donde se encuentra del elemento
+    row: integer; //número de línea del elemento
+    col: integer; //número de columna del elemento
+  end;
+  TSrcPosArray = array of TSrcPos;
+
   //Tipos de contextos
   tTypCon = (
     TC_ARC,      //contexto de tipo archivo
@@ -25,11 +37,12 @@ type
 
   TContext = class;
 
-  {Posición dentro de un contexto. A diferencia de "Tcontexto", es un registro y siempre
-   guardará una copia permanente. No guarda el contenido del contexto}
+  {Posición dentro de un contexto. A diferencia de "TContext", es un registro y siempre
+   guardará una copia permanente. No guarda el contenido del contexto, sino una
+   referencia al objeto, que debe ser válida, para poder accederlo. EL objetivo de este
+   campos es poder posicionarse dentro de alguna parte del contexto, para hacer la
+   exploración nuevamente.}
   TPosCont = record
-//    arc   : String  ;      //Nombre de archivo
-//    nlin  : LongInt ;      //Número de líneas
     fCon  : TContext;      //Referencia al Contexto
     fPos  : TFaLexerState;  //Posición (estado) en el contexto
   End;
@@ -118,21 +131,24 @@ type
     lex    : TSynFacilSyn;   //resaltador - lexer
     cEnt   : TContext;       //referencia al contexto de entrada actual
     ctxList : TListaCont;    //Lista de contextos de entrada
-    function LeePosContAct: TPosCont;
-    procedure FijPosContAct(pc: TPosCont);
+    function GetPosAct: TPosCont;
+    procedure SetPosAct(pc: TPosCont);
   public
     MsjError : string;
     tok      : string;     //token actual
     tokType  : integer;    //tipo de token actual
     OnNewLine: procedure(lin: string) of object;
+    lastPos  : TPosCont;   //Estado del contexto anterior
     function tokL: string;   //token actual en minúscula
     function tokAttrib: TSynHighlighterAttributes; inline;
-    property PosAct: TPosCont read LeePosContAct write FijPosContAct;
     property curCon: TContext read cEnt;
+    property PosAct: TPosCont read GetPosAct write SetPosAct;
+    function ReadSrcPos: TSrcPos;
     procedure NewContextFromFile(arc0: String);
     procedure NewContextFromFile(arc0: String; lins: Tstrings);
     procedure NewContextFromTxt(txt: string; arc0: String);
     procedure RemoveContext;
+    procedure CloseContext;
     procedure ClearAll;      //elimian todos los contextos
 
     function Eof: Boolean;
@@ -371,7 +387,7 @@ begin
 end;
 
 { TContexts }
-function TContexts.LeePosContAct: TPosCont;
+function TContexts.GetPosAct: TPosCont;
 //Devuelve Contexto actual y su posición
 begin
   Result.fCon := cEnt;
@@ -385,7 +401,7 @@ begin
 //      Result.nlin := cEnt.nlin;
   end;
 end;
-procedure TContexts.FijPosContAct(pc: TPosCont);
+procedure TContexts.SetPosAct(pc: TPosCont);
 //Fija Contexto actual y su posición
 begin
   cEnt := pc.fCon;
@@ -424,11 +440,12 @@ begin
     MsjError := 'No se encuentra archivo: ' + arc0;
     Exit;
   end;
-  cEnt := TContext.Create; //crea Contexto
-  cEnt.DefSyn(Lex);     //asigna lexer
-  ctxList.Add(cEnt);   //Registra Contexto
-  cEnt.SetSourceF(arc0);     //inicia con archivo
-  //actualiza token actual
+  lastPos := PosAct;   //Guarda posición actual
+  cEnt := TContext.Create; //crea nuevo Contexto
+  cEnt.DefSyn(Lex);       //asigna lexer
+  ctxList.Add(cEnt);      //Registra Contexto
+  cEnt.SetSourceF(arc0);  //inicia con archivo
+  //Actualiza token actual
   tok := lex.GetToken;    //lee el token
   tokType := lex.GetTokenKind;  //lee atributo
 end;
@@ -436,6 +453,7 @@ procedure TContexts.NewContextFromFile(arc0: String; lins: Tstrings);
 //Crea un Contexto a partir de un Tstring, como si fuera un archivo.
 //Fija el Contexto Actual "cEnt" como el Contexto creado.
 begin
+  lastPos := PosAct;   //Guarda posición actual
   cEnt := TContext.Create; //crea Contexto
   cEnt.DefSyn(Lex);     //asigna lexer
   ctxList.Add(cEnt);   //Registra Contexto
@@ -457,10 +475,22 @@ begin
     cEnt := nil
   else  //apunta al último
     CEnt := ctxList[ctxList.Count-1];
+  PosAct := lastPos;  //Actualiza CEnt
+end;
+procedure TContexts.CloseContext;
+{Cierra el contexto actual, retomando el contexto anterior. No elimina de la memoria,
+los contextos anteriores.}
+begin
+  if ctxList.Count = 0 then begin
+    cEnt := nil;   //por si acaso
+    exit;  //no se puede quitar más
+  end;
+  PosAct := lastPos;  //Actualiza CEnt
 end;
 procedure TContexts.ClearAll;  //Limpia todos los contextos
 begin
   ctxList.Clear;     //elimina todos los Contextos de entrada
+  cEnt := nil;   //por si acaso
 end;
 function TContexts.Eof: Boolean;
 begin
@@ -513,6 +543,13 @@ end;
 function TContexts.tokAttrib: TSynHighlighterAttributes;
 begin
   Result := lex.GetTokenAttribute;
+end;
+function TContexts.ReadSrcPos: TSrcPos;
+{Devuelve un objeto TSrcPos, en la posición actual.}
+begin
+  Result.Fil := curCon.arc;
+  Result.Row := curCon.row;
+  Result.Col := curCon.col;
 end;
 constructor TContexts.Create(Lex0: TSynFacilSyn);
 begin
