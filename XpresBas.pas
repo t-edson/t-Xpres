@@ -547,7 +547,7 @@ end;
 function TContexts.ReadSrcPos: TSrcPos;
 {Devuelve un objeto TSrcPos, en la posición actual.}
 begin
-  Result.Fil := curCon.arc;
+  Result.fil := curCon.arc;
   Result.Row := curCon.row;
   Result.Col := curCon.col;
 end;
