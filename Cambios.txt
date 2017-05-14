@@ -11,9 +11,6 @@ Se cambia de nombre a las rutinas de tipo TCompilerBase.Evaluar*, por TCompilerB
 Se corrige una llamada errónea a GetExpressionE(), por GetExpression(), en 
 TCompilerBase.GetOperand().
 Se crean los tipos TSrcPos y TSrcPosArray.
-Se modifican TContexts.NewContextFromFile() y TContexts.RemoveContext, para que guerde y 
-recupere el estado del lexer.
-Se crea el método TContexts.CloseContext().
 
 XPres 1.2
 =========

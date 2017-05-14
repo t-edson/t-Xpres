@@ -13,7 +13,7 @@ unit XpresBas;
 {$mode objfpc}{$H+}
 interface
 uses Classes, SysUtils, fgl,
-  Forms, LCLType,  //Para mostrar mensajes con Application.MessageBox()
+  Forms, LCLType, LCLProc,  //Para mostrar mensajes con Application.MessageBox()
   SynEditHighlighter, SynFacilHighlighter, SynFacilBasic;
 
 
@@ -138,7 +138,6 @@ type
     tok      : string;     //token actual
     tokType  : integer;    //tipo de token actual
     OnNewLine: procedure(lin: string) of object;
-    lastPos  : TPosCont;   //Estado del contexto anterior
     function tokL: string;   //token actual en minúscula
     function tokAttrib: TSynHighlighterAttributes; inline;
     property curCon: TContext read cEnt;
@@ -148,7 +147,6 @@ type
     procedure NewContextFromFile(arc0: String; lins: Tstrings);
     procedure NewContextFromTxt(txt: string; arc0: String);
     procedure RemoveContext;
-    procedure CloseContext;
     procedure ClearAll;      //elimian todos los contextos
 
     function Eof: Boolean;
@@ -440,7 +438,6 @@ begin
     MsjError := 'No se encuentra archivo: ' + arc0;
     Exit;
   end;
-  lastPos := PosAct;   //Guarda posición actual
   cEnt := TContext.Create; //crea nuevo Contexto
   cEnt.DefSyn(Lex);       //asigna lexer
   ctxList.Add(cEnt);      //Registra Contexto
@@ -453,7 +450,6 @@ procedure TContexts.NewContextFromFile(arc0: String; lins: Tstrings);
 //Crea un Contexto a partir de un Tstring, como si fuera un archivo.
 //Fija el Contexto Actual "cEnt" como el Contexto creado.
 begin
-  lastPos := PosAct;   //Guarda posición actual
   cEnt := TContext.Create; //crea Contexto
   cEnt.DefSyn(Lex);     //asigna lexer
   ctxList.Add(cEnt);   //Registra Contexto
@@ -475,17 +471,6 @@ begin
     cEnt := nil
   else  //apunta al último
     CEnt := ctxList[ctxList.Count-1];
-  PosAct := lastPos;  //Actualiza CEnt
-end;
-procedure TContexts.CloseContext;
-{Cierra el contexto actual, retomando el contexto anterior. No elimina de la memoria,
-los contextos anteriores.}
-begin
-  if ctxList.Count = 0 then begin
-    cEnt := nil;   //por si acaso
-    exit;  //no se puede quitar más
-  end;
-  PosAct := lastPos;  //Actualiza CEnt
 end;
 procedure TContexts.ClearAll;  //Limpia todos los contextos
 begin
