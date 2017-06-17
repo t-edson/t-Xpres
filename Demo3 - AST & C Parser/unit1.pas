@@ -27,7 +27,8 @@ type
     opEve: TFaOpenEvent;
     blkStruct, blkStructBody: TFaSynBlock;
     procedure ScanSource;
-    procedure opEveLoadItems(curEnv: TFaCursorEnviron; var Cancel: boolean);
+    procedure opEveLoadItems(opEv: TFaOpenEvent; curEnv: TFaCursorEnviron;
+                             out Cancel: boolean);
   end;
 
 var
@@ -84,7 +85,8 @@ begin
   end;
 end;
 
-procedure TForm1.opEveLoadItems(curEnv: TFaCursorEnviron; var Cancel: boolean);
+procedure TForm1.opEveLoadItems(opEv: TFaOpenEvent; curEnv: TFaCursorEnviron;
+  out Cancel: boolean);
 {Fills the completion list, scanning the Syntax Tree}
 var
   el : TxpElement;
