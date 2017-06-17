@@ -1,6 +1,6 @@
 XPres 1.3
 =========
-Se adapta el código para trabajar con SynFacilUtils 1.1.
+Se adapta el código para trabajar con SynFacilUtils 1.2.
 Se cambia el tipo de TContext.TokenType a integer.
 Se crea TContext.TokenAttrib.
 Se cambia el tipo de TContexts.tokType a integer.
