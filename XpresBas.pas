@@ -435,7 +435,7 @@ procedure TContexts.NewContextFromFile(arc0: String);
 //Fija el Contexto Actual "cEnt" como el Contexto creado.
 begin
   If not FileExists(arc0)  Then  begin  //ve si existe
-    MsjError := 'No se encuentra archivo: ' + arc0;
+    MsjError := 'File no found: ' + arc0;
     Exit;
   end;
   cEnt := TContext.Create; //crea nuevo Contexto
