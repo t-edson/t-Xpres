@@ -31,6 +31,7 @@ type
     row: integer; //número de línea del elemento
     col: integer; //número de columna del elemento
     function RowColString: string;
+    function EqualTo(const target: TSrcPos): boolean;
   end;
   TSrcPosArray = array of TSrcPos;
 
@@ -169,6 +170,13 @@ function TSrcPos.RowColString: string;
 begin
   Result := '[' + IntToStr(Row) + ',' + IntToStr(Col)+']';
 end;
+function TSrcPos.EqualTo(const target: TSrcPos): boolean;
+begin
+  Result := (fil = target.fil) and
+            (row = target.row) and
+            (col = target.col);
+end;
+
 { TContext }
 constructor TContext.Create;
 begin
