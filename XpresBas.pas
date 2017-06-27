@@ -23,10 +23,14 @@ type
   fuente. Tiene relación con un contexto, pero solo se remite a manejar ubicación.
   No es lo mismo que TPosCont, que se usa para gaurdar posiciones dentro de un contexto
   con fines de retomar la exploración.}
-  TSrcPos = record
+
+  { TSrcPos }
+
+  TSrcPos = object
     fil: string;  //archivo donde se encuentra del elemento
     row: integer; //número de línea del elemento
     col: integer; //número de columna del elemento
+    function RowColString: string;
   end;
   TSrcPosArray = array of TSrcPos;
 
@@ -160,6 +164,11 @@ type
 
 implementation
 
+{ TSrcPos }
+function TSrcPos.RowColString: string;
+begin
+  Result := '[' + IntToStr(Row) + ',' + IntToStr(Col)+']';
+end;
 { TContext }
 constructor TContext.Create;
 begin
