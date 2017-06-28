@@ -172,7 +172,7 @@ begin
 end;
 function TSrcPos.EqualTo(const target: TSrcPos): boolean;
 begin
-  Result := (fil = target.fil) and
+  Result := (UpCase(fil) = UpCase(target.fil)) and
             (row = target.row) and
             (col = target.col);
 end;
