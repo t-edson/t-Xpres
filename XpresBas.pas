@@ -208,7 +208,7 @@ begin
       Exit;
   End;
   //Verifica
-  Result := (lex.GetY = nlin) and lex.GetEol;
+  Result := (lex.GetY >= nlin) and lex.GetEol;
 end;
 procedure TContext.SkipWhitesNoEOL;
 //Coge los blancos iniciales del contexto de entrada, sin considerar saltos de línea.

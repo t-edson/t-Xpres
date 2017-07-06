@@ -11,6 +11,7 @@ Se cambia de nombre a las rutinas de tipo TCompilerBase.Evaluar*, por TCompilerB
 Se corrige una llamada errónea a GetExpressionE(), por GetExpression(), en 
 TCompilerBase.GetOperand().
 Se crean los tipos TSrcPos y TSrcPosArray.
+Se agrega una protección adicional para detectar el fin del contexto en TContext.Eof().
 
 XPres 1.2
 =========
