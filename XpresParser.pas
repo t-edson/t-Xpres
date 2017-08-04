@@ -469,7 +469,6 @@ ya se ha explorado antes.
 }
 var
   tmp: String;
-  params : string;   //parámetros de la función
   i: Integer;
   hayFunc: Boolean;
 begin
@@ -493,8 +492,8 @@ begin
     Result := TFF_PARTIAL;
     {Construye la lista de parámetros de las funciones con el mismo nombre. Solo
     hacemos esta tarea pesada aquí, porque  sabemos que se detendrá la compilación}
-    params := '';   //aquí almacenará la lista
-{    for i:=idx0 to high(funcs) do begin  //no debe empezar 1n 0, porque allí está func[0]
+{    params := '';   //aquí almacenará la lista
+    for i:=idx0 to high(funcs) do begin  //no debe empezar 1n 0, porque allí está func[0]
       if Upcase(funcs[i].name)= tmp then begin
         for j:=0 to high(funcs[i].pars) do begin
           params += funcs[i].pars[j].name + ',';

@@ -384,7 +384,9 @@ end;
 function TXpTreeElements.FindFirst(const name: string): TxpElement;
 {Busca un nombre siguiendo la estructura del espacio de nombres (primero en el espacio
  actual y luego en los espacios padres).
- Si encuentra devuelve la referencia. Si no encuentra, devuelve NIL}
+ Si encuentra devuelve la referencia. Si no encuentra, devuelve NIL.
+Este es un ejemplo, implementar de acuerdo al lenguaje y reglas de alcance.
+}
   function FindFirstIn(nod: TxpElement): TxpElement;
   var
     idx0: integer;
@@ -416,7 +418,8 @@ end;
 function TXpTreeElements.FindNext: TxpElement;
 {Continúa la búsqueda iniciada con FindFirst().}
 begin
-
+  //Implementar de acuerdo al lenguaje.
+  Result := nil;
 end;
 function TXpTreeElements.FindFuncWithParams(const funName: string; const func0: TxpEleFun;
   var fmatch: TxpEleFun): TFindFuncResult;
@@ -428,7 +431,6 @@ El resultado puede ser:
 }
 var
   tmp: String;
-  params : string;   //parámetros de la función
   ele: TxpElement;
   hayFunc: Boolean;
 begin
@@ -452,8 +454,8 @@ begin
     Result := TFF_PARTIAL;
     {Construye la lista de parámetros de las funciones con el mismo nombre. Solo
     hacemos esta tarea pesada aquí, porque  sabemos que se detendrá la compilación}
-    params := '';   //aquí almacenará la lista
-{    for i:=idx0 to high(funcs) do begin  //no debe empezar 1n 0, porque allí está func[0]
+{    params := '';   //aquí almacenará la lista
+    for i:=idx0 to high(funcs) do begin  //no debe empezar 1n 0, porque allí está func[0]
       if Upcase(funcs[i].name)= tmp then begin
         for j:=0 to high(funcs[i].pars) do begin
           params += funcs[i].pars[j].name + ',';
