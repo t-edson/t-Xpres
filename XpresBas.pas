@@ -98,9 +98,12 @@ type
     data     : TObject;      //Campo para información adiciconal que se desee alamcenar.
     autoClose: boolean;      {Indica que este contexto se debe cerrar automáticamente al
                               llegar al final.}
+    //Campos para manejo de mensajes de error
     FixErrPos: boolean;      {Indica que los mensajes de error, deben apuntar a una
                               posición fija, y no a la posición en donde se detecta el error.}
     ErrPosition: TSrcPos;    //Posición a usar para el error, cuando se activa FixErrPos.
+    PreErrorMsg: string;     {Mensaje previo al mensaje de error, cuando el errror se
+                             genere en este contexto.}
     //Posición del cursor actual
     property row: integer read getRow;
     property col: integer read getCol;
@@ -525,15 +528,23 @@ end;
 procedure TContexts.SkipWhites;
 {Salta los blancos incluidos los saltos de línea}
 begin
-  while not cEnt.Eof and ((lex.GetTokenAttribute = lex.tkSpace) or
-                     (lex.GetTokenAttribute = lex.tkEol)  or
-                     (lex.GetTokenAttribute = lex.tkComment) ) do
+  while cEnt.Eof or  //Considera también, para poder auto-cerrar contextos
+        (lex.GetTokenAttribute = lex.tkSpace) or
+        (lex.GetTokenAttribute = lex.tkEol)  or
+        (lex.GetTokenAttribute = lex.tkComment) do
   begin
+      if cEnt.Eof then begin
+        if cEnt.autoClose then begin
+          RemoveContext;  //cierra automáticamente
+        end else begin
+          break;  //Sale del WHILE
+        end;
+      end;
       if cEnt.Next then begin   //hubo cambio de línea
         if OnNewLine<>nil then OnNewLine(cEnt.CurLine);
       end;
   end;
-  //actualiza token actual
+  //Actualiza token actual
   tok := lex.GetToken;    //lee el token
   tokType := lex.GetTokenKind;  //lee atributo
 end;

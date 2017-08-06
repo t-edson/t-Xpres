@@ -7,6 +7,8 @@ Se crea el método TContexts.AddContext(), para unificar los métodos que agregan
 contextos.
 Se implementa código para guadar la posición de un contexto al abrir uno nuevo,
 y para restaurarlo al cerrar el contexto actual.
+Se modifica TContexts.SkipWhites() para que pase entre contextos, cuando el contexto
+actual es de tipo "AutoClose".
 
 XPres 1.3
 =========
