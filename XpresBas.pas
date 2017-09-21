@@ -164,7 +164,7 @@ type
     procedure NewContextFromTxt(txt: string; arc0: String);
     procedure RemoveContext;
     procedure ClearAll;      //elimian todos los contextos
-
+    procedure ShowContexts;
     function Eof: Boolean;
     procedure SkipWhites;
     procedure SkipWhitesNoEOL;
@@ -457,6 +457,7 @@ procedure TContexts.NewContextFromTxt(txt: string; arc0: String);
 //Fija el Contexto Actual "cEnt" como el Contexto creado.
 begin
   cEnt := AddContext;
+  debugln('  +Nex context from Txt:'+arc0);
   cEnt.SetSource(txt);     //Inicia con texto
   cEnt.arc := arc0;     {Se guarda el nombre del archivo actual, solo para poder procesar
                          las funciones $NOM_ACTUAL y $DIR_ACTUAL}
@@ -473,6 +474,7 @@ begin
     Exit;
   end;
   cEnt := AddContext;
+  debugln('  +Nex context from File:'+arc0);
   cEnt.SetSourceF(arc0);   //Inicia con archivo
   //Actualiza token actual
   tok := lex.GetToken;    //lee el token
@@ -483,6 +485,7 @@ procedure TContexts.NewContextFromFile(arc0: String; lins: Tstrings);
 //Fija el Contexto Actual "cEnt" como el Contexto creado.
 begin
   cEnt := AddContext;
+  debugln('  +Nex context from File:'+arc0);
   cEnt.SetSource(lins);    //Inicia con archivo contenido en TStrings
   cEnt.arc :=  arc0;       //Guarda nombre de archivo, solo como referencia.
   //actualiza token actual
@@ -499,20 +502,18 @@ begin
     cEnt := nil;   //por si acaso
     exit;  //no se puede quitar más
   end;
+debugln('  -Context deleted:'+ cEnt.arc);
   //Hay al menos un contexto abierto
   retPos := cEnt.retPos;  //guarda dirección de retorno
-  ctxList.Delete(ctxList.Count-1);  //elimina contexto superior
+  //ctxList.Delete(ctxList.Count-1);  //elimina contexto superior
+  ctxList.Remove(cEnt);
   if ctxList.Count = 0 then begin
     //No quedan contextos abiertos
     cEnt := nil;
   end else begin
     //Queda al menos un contexto anterior
-//    if retPos<>nil then begin
-      //Recupera posición anterior
-      PosAct := retPos;
-//    end else begin
-//      CEnt := ctxList[ctxList.Count-1];
-//    end;
+    //Recupera posición anterior
+    PosAct := retPos;
   end;
 end;
 procedure TContexts.ClearAll;  //Limpia todos los contextos
@@ -520,11 +521,19 @@ begin
   ctxList.Clear;     //elimina todos los Contextos de entrada
   cEnt := nil;   //por si acaso
 end;
+procedure TContexts.ShowContexts;
+{Función para depuración. Muestra el contenido de los contextos existentes.}
+var ctx: TContext;
+begin
+  debugln('=== Openend contexts ===');
+  for ctx in ctxList do begin
+    debugln('   ' + ctx.arc);
+  end;
+end;
 function TContexts.Eof: Boolean;
 begin
   Result := cEnt.Eof;
 end;
-
 procedure TContexts.SkipWhites;
 {Salta los blancos incluidos los saltos de línea}
 begin

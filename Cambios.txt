@@ -9,6 +9,8 @@ Se implementa código para guadar la posición de un contexto al abrir uno nuevo,
 y para restaurarlo al cerrar el contexto actual.
 Se modifica TContexts.SkipWhites() para que pase entre contextos, cuando el contexto
 actual es de tipo "AutoClose".
+Se modifica TContexts.RemoveContext, para que elimine el contexto actual, y no el 
+último abierto.
 
 XPres 1.3
 =========
