@@ -1,3 +1,10 @@
+XPres 1.3.2
+===========
+Se crea el contador TContexts.idCount.
+Se crea el campo TCOntext.idCtx, para identificar a los conetxtos.
+Se modifica TContexts.AddContext(), para agregar un índice único a cada contexto que 
+va agregando.
+
 XPres 1.3.1
 ===========
 Se cambia de nombre al tipo TListaCont, a TContextList.

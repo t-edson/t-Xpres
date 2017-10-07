@@ -11,6 +11,7 @@ Para ver los cambios en esta versión, revisar el archivo cambios.txt.
 
 unit XpresBas;
 {$mode objfpc}{$H+}
+//{$define debug_mode}
 interface
 uses Classes, SysUtils, fgl,
   Forms, LCLType, LCLProc,  //Para mostrar mensajes con Application.MessageBox()
@@ -98,6 +99,7 @@ type
     data     : TObject;      //Campo para información adiciconal que se desee alamcenar.
     autoClose: boolean;      {Indica que este contexto se debe cerrar automáticamente al
                               llegar al final.}
+    idCtx    : integer;      //Índice de unicidad del contexto.
     //Campos para manejo de mensajes de error
     FixErrPos: boolean;      {Indica que los mensajes de error, deben apuntar a una
                               posición fija, y no a la posición en donde se detecta el error.}
@@ -145,7 +147,8 @@ type
   private
     lex    : TSynFacilSyn;   //resaltador - lexer
     cEnt   : TContext;       //referencia al contexto de entrada actual
-    ctxList: TContextList;    //Lista de contextos de entrada
+    ctxList: TContextList;   //Lista de contextos de entrada
+    idCount: integer;        //Contador para obtener el índice de un contexto
     function GetPosAct: TPosCont;
     procedure SetPosAct(pc: TPosCont);
   public
@@ -164,12 +167,14 @@ type
     procedure NewContextFromTxt(txt: string; arc0: String);
     procedure RemoveContext;
     procedure ClearAll;      //elimian todos los contextos
-    procedure ShowContexts;
     function Eof: Boolean;
     procedure SkipWhites;
     procedure SkipWhitesNoEOL;
     procedure Next;          //Pasa al siguiente token
-  public
+  public  //Opciones de depuración
+    procedure ShowContexts;
+    procedure ShowCurContInformat;
+  public  //Inicialización
     constructor Create(Lex0: TSynFacilSyn);
     destructor Destroy; override;
   end;
@@ -445,19 +450,24 @@ begin
   tokType := lex.GetTokenKind;  //lee atributo
 end;
 function TContexts.AddContext: TContext;
-{Agrega un contexto a "ctxList" y devuelve la referencia.}
+{Agrega un contexto a "ctxList" y devuelve la referencia.
+Punto único para agregar un conetxto}
 begin
   Result := TContext.Create; //Crea Contexto
   Result.DefSyn(Lex);        //Asigna el lexer actual
   Result.retPos := PosAct;   //Guarda posicíon de retorno
+  Result.idCtx := idCount;   //Pone índice único
   ctxList.Add(Result);       //Registra Contexto
+  inc(idCount);
 end;
 procedure TContexts.NewContextFromTxt(txt: string; arc0: String);
 //Crea un Contexto a partir de una cadena.
 //Fija el Contexto Actual "cEnt" como el Contexto creado.
 begin
   cEnt := AddContext;
+  {$ifdef debug_mode}
   debugln('  +Nex context from Txt:'+arc0);
+  {$endif}
   cEnt.SetSource(txt);     //Inicia con texto
   cEnt.arc := arc0;     {Se guarda el nombre del archivo actual, solo para poder procesar
                          las funciones $NOM_ACTUAL y $DIR_ACTUAL}
@@ -474,7 +484,9 @@ begin
     Exit;
   end;
   cEnt := AddContext;
+  {$ifdef debug_mode}
   debugln('  +Nex context from File:'+arc0);
+  {$endif}
   cEnt.SetSourceF(arc0);   //Inicia con archivo
   //Actualiza token actual
   tok := lex.GetToken;    //lee el token
@@ -485,7 +497,9 @@ procedure TContexts.NewContextFromFile(arc0: String; lins: Tstrings);
 //Fija el Contexto Actual "cEnt" como el Contexto creado.
 begin
   cEnt := AddContext;
+  {$ifdef debug_mode}
   debugln('  +Nex context from File:'+arc0);
+  {$endif}
   cEnt.SetSource(lins);    //Inicia con archivo contenido en TStrings
   cEnt.arc :=  arc0;       //Guarda nombre de archivo, solo como referencia.
   //actualiza token actual
@@ -502,7 +516,9 @@ begin
     cEnt := nil;   //por si acaso
     exit;  //no se puede quitar más
   end;
-debugln('  -Context deleted:'+ cEnt.arc);
+  {$ifdef debug_mode}
+  debugln('  -Context deleted:'+ cEnt.arc);
+  {$endif}
   //Hay al menos un contexto abierto
   retPos := cEnt.retPos;  //guarda dirección de retorno
   //ctxList.Delete(ctxList.Count-1);  //elimina contexto superior
@@ -518,17 +534,9 @@ debugln('  -Context deleted:'+ cEnt.arc);
 end;
 procedure TContexts.ClearAll;  //Limpia todos los contextos
 begin
-  ctxList.Clear;     //elimina todos los Contextos de entrada
-  cEnt := nil;   //por si acaso
-end;
-procedure TContexts.ShowContexts;
-{Función para depuración. Muestra el contenido de los contextos existentes.}
-var ctx: TContext;
-begin
-  debugln('=== Openend contexts ===');
-  for ctx in ctxList do begin
-    debugln('   ' + ctx.arc);
-  end;
+  ctxList.Clear;  //Elimina todos los Contextos de entrada
+  cEnt := nil;    //Por si acaso
+  idCount := 0;   //Inicia contador
 end;
 function TContexts.Eof: Boolean;
 begin
@@ -600,6 +608,29 @@ begin
   Result.Row := curCon.row;
   Result.Col := curCon.col;
 end;
+procedure TContexts.ShowContexts;
+{Función para depuración. Muestra el contenido de los contextos existentes.}
+var ctx: TContext;
+begin
+  debugln('=== Openend contexts ===');
+  for ctx in ctxList do begin
+    debugln('   ' + ctx.arc);
+  end;
+end;
+procedure TContexts.ShowCurContInformat;
+var
+  typStr: string;
+begin
+  case curCon.typ of
+  TC_ARC: typStr := 'TC_ARC';
+  TC_TXT: typStr := 'TC_TXT';
+  end;
+  debugln('===Current Context ===');
+  debugln('  arc=' + curCon.arc);
+  debugln('  typ=%s pos=[%d,%d]', [typStr, curCon.row, curCon.col]);
+//  debugln('  curlines=' + curCon.curLines.Text);
+end;
+//Inicialización
 constructor TContexts.Create(Lex0: TSynFacilSyn);
 begin
   Lex := Lex0;   //guarda referencia
